@@ -1,10 +1,24 @@
 # Removes the following words, if they are at the end of a line
 
 # German
+mit
+
 und
 oder
 aber
+
+des
+DIE
+die
+der
+das
+
 bleibt
+
+aller
+
+eine
+
 
 # English
 and

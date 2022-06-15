@@ -8,10 +8,27 @@ from abc import ABC, abstractmethod
 from typing import List, Set, Tuple, Callable
 
 import sys
+import os
 import argparse
-from spellchecker import SpellChecker
 
+from spellchecker import SpellChecker
 import re
+
+def locate_resource(filename : str) -> str:
+    if os.path.isabs(filename):
+        return filename
+    
+    if os.path.exists(filename):
+        return filename
+    
+    try:
+        abs_filename = os.path.join(os.path.dirname(__file__),filename)
+        if os.path.exists(abs_filename):
+            return abs_filename
+        else:
+            raise Exception("neither ./{filename} nor {abs_filename} exists")
+    except Exception as e:
+        print(f"can't locate {filename}: {e}",file=sys.stderr)
 
 """The global list of all entries which will always be ignored."""
 ignored_entries = set()
@@ -146,9 +163,10 @@ class DeLeetify(AtomicRule):
         deleetified_terms = deleetified_entry.split()
         known_en = DeLeetify.spell_en.known 
         known_de = DeLeetify.spell_de.known 
+        # alternative test: all(len(known_en([t])) != 0 for t in deleetified_terms)\
         if  len(known_en(deleetified_terms)) == len(deleetified_terms)\
             or\
-            all(len(known_de(t)) != 0 for t in deleetified_terms):
+            len(known_de(deleetified_terms)) == len(deleetified_terms):
             return [deleetified_entry]
         else:
             return []
@@ -172,6 +190,21 @@ class RemoveWhitespace(AtomicRule):
         return "remove_ws"
 
 REMOVE_WHITESPACE = RemoveWhitespace()        
+
+
+class Strip(AtomicRule):
+
+    def process(self, entry: str) -> List[str]:
+        stripped_entry = entry.strip()
+        if stripped_entry != entry:
+            return [stripped_entry]
+        else:
+            return []
+
+    def __str__(self):
+        return "strip"
+
+STRIP = Strip()    
 
 
 class ToLower(AtomicRule):
@@ -222,6 +255,26 @@ class RemoveSpecialChars(AtomicRule):
         return "remove_sc"
 
 REMOVE_SPECIAL_CHARS = RemoveSpecialChars()
+
+
+class GetSpecialChars(AtomicRule):
+
+    special_chars_pattern = re.compile("[^a-zA-Z0-9\s]+")
+
+    def process(self, entry: str) -> List[str]:
+        entries = [
+            i.group(0) 
+            for i in GetSpecialChars.special_chars_pattern.finditer(entry)
+        ]
+        if len(entries) >= 1 and entry != entries[0]:
+            return entries
+        else:
+            return []
+
+    def __str__(self):
+        return "get_sc"
+
+GET_SPECIAL_CHARS = GetSpecialChars()
 
 
 class GetNumbers(AtomicRule):
@@ -327,16 +380,17 @@ class Split(AtomicRule):
             .replace(' ',"\\s")\
             .replace('\t',"\\t")
         return f"split {split_char_def}"            
-
+  
 
 class Replace(AtomicRule):
     """Replaces a character by another (set of) character(s)."""
 
     def __init__(self, replacements_filename):
         self.replacements_filename = replacements_filename
+        abs_filename = locate_resource(replacements_filename)
         
         replacement_table : dict[str,str] = {}
-        with open(replacements_filename,"r", encoding='utf-8') as replace_file :
+        with open(abs_filename,"r", encoding='utf-8') as replace_file :
             for line in replace_file:
                 sline = line.strip()
                 if len(sline) == 0 or sline.startswith("# "):
@@ -460,8 +514,8 @@ def parse_discard_endings(rest_of_rule: str) -> Tuple[str, AtomicRule]:
     if not endings_filename_match:
         raise Exception("discard_endings: file name missing (did you forgot the quotes(\")?)")
     endings_filename = endings_filename_match.group(0).strip("\"")
-    new_rest_of_rule = rest_of_rule[endings_filename_match.end(0):].lstrip()
-    return (new_rest_of_rule,Discard(endings_filename))
+    new_rest_of_rule = rest_of_rule[endings_filename_match.end(0):].lstrip()    
+    return (new_rest_of_rule,Discard(locate_resource(endings_filename)))
 
 
 custom_rules : Tuple[str,Rule] = { }
@@ -479,8 +533,10 @@ rule_parsers = {
     "remove_numbers": parse(REMOVE_NUMBERS),
     "remove_ws": parse(REMOVE_WHITESPACE),
     "remove_sc": parse(REMOVE_SPECIAL_CHARS),
+    "get_sc": parse(GET_SPECIAL_CHARS),
     "capitalize" : parse(CAPITALIZE),
     "deleetify" : parse(DELEETIFY),
+    "strip" : parse(STRIP),
 
     "split": parse_split,
     "replace" : parse_replace,
@@ -573,7 +629,8 @@ def parse_rules(rules_filename : str, verbose : bool) -> List[Rule]:
 
     rules: List[Rule] = []
 
-    with open(rules_filename, 'r', encoding='utf-8') as rules_file:
+    abs_filename = locate_resource(rules_filename)
+    with open(abs_filename, 'r', encoding='utf-8') as rules_file:
         line_number = 0
         for rule_def in rules_file.readlines():
             line_number = line_number + 1
@@ -589,7 +646,8 @@ def parse_rules(rules_filename : str, verbose : bool) -> List[Rule]:
                 if filename[0] != "\"" or filename[len(filename)-1] != "\"":
                     raise Exception("the filename has to be quoted (\")")
 
-                with open(filename[1:-1],"r", encoding='utf-8') as fin:
+                abs_filename = locate_resource(filename[1:-1])
+                with open(abs_filename,"r", encoding='utf-8') as fin:
                     for ignore_entry in fin:
                         # We want to be able to strip words with spaces
                         # at the beginning or end.
