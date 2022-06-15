@@ -1,0 +1,63 @@
+# This is a list of words which are not used as "standalone" passwords;
+# e.g., if after a split-up of an entry the following words are found
+# they are not considered further.
+
+# Deutsch
+der
+die
+das
+den
+dem
+des
+ein
+einer
+eine 
+
+für
+fuer
+
+von
+auf
+unter
+mit
+
+aller 
+
+neuen
+
+ist
+
+keine
+nicht
+
+und
+oder
+aber
+
+eins
+zwei
+drei
+vier
+fünf
+
+Erste
+Zweite
+Dritte
+Vierte
+Fünfte
+Fuenfte
+
+heilige
+geprägter
+
+euch
+
+# Englisch
+are
+all
+
+# Spanisch
+del
+
+# Französisch
+de

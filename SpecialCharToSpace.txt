@@ -1,0 +1,12 @@
+# A very simple table which has two main columns
+# <1. a sequence of characters><a space><another sequence of characters>
+# If you want to replace a space use \s to escape \ use \\ to replace a # use \#
+# empty lines are ignored.
+
+. \s
+$ \s
+! \s
+# \s
+_ \s
+- \s
+/ \s

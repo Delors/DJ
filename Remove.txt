@@ -1,0 +1,6 @@
+# Characters which are always just removed
+,
+.
+(
+)
+/
