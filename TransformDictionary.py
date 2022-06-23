@@ -14,7 +14,6 @@ import argparse
 from spellchecker import SpellChecker
 import re
 
-
 """Let's check if the file is in the current folder/relative to the current folder or relative to the folder where this script is stored."""
 def locate_resource(filename : str) -> str:
     if os.path.isabs(filename):
@@ -412,7 +411,7 @@ class Split(AtomicRule):
             .replace(' ',"\\s")\
             .replace('\t',"\\t")
         return f"split {split_char_def}"            
-
+  
 
 class Replace(AtomicRule):
     """Replaces a character by another (set of) character(s)."""
