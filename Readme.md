@@ -1,6 +1,6 @@
 # TransformDictionary
 
-python3 TransformDictionary.py -r <Rules File> [-f <Dictionary.utf8.txt>]
+python3 TransformDictionary.py [-r <Rules File>] [-f <Dictionary.utf8.txt>]
 
 Reads from the specified file or standard-in a dictionary and performs the transformations specified in the given rules file.
 

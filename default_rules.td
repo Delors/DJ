@@ -11,7 +11,7 @@ def SC_TO_SPACE replace "SpecialCharToSpace.txt"
 # - "deleetify" is a computationally intensive operation and the results
 #             of it may depend on the time when the deleetification
 #             is performed ()
-def BASE_TRANSFORMATIONS +SC_TO_SPACE +deleetify +capitalize +remove_sc +get_numbers +to_lower +UMLAUT_TO_ASCII +REWRITE_UMLAUT +remove_ws
+def BASE_TRANSFORMATIONS +mangle_dates +SC_TO_SPACE +strip +deleetify +capitalize +remove_sc +get_numbers +get_sc +to_lower +UMLAUT_TO_ASCII +REWRITE_UMLAUT +remove_ws
 
 # RULES
 # A "+" directly in front of the rule will
@@ -21,6 +21,7 @@ def BASE_TRANSFORMATIONS +SC_TO_SPACE +deleetify +capitalize +remove_sc +get_num
 # In general, entries which are unchanged by a transformer
 # are filtered.
 BASE_TRANSFORMATIONS report
+split / BASE_TRANSFORMATIONS report
 split . BASE_TRANSFORMATIONS report
 split \s *discard_endings "discard_endings.txt" BASE_TRANSFORMATIONS report
 
