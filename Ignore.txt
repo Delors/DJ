@@ -12,6 +12,8 @@ des
 ein
 einer
 eine 
+dies
+Dies
 
 für
 fuer
