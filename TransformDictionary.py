@@ -2,7 +2,7 @@
 
 # Bundeskriminalamt KT53
 # Dr. Michael Eichberg (michael.eichberg@bka.bund.de)
-# 2022
+# (c) 2022
 
 from abc import ABC, abstractmethod
 from typing import List, Set, Tuple, Callable
@@ -15,8 +15,13 @@ import argparse
 from spellchecker import SpellChecker
 import re
 
-"""Let's check if the file is in the current folder/relative to the current folder or relative to the folder where this script is stored."""
 def locate_resource(filename : str) -> str:
+    """ Tries to locate the file by searching for it relatively to the current
+        folder or the folder where this python script is stored.
+
+        Let's check if the file is in the current folder/relative to the 
+        current folder or relative to the folder where this script is stored.
+    """
     if os.path.isabs(filename):
         return filename
     
@@ -30,13 +35,16 @@ def locate_resource(filename : str) -> str:
         else:
             raise Exception("neither ./{filename} nor {abs_filename} exists")
     except Exception as e:
-        print(f"can't locate {filename}: {e}",file=sys.stderr)
+        print(f"can't locate {filename}: {e}", file=sys.stderr)
 
 """The global list of all entries which will always be ignored."""
 ignored_entries = set()
 
 
 def apply_rules(entry : str, rules) -> List[str]:
+    """Applies all rules to the given entry. As a result multiple new 
+       entries may be generated. 
+    """
     entries = [entry]
     for r in rules:
         if len(entries) == 0:
@@ -56,8 +64,8 @@ def apply_rules(entry : str, rules) -> List[str]:
     return entries
 
 
-""" The set of reported entries per entry. This list is cleared
-    by the transform_entries method.
+""" The set of reported (printed) entries per entry. This list is cleared
+    by the transform_entries method after processing an entry.
 """
 reported_entries : Set[str] = set()
 
@@ -74,7 +82,9 @@ class AtomicRule(ABC):
     An atomic rule performs a single well-defined transformation.
     Every rule also acts as a filter and will only
     return those entries which are newly created as a result of the
-    transformation. The only exception is the KeepEntryModifier which
+    transformation. 
+    
+    The only exception is the KeepEntryModifier which
     acts like a modifier ("+" directly before the rule name) 
     and is implemented as a wrapper.    
     """
@@ -365,7 +375,7 @@ class MangleDates(AtomicRule):
         if not r:
             return []
 
-            (d,m,c,y) = r.groups()
+        (d,m,c,y) = r.groups()
         """Currently we only accept dates between 1975 and 2025.
             The test ist not extremely precise, but should be acceptable for
             our purposes.
@@ -373,33 +383,33 @@ class MangleDates(AtomicRule):
         if int(d) > 31 or int(d) == 0 or int(m) > 12 or int(m) == 0 or (int(y) > 25 and int(y) < 75):
             return []
 
-            mangled_dates = [d+m+y,y]
-            if c:
-                mangled_dates.append(d+m+c+y)
-                mangled_dates.append(c+y)
+        mangled_dates = [d+m+y,y]
+        if c:
+            mangled_dates.append(d+m+c+y)
+            mangled_dates.append(c+y)
         else:
             if int(y) >= 0:
                 mangled_dates.append("20"+y)
             else:
                 mangled_dates.append("19"+y)
 
-            if len(d) == 1:
-                if len(m) == 1:
-                    mangled_dates.append("0"+d+"0"+m+y)
-                else:
-                    mangled_dates.append("0"+d+m+y)
+        if len(d) == 1:
+            if len(m) == 1:
+                mangled_dates.append("0"+d+"0"+m+y)
             else:
-                if len(m) == 1:
-                    mangled_dates.append(d+"0"+m+y)
-            return mangled_dates
+                mangled_dates.append("0"+d+m+y)
         else:
-            return []
+            if len(m) == 1:
+                mangled_dates.append(d+"0"+m+y)
+        return mangled_dates
             
 
     def __str__ (self):
         return "mangle_dates"
 
-MANGLE_DATES = MangleDates()        
+MANGLE_DATES = MangleDates()      
+
+
 class Split(AtomicRule):
 
     def __init__(self, split_char : str):
