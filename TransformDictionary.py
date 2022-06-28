@@ -11,6 +11,7 @@ import sys
 import os
 import argparse
 
+# Uses the pip package: pyspellchecker
 from spellchecker import SpellChecker
 import re
 
