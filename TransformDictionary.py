@@ -356,18 +356,33 @@ CAPITALIZE = Capitalize()
 
 class MangleDates(AtomicRule):
 
-    re_german_date = re.compile("^([0-9]{1,2})\.([0-9]{1,2})\.(19|20)?([0-9]{2})$")
+    re_german_date = re.compile("[^0-9]*([0-9]{1,2})\.?([0-9]{1,2})\.?(19|20)?([0-9]{2})")
 
     def __init__(self): pass
 
     def process(self, entry: str) -> List[str]:
         r = MangleDates.re_german_date.match(entry)
-        if r:
+        if not r:
+            return []
+
             (d,m,c,y) = r.groups()
+        """Currently we only accept dates between 1975 and 2025.
+            The test ist not extremely precise, but should be acceptable for
+            our purposes.
+        """
+        if int(d) > 31 or int(d) == 0 or int(m) > 12 or int(m) == 0 or (int(y) > 25 and int(y) < 75):
+            return []
+
             mangled_dates = [d+m+y,y]
             if c:
                 mangled_dates.append(d+m+c+y)
                 mangled_dates.append(c+y)
+        else:
+            if int(y) >= 0:
+                mangled_dates.append("20"+y)
+            else:
+                mangled_dates.append("19"+y)
+
             if len(d) == 1:
                 if len(m) == 1:
                     mangled_dates.append("0"+d+"0"+m+y)
