@@ -460,9 +460,14 @@ class Replace(AtomicRule):
 
 class Discard(AtomicRule):
     """
-    Discards the last term of a string with multiple elements
-    if the term is defined in the given file. The preceeding 
-    whitespace will also be discarded.
+    Discards the last term - recursively - of a string with multiple elements
+    if the term is defined in the given file. The preceding 
+    whitespace will also be discarded. For example, given the string:
+
+    Michael ist ein
+
+    and assuming that "ist" and "ein" should not be endings, the only
+    string that will pass this rule would be "Michael".
     """
 
     def __init__(self, endings_filename):
@@ -478,8 +483,12 @@ class Discard(AtomicRule):
         all_terms = entry.split()
         if len(all_terms) == 1:
             return []
-        if all_terms[-1] in self.endings:
-            return [" ".join(all_terms[0:-1])]
+        count = 0
+        while len(all_terms) > (-count + 1) and all_terms[count -1] in self.endings:
+            count -= 1
+
+        if count != 0 in self.endings:
+            return [" ".join(all_terms[0:-count])]
         else:
             return []
         
