@@ -367,20 +367,28 @@ CAPITALIZE = Capitalize()
 class MangleDates(AtomicRule):
 
     re_german_date = re.compile("[^0-9]*([0-9]{1,2})\.?([0-9]{1,2})\.?(19|20)?([0-9]{2})")
+    re_english_date = re.compile("[^0-9]*([0-9]{1,2})[/-]?([0-9]{1,2})[/-]?(19|20)?([0-9]{2})")    
 
     def __init__(self): pass
 
     def process(self, entry: str) -> List[str]:
         r = MangleDates.re_german_date.match(entry)
+        if r:
+            (d,m,c,y) = r.groups()
+        
         if not r:
+            r = MangleDates.re_english_date.match(entry)
+            if r:
+                (m,d,c,y) = r.groups()
+
+        if not r:    
             return []
 
-        (d,m,c,y) = r.groups()
         """Currently we only accept dates between 1975 and 2025.
             The test ist not extremely precise, but should be acceptable for
             our purposes.
         """
-        if int(d) > 31 or int(d) == 0 or int(m) > 12 or int(m) == 0 or (int(y) > 25 and int(y) < 75):
+        if int(d) > 31 or int(d) == 0 or int(m) > 12 or int(m) == 0 or (int(y) > 25 and int(y) < 75) or (c and (c == 19 or c == 20)):
             return []
 
         mangled_dates = [d+m+y,y]
@@ -396,11 +404,21 @@ class MangleDates(AtomicRule):
         if len(d) == 1:
             if len(m) == 1:
                 mangled_dates.append("0"+d+"0"+m+y)
+                mangled_dates.append("0"+d+"0"+m)
+                mangled_dates.append("0"+m+"0"+d)
             else:
                 mangled_dates.append("0"+d+m+y)
+                mangled_dates.append("0"+d+m)
+                mangled_dates.append(m+"0"+d)
         else:
             if len(m) == 1:
                 mangled_dates.append(d+"0"+m+y)
+                mangled_dates.append(d+"0"+m)
+                mangled_dates.append("0"+m+d)
+            else:
+                mangled_dates.append(d+m)
+                mangled_dates.append(m+d)
+
         return mangled_dates
             
 
