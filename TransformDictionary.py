@@ -249,19 +249,20 @@ class DeLeetify(AtomicRule):
             not DeLeetify._re_has_leetspeak.match(entry):
             return []
 
+        # TODO [IMPROVEMENT] First scan for all numbers in the entry and then perform the relevant transformations instead of testing all combinations of transformations.
 
-        deleetified_entries : List[str] = []
+        deleetified_entries : Set[str] = set()
         for rs in DeLeetify.replacements:
             deleetified_entry = entry
             for (n,c) in rs:
                 deleetified_entry = deleetified_entry.replace(n,c)
-                if entry != deleetified_entry:
-                    deleetified_entries.append(deleetified_entry)
+            if entry != deleetified_entry:
+                deleetified_entries.add(deleetified_entry)
 
 
         deleetified_words : List[str] = []
 
-        for de in deleetified_entries:
+        for deleetified_entry in deleetified_entries:
 
             deleetified_terms = deleetified_entry.split()
             terms_count =  len(deleetified_terms)
@@ -272,7 +273,7 @@ class DeLeetify(AtomicRule):
                 len(DeLeetify.known_de(deleetified_terms)) == terms_count\
                 or\
                 len(DeLeetify.known_fr(deleetified_terms)) == terms_count:
-                deleetified_entries.append(deleetified_entry)
+                deleetified_words.append(deleetified_entry)
         
         return deleetified_words
 
@@ -661,6 +662,9 @@ class Rule:
     """
 
     def __init__(self, rules: List[AtomicRule]):
+        if not rules or len(rules) == 0:
+            raise Exception("no rules specified")
+
         self.rules = rules
         return
 
@@ -672,7 +676,6 @@ class Rule:
 
 
 ### PARSER SETUP AND CONFIGURATION
-
 
 re_next_word = re.compile("^[^\s]+")
 re_next_quoted_word = re.compile('^"[^"]+"')
@@ -778,11 +781,12 @@ def parse_rest_of_rule(previous_rules : List[AtomicRule], line_number, rest_of_r
     if keep_if_filtered:
         (new_rest_of_rule,base_rule) = result
         result = (new_rest_of_rule,KeepOnlyIfFilteredModifier(base_rule))
-        return result
+    
+    return result
     
 
 
-def parse_rule(line_number:int, is_def : bool, sline:str):
+def parse_rule(line_number:int, is_def : bool, sline:str) -> Rule :
     # Parse a single rule definition in collaboration with the
     # respective atomic parsers.
     atomic_rules: List[AtomicRule] = []
@@ -796,7 +800,10 @@ def parse_rule(line_number:int, is_def : bool, sline:str):
                 not (
                     isinstance(atomic_rule,Report) 
                     or 
-                    (isinstance(atomic_rule,Macro) and isinstance(atomic_rule.rules[-1],Report))
+                    (   isinstance(atomic_rule,Macro) 
+                        and 
+                        isinstance(atomic_rule.rules[-1],Report)
+                    )
                 ):
                 print(
                     f"[info][{line_number}] adding report as the last rule", 
@@ -806,8 +813,11 @@ def parse_rule(line_number:int, is_def : bool, sline:str):
         else:
             # If the parsing of an atomic rule fails, we just
             # ignore the line as a whole.
-            atomic_rules = None
-            break
+            print(
+                    f"[error][{line_number}] parsing failed: {sline}", 
+                    file=sys.stderr
+                )
+            return None
 
     return Rule(atomic_rules)
 
