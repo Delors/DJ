@@ -211,9 +211,9 @@ class DeLeetify(AtomicRule):
         itertools.chain.from_iterable(
             itertools.combinations({
                 ("0","o"),
+                ("1","i"),
                 ("3","e"),
-                ("4","a"),
-                ("1","i")
+                ("4","a")                
             },l) for l in range(1,4)
         )
     )
@@ -222,7 +222,7 @@ class DeLeetify(AtomicRule):
     # we never have words with more than three subsequent vowles and that the
     # numbers 0,3,4,1 are the only relevant ones.
     # (In reality such words exists; e.g. Aioli !)
-    _re_has_at_least_one_seq_with_at_most_three_numbers = re.compile("[^0-9]*[0341]{1,3}([^0-9]|$)")
+    _re_has_at_least_one_seq_with_at_most_three_numbers = re.compile("[^0-9]*[0134]{1,3}([^0-9]|$)")
     _re_has_leetspeak = re.compile(".*[a-zA-Z]")
 
     spell_en = SpellChecker(language="en")
@@ -255,21 +255,26 @@ class DeLeetify(AtomicRule):
             deleetified_entry = entry
             for (n,c) in rs:
                 deleetified_entry = deleetified_entry.replace(n,c)
-        if entry == deleetified_entry:
-            # There is no leet speak...
-                continue
+                if entry != deleetified_entry:
+                    deleetified_entries.append(deleetified_entry)
 
-        deleetified_terms = deleetified_entry.split()
-     
-        # alternative test: all(len(known_en([t])) != 0 for t in deleetified_terms)\
-            if  len(DeLeetify.known_en(deleetified_terms)) == len(deleetified_terms)\
-            or\
-                len(DeLeetify.known_de(deleetified_terms)) == len(deleetified_terms)\
+
+        deleetified_words : List[str] = []
+
+        for de in deleetified_entries:
+
+            deleetified_terms = deleetified_entry.split()
+            terms_count =  len(deleetified_terms)
+
+            # alternative test: all(len(known_en([t])) != 0 for t in deleetified_terms)\
+            if  len(DeLeetify.known_en(deleetified_terms)) == terms_count\
                 or\
-                len(DeLeetify.known_fr(deleetified_terms)) == len(deleetified_terms):
+                len(DeLeetify.known_de(deleetified_terms)) == terms_count\
+                or\
+                len(DeLeetify.known_fr(deleetified_terms)) == terms_count:
                 deleetified_entries.append(deleetified_entry)
         
-        return deleetified_entries
+        return deleetified_words
 
     def __str__(self):
         return "deleetify"
@@ -448,7 +453,7 @@ class FoldWhitespace(AtomicRule):
 
 FOLD_WHITESPACE = FoldWhitespace()
 
-rule_name: str,
+
 class Capitalize(AtomicRule):
     """Capitalize a given entry."""
 
