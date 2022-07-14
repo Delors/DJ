@@ -8,6 +8,7 @@ from abc import ABC, abstractmethod
 from typing import List, Set, Tuple, Callable
 
 import sys
+import itertools
 import os
 import argparse
 
@@ -37,37 +38,12 @@ def locate_resource(filename : str) -> str:
     except Exception as e:
         print(f"can't locate {filename}: {e}", file=sys.stderr)
 
-"""The global list of all entries which will always be ignored."""
-ignored_entries = set()
 
-
-def apply_rules(entry : str, rules) -> List[str]:
-    """Applies all rules to the given entry. As a result multiple new 
-       entries may be generated. 
-    """
-    entries = [entry]
-    for r in rules:
-        if len(entries) == 0:
-            break
-
-        new_entries = []
-        for entry in entries:
-            if len(entry) > 0:
-                try:
-                    for new_entry in r.process(entry):
-                        if new_entry not in ignored_entries:
-                            new_entries.append(new_entry)
-                except Exception as e:
-                    print(f"rule {r} failed: {e}",file=sys.stderr)
-        entries = new_entries
-
-    return entries
-
-
-""" The set of reported (printed) entries per entry. This list is cleared
-    by the transform_entries method after processing an entry.
-"""
 reported_entries : Set[str] = set()
+""" The set of reported, i.e., printed, entries per entry. This list is cleared
+    by the `transform_entries` method after processing an entry.
+    """
+
 
 def report(s : str):
     """Prints out the entry."""
@@ -92,6 +68,33 @@ class AtomicRule(ABC):
     @abstractmethod
     def process(self, entry: str) -> List[str]:
         pass
+
+
+ignored_entries = set()
+"""The global list of all entries which will always be ignored."""
+
+
+def apply_rules(entry : str, rules : List[AtomicRule]) -> List[str]:
+    """Applies all rules to the given entry. As a result multiple new 
+       entries may be generated. 
+    """
+    entries = [entry]
+    for r in rules:
+        if len(entries) == 0:
+            break
+
+        new_entries = []
+        for entry in entries:
+            if len(entry) > 0:
+                try:
+                    for new_entry in r.process(entry):
+                        if new_entry not in ignored_entries:
+                            new_entries.append(new_entry)
+                except Exception as e:
+                    print(f"rule {r} failed: {e}",file=sys.stderr)
+        entries = new_entries
+
+    return entries
 
 
 class Report(AtomicRule):
@@ -119,6 +122,7 @@ REPORT = Report()
 
 class Macro(AtomicRule):
     """Definition of a macro."""
+
     def __init__(self, name :str, rules : List[AtomicRule]):
         self.name = name
         self.rules = rules
@@ -274,6 +278,7 @@ DELEETIFY = DeLeetify()
 
 
 class RemoveWhitespace(AtomicRule):
+    """Removes all whitespace."""
 
     def process(self, entry: str) -> List[str]:
         split_entries = entry.split()
@@ -289,6 +294,7 @@ REMOVE_WHITESPACE = RemoveWhitespace()
 
 
 class Strip(AtomicRule):
+    """Removes leading and trailing whitespace."""
 
     def process(self, entry: str) -> List[str]:
         stripped_entry = entry.strip()
@@ -304,6 +310,7 @@ STRIP = Strip()
 
 
 class ToLower(AtomicRule):
+    """Converts an entry to all lower case."""
 
     def process(self, entry: str) -> List[str]:
         lower = entry.lower()
@@ -319,6 +326,7 @@ TO_LOWER = ToLower()
 
 
 class ToUpper(AtomicRule):
+    """Converts an entry to all upper case."""
 
     def process(self, entry: str) -> List[str]:
         upper = entry.upper()
@@ -334,13 +342,16 @@ TO_UPPER = ToUpper()
 
 
 class RemoveSpecialChars(AtomicRule):
+    """ Removes all special chars; whitespace is not considered as a
+        special char.
+    """
 
-    non_special_char_pattern = re.compile("[a-zA-Z0-9\s]+")
+    re_non_special_char = re.compile("[a-zA-Z0-9\s]+")
 
     def process(self, entry: str) -> List[str]:
         entries = [
             i.group(0) 
-            for i in RemoveSpecialChars.non_special_char_pattern.finditer(entry)
+            for i in RemoveSpecialChars.re_non_special_char.finditer(entry)
         ]
         if len(entries) >= 1 and entry != entries[0]:
             return ["".join(entries)]
@@ -354,13 +365,14 @@ REMOVE_SPECIAL_CHARS = RemoveSpecialChars()
 
 
 class GetSpecialChars(AtomicRule):
+    """Extracts the used special char (sequences)."""
 
-    special_chars_pattern = re.compile("[^a-zA-Z0-9\s]+")
+    re_special_chars = re.compile("[^a-zA-Z0-9\s]+")
 
     def process(self, entry: str) -> List[str]:
         entries = [
             i.group(0) 
-            for i in GetSpecialChars.special_chars_pattern.finditer(entry)
+            for i in GetSpecialChars.re_special_chars.finditer(entry)
         ]
         if len(entries) >= 1 and entry != entries[0]:
             return entries
@@ -374,13 +386,14 @@ GET_SPECIAL_CHARS = GetSpecialChars()
 
 
 class GetNumbers(AtomicRule):
+    """ Extracts all numbers. """
 
-    numbers_pattern = re.compile("[0-9]+")
+    re_numbers = re.compile("[0-9]+")
 
     def process(self, entry: str) -> List[str]:
         entries = [
             i.group(0) 
-            for i in GetNumbers.numbers_pattern.finditer(entry)
+            for i in GetNumbers.re_numbers.finditer(entry)
         ]
         if len(entries) >= 1 and entry != entries[0]:
             return entries
@@ -394,13 +407,14 @@ GET_NUMBERS = GetNumbers()
 
 
 class RemoveNumbers(AtomicRule):
+    """Removes all numbers from an entry."""
 
-    no_numbers_pattern = re.compile("[^0-9]+")
+    re_no_numbers = re.compile("[^0-9]+")
 
     def process(self, entry: str) -> List[str]:
         entries = [
             i.group(0) 
-            for i in RemoveNumbers.no_numbers_pattern.finditer(entry)
+            for i in RemoveNumbers.re_no_numbers.finditer(entry)
         ]
         if len(entries) >= 1 and entry != entries[0]:
             return ["".join(entries)]
@@ -414,6 +428,7 @@ REMOVE_NUMBERS = RemoveNumbers()
 
 
 class FoldWhitespace(AtomicRule):
+    """ Folds all whitespace (spaces and tabs) to one space. """
 
     def process(self, entry: str) -> List[str]:
         last_entry = ""
@@ -433,8 +448,9 @@ class FoldWhitespace(AtomicRule):
 
 FOLD_WHITESPACE = FoldWhitespace()
 
-
+rule_name: str,
 class Capitalize(AtomicRule):
+    """Capitalize a given entry."""
 
     def process(self, entry: str) -> List[str]:
         capitalized = entry.capitalize()
@@ -449,6 +465,9 @@ class Capitalize(AtomicRule):
 CAPITALIZE = Capitalize()
 
 class MangleDates(AtomicRule):
+    """ Tries to identify numbers which are dates and then creates various
+        representations for the respective date.
+    """
 
     re_german_date = re.compile("[^0-9]*([0-9]{1,2})\.?([0-9]{1,2})\.?(19|20)?([0-9]{2})")
 
@@ -472,7 +491,7 @@ class MangleDates(AtomicRule):
             mangled_dates.append(d+m+c+y)
             mangled_dates.append(c+y)
         else:
-            if int(y) >= 0:
+            if int(y) <= 25:
                 mangled_dates.append("20"+y)
             else:
                 mangled_dates.append("19"+y)
@@ -495,6 +514,9 @@ MANGLE_DATES = MangleDates()
 
 
 class Split(AtomicRule):
+    """ Splits up an entry using the given split_char as a separator
+        creating all sub splits.
+    """
 
     def __init__(self, split_char : str):
         self.split_char = split_char
@@ -574,7 +596,7 @@ class Discard(AtomicRule):
     if the term is defined in the given file. The preceding 
     whitespace will also be discarded. For example, given the string:
 
-    Michael ist ein
+        _Michael ist ein_
 
     and assuming that "ist" and "ein" should not be endings, the only
     string that will pass this rule would be "Michael".
@@ -584,7 +606,7 @@ class Discard(AtomicRule):
         self.endings_filename = endings_filename
 
         endings : Set[str] = set()
-        with open(endings_filename,"r",encoding="utf-8") as fin :
+        with open(locate_resource(endings_filename),"r",encoding="utf-8") as fin :
             for ending in fin:
                 endings.add(ending.rstrip("\r\n"))       
         self.endings = endings
@@ -603,7 +625,7 @@ class Discard(AtomicRule):
             return []
         
     def __str__(self):
-        return f'discard "{self.endings_filename}"'
+        return f'discard_endings"{self.endings_filename}"'
 
 
 class Rule:
@@ -629,20 +651,20 @@ class Rule:
 ### PARSER SETUP AND CONFIGURATION
 
 
-next_word_pattern = re.compile("^[^\s]+")
-next_quoted_word_pattern = re.compile('^"[^"]+"')
+re_next_word = re.compile("^[^\s]+")
+re_next_quoted_word = re.compile('^"[^"]+"')
 
-def parse(rule) -> Callable[[str],Tuple[str,AtomicRule]]:
+def parse(rule) -> Callable[[str,str],Tuple[str,AtomicRule]]:
     """Generic parser for rules without parameters."""
 
-    def parse_it(rest_of_rule: str) -> Tuple[str, AtomicRule]:
+    def parse_it(rule_name: str, rest_of_rule: str) -> Tuple[str, AtomicRule]:
         return (rest_of_rule,rule)
 
     return parse_it   
 
 
-def parse_split(rest_of_rule: str) -> Tuple[str, AtomicRule]:
-    split_chars_match = next_word_pattern.match(rest_of_rule)
+def parse_split(rule_name: str, rest_of_rule: str) -> Tuple[str, AtomicRule]:
+    split_chars_match = re_next_word.match(rest_of_rule)
     raw_split_chars = split_chars_match.group(0)
     split_char = raw_split_chars \
             .replace("\\t","\t") \
@@ -652,23 +674,23 @@ def parse_split(rest_of_rule: str) -> Tuple[str, AtomicRule]:
     return (new_rest_of_rule,Split(split_char))
 
 
-def parse_replace(rest_of_rule: str) -> Tuple[str, AtomicRule]:
-    replace_filename_match = next_quoted_word_pattern.match(rest_of_rule)
+def parse_replace(rule_name: str, rest_of_rule: str) -> Tuple[str, AtomicRule]:
+    replace_filename_match = re_next_quoted_word.match(rest_of_rule)
     replace_filename = replace_filename_match.group(0).strip("\"")
     new_rest_of_rule = rest_of_rule[replace_filename_match.end(0):].lstrip()
     return (new_rest_of_rule,Replace(replace_filename))
 
 
-def parse_discard_endings(rest_of_rule: str) -> Tuple[str, AtomicRule]:
-    endings_filename_match = next_quoted_word_pattern.match(rest_of_rule)
+def parse_discard_endings(rule_name: str, rest_of_rule: str) -> Tuple[str, AtomicRule]:
+    endings_filename_match = re_next_quoted_word.match(rest_of_rule)
     if not endings_filename_match:
         raise Exception("discard_endings: file name missing (did you forgot the quotes(\")?)")
     endings_filename = endings_filename_match.group(0).strip("\"")
     new_rest_of_rule = rest_of_rule[endings_filename_match.end(0):].lstrip()    
-    return (new_rest_of_rule,Discard(locate_resource(endings_filename)))
+    return (new_rest_of_rule,Discard(endings_filename))
 
 
-custom_rules : Tuple[str,Rule] = { }
+macro_defs : Tuple[str,Rule] = { }
 
 """Mapping between the name of a rule and it's associated parameters parser."""
 rule_parsers = {
@@ -697,7 +719,7 @@ rule_parsers = {
 
 def parse_rest_of_rule(previous_rules : List[AtomicRule], line_number, rest_of_rule : str) -> Tuple[str, AtomicRule]:
     # Get name of rule parser
-    next_rule_parser_match = next_word_pattern.match(rest_of_rule)
+    next_rule_parser_match = re_next_word.match(rest_of_rule)
     next_rule_parser_name = next_rule_parser_match.group(0)
 
     # Check for rule modifiers
@@ -706,20 +728,26 @@ def parse_rest_of_rule(previous_rules : List[AtomicRule], line_number, rest_of_r
     if keep_always or keep_if_filtered:
         next_rule_parser_name = next_rule_parser_name[1:]
 
-    result :  Tuple[str, AtomicRule] = None
+    result : Tuple[str, AtomicRule] = None
     next_rule_parser = rule_parsers.get(next_rule_parser_name)
     if next_rule_parser is not None:
         new_rest_of_rule = rest_of_rule[next_rule_parser_match.end(
             0):].lstrip()
-        result = next_rule_parser(new_rest_of_rule)
-    elif custom_rules.get(next_rule_parser_name) is not None:
-        custom_rule_instance = custom_rules.get(next_rule_parser_name)
+        result = next_rule_parser(next_rule_parser_name, new_rest_of_rule)
+    elif macro_defs.get(next_rule_parser_name) is not None:
+        macro_def = macro_defs.get(next_rule_parser_name)
         new_rest_of_rule = rest_of_rule[next_rule_parser_match.end(
             0):].lstrip()
         result = (
             new_rest_of_rule,
-            Macro(next_rule_parser_name,custom_rule_instance.rules)
+            Macro(next_rule_parser_name,macro_def.rules)
         )
+    else:
+        print(
+            f"[error][{line_number}] unknown command: {next_rule_parser_name}", 
+            file=sys.stderr
+        )
+        return None        
 
     if keep_always:
         (new_rest_of_rule,base_rule) = result
@@ -727,15 +755,8 @@ def parse_rest_of_rule(previous_rules : List[AtomicRule], line_number, rest_of_r
     if keep_if_filtered:
         (new_rest_of_rule,base_rule) = result
         result = (new_rest_of_rule,KeepOnlyIfFilteredModifier(base_rule))
-
-    if result is not None:
         return result
     
-    print(
-        f"[error][{line_number}] unknown command: {next_rule_parser_name}", 
-        file=sys.stderr
-    )
-    return None
 
 
 def parse_rule(line_number:int, is_def : bool, sline:str):
@@ -807,15 +828,15 @@ def parse_rules(rules_filename : str, verbose : bool) -> List[Rule]:
                             ignored_entries.add(stripped_ignore_entry)
 
             elif sline.startswith("def"):
-                custom_rule_def = sline[len("def")+1:]
-                rule_name_match = next_word_pattern.match(custom_rule_def)
-                rule_name = rule_name_match.group(0)
-                rule_body = custom_rule_def[rule_name_match.end(0):].lstrip()
-                if rule_name.upper() != rule_name:
-                    raise Exception(f"custom rules need to be upper case: {rule_name}")
-                rule = parse_rule(line_number, True, rule_body)
+                macro_def = sline[len("def")+1:]
+                macro_name_match = re_next_word.match(macro_def)
+                macro_name = macro_name_match.group(0)
+                macro_body = macro_def[macro_name_match.end(0):].lstrip()
+                if macro_name.upper() != macro_name:
+                    raise Exception(f"macro names need to be upper case: {macro_name}")
+                rule = parse_rule(line_number, True, macro_body)
                 if rule:
-                    custom_rules[rule_name] = rule
+                    macro_defs[macro_name] = rule
 
             else:
                 rule = parse_rule(line_number, False, sline)
