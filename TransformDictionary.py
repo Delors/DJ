@@ -33,7 +33,7 @@ def locate_resource(filename : str) -> str:
         if os.path.exists(abs_filename):
             return abs_filename
         else:
-            raise Exception("neither ./{filename} nor {abs_filename} exists")
+            raise Exception(f"neither ./{filename} nor {abs_filename} exists")
     except Exception as e:
         print(f"can't locate {filename}: {e}", file=sys.stderr)
 
@@ -65,12 +65,14 @@ def apply_rules(entry : str, rules) -> List[str]:
 
 
 """ The set of reported (printed) entries per entry. This list is cleared
-    by the transform_entries method after processing an entry.
+    by the `transform_entries` method after processing an entry.
 """
 reported_entries : Set[str] = set()
 
 def report(s : str):
-    """Prints out the entry."""
+    """Prints out the entry if it was not yet printed as part of the mangling
+       of the same entry.
+    """
     if s not in reported_entries:
         reported_entries.add(s)
         print(s)
@@ -84,9 +86,9 @@ class AtomicRule(ABC):
     return those entries which are newly created as a result of the
     transformation. 
     
-    The only exception is the KeepEntryModifier which
-    acts like a modifier ("+" directly before the rule name) 
-    and is implemented as a wrapper.    
+    The only exception are the `KeepAlwaysModifier` and the 
+    KeepOnlyIfFilteredModifier` which act like modifiers ("+"/"*" 
+    directly before the rule name) and which are implemented as wrappers.    
     """
 
     @abstractmethod
