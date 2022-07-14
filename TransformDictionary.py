@@ -150,8 +150,10 @@ class KeepAlwaysModifier(AtomicRule):
 
 
 class KeepOnlyIfFilteredModifier(AtomicRule):
-    """The input entry will be an output entry if the wrapped rule
-        completely rejects the entry.
+    """Modifies the behavior of the wrapped rule such that an
+       input entry will be an output entry if the wrapped rule
+       completely rejects the entry. I.e., if the wrapped rule does not
+       apply, the entry is passed on.
     """
 
     def __init__(self, rule : AtomicRule):
