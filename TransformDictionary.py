@@ -101,7 +101,11 @@ class Report(AtomicRule):
     Can also be used if an intermediate result is actually a desired 
     output and we do not want to have multiple rules. For example:
 
-    ___remove_ws +report replace "UmlautToAscii" report___
+    ___remove\_ws +report replace "UmlautToAscii" report___
+
+    In the above case, the first rule removes all whitespace, after that
+    the +report rule will print out all entries newly created by the remove_ws
+    rule and will then pass (_+_) those elements to the replace rule.
     """
     def process(self, entry: str) -> List[str]:
         report(entry)
