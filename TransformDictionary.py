@@ -132,7 +132,9 @@ class Macro(AtomicRule):
 
 
 class KeepAlwaysModifier(AtomicRule):
-    """The input entry will also be an output entry."""
+    """Modifies the behavior of the wrapped rule such that all
+       input entries will also be output entries additionally
+       to those that are newly created by the wrapped rule."""
 
     def __init__(self, rule : AtomicRule):
         self.rule = rule
