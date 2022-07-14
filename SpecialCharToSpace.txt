@@ -4,9 +4,19 @@
 # empty lines are ignored.
 
 . \s
-$ \s
+: \s
+, \s
+; \s
+? \s
 ! \s
+$ \s
+% \s
+& \s
+" \s
 # \s
++ \s
+* \s
 _ \s
 - \s
 / \s
+\ \s
