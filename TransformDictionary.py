@@ -538,6 +538,27 @@ MANGLE_DATES = MangleDates()
 
 
 class Split(AtomicRule):
+    """ Splits up an entry using the given split_char as a separator.
+    """
+
+    def __init__(self, split_char : str):
+        self.split_char = split_char
+        return
+
+    def process(self, entry: str) -> List[str]:
+        segments = entry.split(self.split_char)
+        if len(segments) ==  1:
+            return []
+            
+        return segments
+
+    def __str__ (self):
+        split_char_def = self.split_char\
+            .replace(' ',"\\s")\
+            .replace('\t',"\\t")
+        return f"split {split_char_def}"         
+
+class SubSplits(AtomicRule):
     """ Splits up an entry using the given split_char as a separator
         creating all sub splits.
     """
@@ -566,7 +587,7 @@ class Split(AtomicRule):
         split_char_def = self.split_char\
             .replace(' ',"\\s")\
             .replace('\t',"\\t")
-        return f"split {split_char_def}"            
+        return f"sub_splits {split_char_def}"           
   
 
 class Replace(AtomicRule):
@@ -699,6 +720,15 @@ def parse_split(rule_name: str, rest_of_rule: str) -> Tuple[str, AtomicRule]:
     new_rest_of_rule = rest_of_rule[split_chars_match.end(0):].lstrip()
     return (new_rest_of_rule,Split(split_char))
 
+def parse_sub_splits(rule_name: str, rest_of_rule: str) -> Tuple[str, AtomicRule]:
+    split_chars_match = re_next_word.match(rest_of_rule)
+    raw_split_chars = split_chars_match.group(0)
+    split_char = raw_split_chars \
+            .replace("\\t","\t") \
+            .replace("\\s"," ") \
+            .replace("\\\\","\\")
+    new_rest_of_rule = rest_of_rule[split_chars_match.end(0):].lstrip()
+    return (new_rest_of_rule,SubSplits(split_char))
 
 def parse_replace(rule_name: str, rest_of_rule: str) -> Tuple[str, AtomicRule]:
     replace_filename_match = re_next_quoted_word.match(rest_of_rule)
@@ -738,6 +768,7 @@ rule_parsers = {
     "mangle_dates" : parse(MANGLE_DATES),
 
     "split": parse_split,
+    "sub_splits": parse_sub_splits,
     "replace" : parse_replace,
     "discard_endings" : parse_discard_endings,
 }
