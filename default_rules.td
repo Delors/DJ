@@ -1,7 +1,7 @@
 # GENERAL FILTER
 ignore "Ignore.txt"
 
-# DEFINITIONS OF CUSTOM RULES
+# DEFINITIONS OF MACROS
 def UMLAUT_TO_ASCII replace "UmlautToAscii.txt"
 def REWRITE_UMLAUT replace "RewriteUmlaut.txt"
 def SC_TO_SPACE replace "SpecialCharToSpace.txt"
@@ -14,15 +14,20 @@ def SC_TO_SPACE replace "SpecialCharToSpace.txt"
 def BASE_TRANSFORMATIONS +SC_TO_SPACE +strip +deleetify +capitalize +remove_sc +get_numbers +get_sc +to_lower +UMLAUT_TO_ASCII +REWRITE_UMLAUT +remove_ws
 
 # RULES
+# A rule takes an entry and generates new candidates.
+# In general, entries which are unchanged by a transformer
+# are filtered.
 # A "+" directly in front of the rule will
 # ensure that the original entry is passed on to the next step.
 # " A "*" directly in front of the rule will ensure that the 
 # entry is passed on if and only if it was not transformed. 
-# In general, entries which are unchanged by a transformer
-# are filtered.
+
 BASE_TRANSFORMATIONS report
 split / BASE_TRANSFORMATIONS report
-split . BASE_TRANSFORMATIONS report
-split \s *discard_endings "discard_endings.txt" BASE_TRANSFORMATIONS report
+# split . BASE_TRANSFORMATIONS report
+mangle_dates report
+split \s discard_endings "discard_endings.txt" BASE_TRANSFORMATIONS report
+
+
 
 
