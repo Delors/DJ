@@ -2,7 +2,7 @@
 
 python3 TransformDictionary.py [-r <Rules File>] [-f <Dictionary.utf8.txt>]
 
-Reads from the specified file or standard-in a dictionary and performs the transformations specified in the given rules file.
+Reads from standard-in or the specified file a dictionary and performs the transformations specified in the given rules file. If no rule-file is specified, the default file: `default_rules.td` will be used.
 
 
 ## Rules File
