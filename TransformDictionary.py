@@ -17,10 +17,8 @@ import re
 
 def locate_resource(filename : str) -> str:
     """ Tries to locate the file by searching for it relatively to the current
-        folder or the folder where this python script is stored.
-
-        Let's check if the file is in the current folder/relative to the 
-        current folder or relative to the folder where this script is stored.
+        folder or the folder where this python script is stored unless the 
+        filename is already absolute.
     """
     if os.path.isabs(filename):
         return filename
