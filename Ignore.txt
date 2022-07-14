@@ -1,6 +1,6 @@
 # This is a list of words which are not used as "standalone" passwords;
-# e.g., if after a split-up of an entry the following words are found
-# they are not considered further.
+# e.g., if after a split-up of an entry a word is found in the following
+# list, it will not be considered further.
 
 # Deutsch
 der
