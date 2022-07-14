@@ -27,11 +27,13 @@ def locate_resource(filename : str) -> str:
         return filename
     
     try:
+
         abs_filename = os.path.join(os.path.dirname(__file__),filename)
         if os.path.exists(abs_filename):
             return abs_filename
         else:
             raise Exception("neither ./{filename} nor {abs_filename} exists")
+
     except Exception as e:
         print(f"can't locate {filename}: {e}", file=sys.stderr)
 
