@@ -33,8 +33,7 @@ def locate_resource(filename : str) -> str:
         if os.path.exists(abs_filename):
             return abs_filename
         else:
-            raise Exception("neither ./{filename} nor {abs_filename} exists")
-
+            raise Exception(f"neither ./{filename} nor {abs_filename} exists")
     except Exception as e:
         print(f"can't locate {filename}: {e}", file=sys.stderr)
 
@@ -44,9 +43,10 @@ reported_entries : Set[str] = set()
     by the `transform_entries` method after processing an entry.
     """
 
-
 def report(s : str):
-    """Prints out the entry."""
+    """Prints out the entry if it was not yet printed as part of the mangling
+       of the same entry.
+    """
     if s not in reported_entries:
         reported_entries.add(s)
         print(s)
@@ -60,9 +60,9 @@ class AtomicRule(ABC):
     return those entries which are newly created as a result of the
     transformation. 
     
-    The only exception is the KeepEntryModifier which
-    acts like a modifier ("+" directly before the rule name) 
-    and is implemented as a wrapper.    
+    The only exception are the `KeepAlwaysModifier` and the 
+    KeepOnlyIfFilteredModifier` which act like modifiers ("+"/"*" 
+    directly before the rule name) and which are implemented as wrappers.    
     """
 
     @abstractmethod
@@ -475,20 +475,28 @@ class MangleDates(AtomicRule):
     """
 
     re_german_date = re.compile("[^0-9]*([0-9]{1,2})\.?([0-9]{1,2})\.?(19|20)?([0-9]{2})")
+    re_english_date = re.compile("[^0-9]*([0-9]{1,2})[/-]?([0-9]{1,2})[/-]?(19|20)?([0-9]{2})")    
 
     def __init__(self): pass
 
     def process(self, entry: str) -> List[str]:
         r = MangleDates.re_german_date.match(entry)
+        if r:
+            (d,m,c,y) = r.groups()
+        
         if not r:
+            r = MangleDates.re_english_date.match(entry)
+            if r:
+                (m,d,c,y) = r.groups()
+
+        if not r:    
             return []
 
-        (d,m,c,y) = r.groups()
         """Currently we only accept dates between 1975 and 2025.
             The test ist not extremely precise, but should be acceptable for
             our purposes.
         """
-        if int(d) > 31 or int(d) == 0 or int(m) > 12 or int(m) == 0 or (int(y) > 25 and int(y) < 75):
+        if int(d) > 31 or int(d) == 0 or int(m) > 12 or int(m) == 0 or (int(y) > 25 and int(y) < 75) or (c and (c == 19 or c == 20)):
             return []
 
         mangled_dates = [d+m+y,y]
@@ -504,11 +512,21 @@ class MangleDates(AtomicRule):
         if len(d) == 1:
             if len(m) == 1:
                 mangled_dates.append("0"+d+"0"+m+y)
+                mangled_dates.append("0"+d+"0"+m)
+                mangled_dates.append("0"+m+"0"+d)
             else:
                 mangled_dates.append("0"+d+m+y)
+                mangled_dates.append("0"+d+m)
+                mangled_dates.append(m+"0"+d)
         else:
             if len(m) == 1:
                 mangled_dates.append(d+"0"+m+y)
+                mangled_dates.append(d+"0"+m)
+                mangled_dates.append("0"+m+d)
+            else:
+                mangled_dates.append(d+m)
+                mangled_dates.append(m+d)
+
         return mangled_dates
             
 
