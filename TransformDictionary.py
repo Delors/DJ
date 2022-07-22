@@ -558,6 +558,42 @@ class Split(AtomicRule):
             .replace('\t',"\\t")
         return f"split {split_char_def}"         
 
+
+class Number(AtomicRule):
+    """ Replaces every matched character by the number of previous occurrences of matched characts.
+
+        E.g. if the chars to number contains of the set [aeiou] and
+        the string "Bullen jagen" is given, then the result of the
+        transformation is: "B1ll2n j3g4n".
+    """
+
+    def __init__(self, chars_to_number : str):
+        cs = chars_to_number[1:-1] # get rid of the set braces "[" and "]".
+        self.chars_to_number = set(cs) 
+
+        return
+
+    def process(self, entry: str) -> List[str]:
+        count = 0
+        new_e = ""
+        for e in entry:
+            if e in self.chars_to_number:
+                count += 1
+                new_e += str(count)
+            else:
+                new_e += e
+
+        if count == 0:
+            return []
+        else:
+            return [new_e]
+
+    def __str__ (self):
+        split_char_def = self.split_char\
+            .replace(' ',"\\s")\
+            .replace('\t',"\\t")
+        return f"number {split_char_def}"
+
 class SubSplits(AtomicRule):
     """ Splits up an entry using the given split_char as a separator
         creating all sub splits.
@@ -710,6 +746,16 @@ def parse(rule) -> Callable[[str,str],Tuple[str,AtomicRule]]:
     return parse_it   
 
 
+def parse_number(rule_name: str, rest_of_rule: str) -> Tuple[str, AtomicRule]:
+    chars_to_number_match = re_next_word.match(rest_of_rule)
+    raw_chars_to_number = chars_to_number_match.group(0)
+    chars_to_number = raw_chars_to_number \
+            .replace("\\t","\t") \
+            .replace("\\s"," ") \
+            .replace("\\\\","\\")
+    new_rest_of_rule = rest_of_rule[chars_to_number_match.end(0):].lstrip()
+    return (new_rest_of_rule,Number(chars_to_number))
+
 def parse_split(rule_name: str, rest_of_rule: str) -> Tuple[str, AtomicRule]:
     split_chars_match = re_next_word.match(rest_of_rule)
     raw_split_chars = split_chars_match.group(0)
@@ -767,6 +813,7 @@ rule_parsers = {
     "strip" : parse(STRIP),
     "mangle_dates" : parse(MANGLE_DATES),
 
+    "number": parse_number,
     "split": parse_split,
     "sub_splits": parse_sub_splits,
     "replace" : parse_replace,
@@ -939,9 +986,7 @@ def transform_entries(dict_filename: str, verbose : bool, rules: List[Rule]):
 def main() -> int:
     parser = argparse.ArgumentParser(
         description=
-        """Generates an attack dictionary based on a plain dictionary.
-
-        """
+        """Generates an attack dictionary based on a plain dictionary."""
     )
     parser.add_argument(
         '-r', 

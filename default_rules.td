@@ -11,7 +11,8 @@ def SC_TO_SPACE replace "SpecialCharToSpace.txt"
 # - "deleetify" is a computationally intensive operation and the results
 #             of it may depend on the time when the deleetification
 #             is performed.
-def BASE_TRANSFORMATIONS +SC_TO_SPACE +strip +deleetify +capitalize +remove_sc +get_numbers +get_sc +to_lower +UMLAUT_TO_ASCII +REWRITE_UMLAUT +remove_ws
+# - "number" may lead to many new entries, use sparingly!
+def BASE_TRANSFORMATIONS +SC_TO_SPACE +strip +deleetify +capitalize +remove_sc +get_numbers +get_sc +to_lower +UMLAUT_TO_ASCII +REWRITE_UMLAUT +remove_ws +number [aeiou]
 
 # RULES
 # A rule takes an entry and generates new candidates.
