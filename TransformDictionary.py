@@ -67,6 +67,20 @@ class AtomicRule(ABC):
 
     @abstractmethod
     def process(self, entry: str) -> List[str]:
+        """
+        Processes the given entry and returns the list of new entries.
+        If a rule applies, i.e., the rule's inherent transformation 
+        is meangingfully applied, a list (possibly empty) should be returned.
+        If a rules does not apply at all, None should be returned.
+
+        For example, a rule to remove special chars would apply to
+        an entry consisting only of special chars and would return
+        the empty list. If the entry does not contain any special chars,
+        None would be returned.
+
+        A rule that just extracts certain characters or which replaces certain
+        characters will always either return a non-empty list or None.
+        """
         pass
 
 
@@ -78,21 +92,29 @@ def apply_rules(entry : str, rules : List[AtomicRule]) -> List[str]:
     """Applies all rules to the given entry. As a result multiple new 
        entries may be generated. 
     """
-    entries = [entry]
+    
+    entries = [entry]    
     for r in rules:
-        if len(entries) == 0:
-            break
-
+        all_none = True
         new_entries = []
         for entry in entries:
             if len(entry) > 0:
                 try:
-                    for new_entry in r.process(entry):
-                        if new_entry not in ignored_entries:
-                            new_entries.append(new_entry)
+                    new_candidate_entries = r.process(entry)
+                    if new_candidate_entries is not None:
+                        all_none = False
+                        for new_entry in new_candidate_entries:
+                            if new_entry not in ignored_entries:
+                                new_entries.append(new_entry)
                 except Exception as e:
                     print(f"rule {r} failed: {e}",file=sys.stderr)
         entries = new_entries
+
+        if len(entries) == 0:
+            if all_none:
+                return None
+            else:
+                return []
 
     return entries
 
@@ -146,6 +168,8 @@ class KeepAlwaysModifier(AtomicRule):
 
     def process(self, entry: str) -> List[str]:
         entries = self.rule.process(entry)
+        if entries is None:
+            entries = []
         entries.append(entry)
         return entries
         
@@ -166,7 +190,7 @@ class KeepOnlyIfFilteredModifier(AtomicRule):
 
     def process(self, entry: str) -> List[str]:
         entries = self.rule.process(entry)
-        if len(entries) == 0:
+        if entries is None:
             entries = [entry]
         return entries
         
@@ -275,7 +299,10 @@ class DeLeetify(AtomicRule):
                 len(DeLeetify.known_fr(deleetified_terms)) == terms_count:
                 deleetified_words.append(deleetified_entry)
         
-        return deleetified_words
+        if len(deleetified_entries) == 0:
+            return None
+        else:
+            return deleetified_words
 
     def __str__(self):
         return "deleetify"
@@ -288,8 +315,11 @@ class RemoveWhitespace(AtomicRule):
 
     def process(self, entry: str) -> List[str]:
         split_entries = entry.split()
-        if len(split_entries) == 1:  
+        if len(split_entries) == 0:
+            # The entry consisted only of WS
             return []
+        elif len(split_entries) == 1:  
+            return None
         else:
             return ["".join(split_entries)]
 
@@ -304,10 +334,15 @@ class Strip(AtomicRule):
 
     def process(self, entry: str) -> List[str]:
         stripped_entry = entry.strip()
-        if stripped_entry != entry:
-            return [stripped_entry]
-        else:
+        if stripped_entry is entry:
+            return None
+        elif len(stripped_entry) == 0:
+            # The entry just consisted of WS
             return []
+        else: # stripped_entry != entry:
+            # The entry is not empty
+            return [stripped_entry]
+            
 
     def __str__(self):
         return "strip"
@@ -323,7 +358,7 @@ class ToLower(AtomicRule):
         if lower != entry:
             return [lower]
         else:
-            return []
+            return None
 
     def __str__(self):
         return "to_lower"    
@@ -339,7 +374,7 @@ class ToUpper(AtomicRule):
         if upper != entry:
             return [upper]
         else:
-            return []
+            return None
 
     def __str__(self):
         return "to_upper"    
@@ -359,10 +394,14 @@ class RemoveSpecialChars(AtomicRule):
             i.group(0) 
             for i in RemoveSpecialChars.re_non_special_char.finditer(entry)
         ]
-        if len(entries) >= 1 and entry != entries[0]:
+        if len(entries) == 0:
+            # the entry just consisted of special chars...
+            return []
+        elif entry != entries[0]:
             return ["".join(entries)]
         else:
-            return []
+            # there were no special chars
+            return None
 
     def __str__(self):
         return "remove_sc"
@@ -383,7 +422,7 @@ class GetSpecialChars(AtomicRule):
         if len(entries) >= 1 and entry != entries[0]:
             return entries
         else:
-            return []
+            return None
 
     def __str__(self):
         return "get_sc"
@@ -404,7 +443,7 @@ class GetNumbers(AtomicRule):
         if len(entries) >= 1 and entry != entries[0]:
             return entries
         else:
-            return []
+            return None
 
     def __str__(self):
         return "get_numbers"   
@@ -422,10 +461,12 @@ class RemoveNumbers(AtomicRule):
             i.group(0) 
             for i in RemoveNumbers.re_no_numbers.finditer(entry)
         ]
-        if len(entries) >= 1 and entry != entries[0]:
+        if len(entries) == 0:
+            return []
+        if entry != entries[0]:
             return ["".join(entries)]
         else:
-            return []
+            return None
 
     def __str__(self):
         return "remove_numbers"   
@@ -434,7 +475,7 @@ REMOVE_NUMBERS = RemoveNumbers()
 
 
 class FoldWhitespace(AtomicRule):
-    """ Folds all whitespace (spaces and tabs) to one space. """
+    """ Folds multiple consecutive whitespace (spaces and tabs) to one space. """
 
     def process(self, entry: str) -> List[str]:
         last_entry = ""
@@ -447,7 +488,7 @@ class FoldWhitespace(AtomicRule):
         if entry != folded_entry:
             return [folded_entry]
         else:
-            return []
+            return None
 
     def __str__(self):
         return "fold_ws"
@@ -463,7 +504,7 @@ class Capitalize(AtomicRule):
         if entry != capitalized:
             return [capitalized]
         else:
-            return []
+            return None
 
     def __str__(self):
         return "capitalize"
@@ -491,7 +532,7 @@ class MangleDates(AtomicRule):
                 (m,d,c,y) = r.groups()
 
         if not r:    
-            return []
+            return None
 
         """Currently we only accept dates between 1975 and 2025.
             The test ist not extremely precise, but should be acceptable for
@@ -547,8 +588,16 @@ class Split(AtomicRule):
 
     def process(self, entry: str) -> List[str]:
         segments = entry.split(self.split_char)
+        if all(len(s) == 0 for s in segments):
+            # entry was either the empty string 
+            # or just consisted of the split character
+            if len(entry) == 0:
+                return None
+            else:
+                return []
+
         if len(segments) ==  1:
-            return []
+            return None
             
         return segments
 
@@ -560,7 +609,7 @@ class Split(AtomicRule):
 
 
 class Number(AtomicRule):
-    """ Replaces every matched character by the number of previous occurrences of matched characts.
+    """ Replaces every matched character by the number of previous occurrences of matched characters.
 
         E.g. if the chars to number contains of the set [aeiou] and
         the string "Bullen jagen" is given, then the result of the
@@ -584,7 +633,7 @@ class Number(AtomicRule):
                 new_e += e
 
         if count == 0:
-            return []
+            return None
         else:
             return [new_e]
 
@@ -596,7 +645,11 @@ class Number(AtomicRule):
 
 class SubSplits(AtomicRule):
     """ Splits up an entry using the given split_char as a separator
-        creating all sub splits.
+        creating all possible sub splits, keeping the order.
+        E.g. Abc-def-ghi with - as the split char would create:
+            Abc-def
+            def-ghi
+            Abc-ghi
     """
 
     def __init__(self, split_char : str):
@@ -606,8 +659,17 @@ class SubSplits(AtomicRule):
     def process(self, entry: str) -> List[str]:
         segments = entry.split(self.split_char)
         segments_count = len(segments)
-        if segments_count ==  1:
-            return []
+
+        if all(len(s) == 0 for s in segments):
+            # entry was either the empty string 
+            # or just consisted of the split character
+            if len(entry) == 0:
+                return None
+            else:
+                return []    
+
+        if segments_count ==  1:            
+            return None
 
         entries = []
         for i in range(2,segments_count):
@@ -663,7 +725,7 @@ class Replace(AtomicRule):
             e = e.replace(k,v) 
         if entry is e:
             # Filter entry if there was nothing to replace.
-            return []
+            return None
         else:
             return [e]
         
@@ -675,7 +737,10 @@ class Discard(AtomicRule):
     """
     Discards the last term - recursively - of a string with multiple elements
     if the term is defined in the given file. The preceding 
-    whitespace will also be discarded. For example, given the string:
+    whitespace will also be discarded. If the string has only one term, 
+    nothing will happen.
+    
+    For example, given the string:
 
         _Michael ist ein_
 
@@ -695,7 +760,7 @@ class Discard(AtomicRule):
     def process(self, entry: str) -> List[str]: 
         all_terms = entry.split()
         if len(all_terms) == 1:
-            return []
+            return None
         count = 0
         while len(all_terms) > (-count + 1) and all_terms[count -1] in self.endings:
             count -= 1
@@ -703,7 +768,7 @@ class Discard(AtomicRule):
         if count != 0 in self.endings:
             return [" ".join(all_terms[0:-count])]
         else:
-            return []
+            return None
         
     def __str__(self):
         return f'discard_endings"{self.endings_filename}"'
@@ -864,7 +929,7 @@ def parse_rest_of_rule(previous_rules : List[AtomicRule], line_number, rest_of_r
     
 
 
-def parse_rule(line_number:int, is_def : bool, sline:str) -> Rule :
+def parse_rule(line_number : int, is_def : bool, sline : str) -> Rule :
     # Parse a single rule definition in collaboration with the
     # respective atomic parsers.
     atomic_rules: List[AtomicRule] = []
