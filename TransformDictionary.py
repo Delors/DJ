@@ -13,6 +13,7 @@ import os
 import argparse
 
 # Uses the pip package: pyspellchecker
+# TODO replace by pyenchant (and nuspell?) - with hunspell dictionaries 
 from spellchecker import SpellChecker
 import re
 
@@ -28,86 +29,130 @@ def locate_resource(filename : str) -> str:
         return filename
     
     try:
-
         abs_filename = os.path.join(os.path.dirname(__file__),filename)
         if os.path.exists(abs_filename):
             return abs_filename
         else:
-            raise Exception(f"neither ./{filename} nor {abs_filename} exists")
+            error = f"neither ./{filename} nor {abs_filename} exists"
+            raise FileNotFoundError(error)
     except Exception as e:
         print(f"can't locate {filename}: {e}", file=sys.stderr)
+        raise
 
 
-reported_entries : Set[str] = set()
+__reported_entries : Set[str] = set()
 """ The set of reported, i.e., printed, entries per entry. This list is cleared
-    by the `transform_entries` method after processing an entry.
+    by the `transform_entries` method after completely processing an entry.
     """
 
 def report(s : str):
     """Prints out the entry if it was not yet printed as part of the mangling
        of the same entry.
     """
-    if s not in reported_entries:
-        reported_entries.add(s)
+    if s not in __reported_entries:
+        __reported_entries.add(s)
         print(s)
 
 
-class AtomicRule(ABC):
-    """Representation of an atomic rule.
-    
-    An atomic rule performs a single well-defined transformation.
-    Every rule also acts as a filter and will only
-    return those entries which are newly created as a result of the
-    transformation. 
-    
-    The only exception are the `KeepAlwaysModifier` and the 
-    KeepOnlyIfFilteredModifier` which act like modifiers ("+"/"*" 
-    directly before the rule name) and which are implemented as wrappers.    
+class Operation(ABC):
+    """ Representation of an operation. An operation processes an entry
+        and produces zero (`[]`) to many entries. An operation which 
+        does not apply to an entry returns `None`. For a definition
+        of "does not apply" see the documentation of the respective 
+        classes of operations.
+
+        An operation is either:
+        - a transformation which takes an entry and returns between
+          zero and many new entries; i.e., the original entry will
+          never be returned. If a transformation does not generate
+          new entries, the transformation is considered to be not
+          applicable to the entry and None is returned.
+          For example, if an entry only consists of special characters
+          and the operation removes all special characterss, a empty 
+          list (not None) will be returned.
+        - an extractor which extracts one to multiple parts of an entry. 
+          An extractor might "extract" the original entry. For example,
+          an extractor for numbers might return the original entry if 
+          the entry just consists of numbers.
+          An extractor which does not extract a single entry is not
+          considered to be applicable and None is returned.
+        - a meta operation which manipulates the behavior of an
+          extractor or a translation.
+        - a filter operation which takes an entry and either returns
+          the entry as is or the empty list ([]). Hence, a filter
+          is considered to be always applicable.
+        - a report operation which either collects some statistics or
+          which prints out an entry but always just returns the entry
+          as is.
+        - a macro which combines one to many operations and which basically
+          provides a convience method to facilitate the definition of
+          operations which should be carried out in a specific order.
     """
 
     @abstractmethod
     def process(self, entry: str) -> List[str]:
         """
         Processes the given entry and returns the list of new entries.
-        If a rule applies, i.e., the rule's inherent transformation 
-        is meangingfully applied, a list (possibly empty) should be returned.
-        If a rules does not apply at all, None should be returned.
+        If an operation applies, i.e., the operation can meangingfully
+        be applied, a list of new entries (possibly empty) will be returned.
+        If an operation does not apply at all, None should be returned.
+        Each operation has to clearly define when it applies and when not.
 
-        For example, a rule to remove special chars would apply to
+        For example, an operation to remove special chars would apply to
         an entry consisting only of special chars and would return
-        the empty list. If the entry does not contain any special chars,
-        None would be returned.
+        the empty list in that case. If, however, the entry does not 
+        contain any special characters, None would be returned.
 
-        A rule that just extracts certain characters or which replaces certain
-        characters will always either return a non-empty list or None.
+        E.g., an operation that just extracts certain characters or which 
+        replaces certain characters will always either return a 
+        non-empty list (`[]`) or `None` (didn't apply).
         """
         pass
 
+    def is_transformer(self) -> bool: return False
+
+    def is_extractor(self) -> bool: return False    
+
+    def is_meta_op(self) -> bool: return False
+
+    def is_macro(self) -> bool: return False
+
+    def is_reporter(self) -> bool: return False        
+
+    def is_filter(self) -> bool: return False                
+
 
 ignored_entries = set()
-"""The global list of all entries which will always be ignored."""
+""" The global list of all entries which will always be ignored.
+    Compared to an operation which only processes an entry at
+    a specific point in time, an entry will - after each step -
+    always be checked against entries in the ignored_entries set.
+"""
 
 
-def apply_rules(entry : str, rules : List[AtomicRule]) -> List[str]:
-    """Applies all rules to the given entry. As a result multiple new 
-       entries may be generated. 
+def apply_ops(entry : str, ops : List[Operation]) -> List[str]:
+    """ Applies all operations to the given entry. As a result multiple new 
+        entries may be generated. None is returned if and only if the 
+        application of an operation to all (intermediate) entries results in 
+        `None`.
     """
     
     entries = [entry]    
-    for r in rules:
+    for op in ops:
         all_none = True
         new_entries = []
         for entry in entries:
             if len(entry) > 0:
                 try:
-                    new_candidate_entries = r.process(entry)
+                    new_candidate_entries = op.process(entry)
                     if new_candidate_entries is not None:
                         all_none = False
                         for new_entry in new_candidate_entries:
                             if new_entry not in ignored_entries:
                                 new_entries.append(new_entry)
                 except Exception as e:
-                    print(f"rule {r} failed: {e}",file=sys.stderr)
+                    print(f"operation {op} failed: {e}",file=sys.stderr)
+                    raise
         entries = new_entries
 
         if len(entries) == 0:
@@ -119,22 +164,43 @@ def apply_rules(entry : str, rules : List[AtomicRule]) -> List[str]:
     return entries
 
 
-class Report(AtomicRule):
-    """The "report" rule prints out the entry. 
+class Report(Operation):
+    """The "report" operation prints out the entry. 
 
-    Prints out the current state of the transformation of an entry.
-    Can also be used if an intermediate result is actually a desired 
-    output and we do not want to have multiple rules. For example:
+    A report generally terminates a sequence of operations, but it
+    can also be used if an intermediate result is actually a desired 
+    output and we do not want to have multiple operations. For example:
 
-    ___remove\_ws +report replace "UmlautToAscii" report___
+    report ___remove\_ws capitalize report___
 
-    In the above case, the first rule removes all whitespace, after that
-    the +report rule will print out all entries newly created by the remove_ws
-    rule and will then pass (_+_) those elements to the replace rule.
+    In the above case, we first print out the (original) entry, after
+    that white space is removed which will also filter the set of 
+    entries down to those which had white space in the first place 
+    and then those entries will be capitalized. For example,
+    given the two entries:
+
+        TestTest
+        Dies ist ein Test
+
+    the output will be:
+
+        TestTest            [output due to initial report]
+        Dies ist ein Test   [output due to initial report]
+        Diesisteintest      [after removing ws and capitalization]
+
+    notably:
+    
+        Testtest
+        DiesisteinTest
+    
+    will not be output.
     """
+
+    def is_reporter(self) -> bool: return True   
+
     def process(self, entry: str) -> List[str]:
         report(entry)
-        return []
+        return [entry]
 
     def __str__(self):
         return "report"
@@ -142,63 +208,77 @@ class Report(AtomicRule):
 REPORT = Report()        
 
 
-class Macro(AtomicRule):
+class Macro(Operation):
     """Definition of a macro."""
 
-    def __init__(self, name :str, rules : List[AtomicRule]):
+    def __init__(self, name :str, ops : List[Operation]):
         self.name = name
-        self.rules = rules
+        self.ops = ops
         return
 
+    def is_macro(self) -> bool: 
+        return True
+
     def process(self, entry: str) -> List[str]:
-        return apply_rules(entry,self.rules)
+        return apply_ops(entry,self.ops)
 
     def __str__(self):
         return self.name
 
 
-class KeepAlwaysModifier(AtomicRule):
-    """Modifies the behavior of the wrapped rule such that all
-       input entries will also be output entries additionally
-       to those that are newly created by the wrapped rule."""
+class KeepAlwaysModifier(Operation):
+    """ Modifies the behavior of the wrapped transformer/extractor
+        such that all input entries will also be output entries 
+        additionally to those that are newly created by the 
+        wrapped operation.
+    """
 
-    def __init__(self, rule : AtomicRule):
-        self.rule = rule
+    def __init__(self, op : Operation):
+        self.op = op
+
+        if not op.is_transformer() and not op.is_extractor():
+            raise ValueError(f"unsupported base operation: {op}")
+
         return
 
     def process(self, entry: str) -> List[str]:
-        entries = self.rule.process(entry)
+        entries = self.op.process(entry)
         if entries is None:
             entries = []
         entries.append(entry)
         return entries
         
     def __str__(self):
-        return "+" + str(self.rule)
+        return "+" + str(self.op)
 
 
-class KeepOnlyIfFilteredModifier(AtomicRule):
-    """Modifies the behavior of the wrapped rule such that an
-       input entry will be an output entry if the wrapped rule
-       completely rejects the entry. I.e., if the wrapped rule does not
-       apply, the entry is passed on.
+class KeepOnlyIfFilteredModifier(Operation):
+    """ Modifies the behavior of the wrapped operation such that an
+        input entry will be an output entry if the wrapped operation
+        does not apply to the entry. I.e., if the wrapped operation 
+        returns None, the entry is passed on otherwise the result
+        of the wrapped operation is passed on as is.
     """
 
-    def __init__(self, rule : AtomicRule):
-        self.rule = rule
+    def __init__(self, op : Operation):
+        self.op = op
+
+        if not (op.is_transformer() or op.is_extractor()):
+            raise ValueError(f"unsupported base operation: {op}")
+
         return
 
     def process(self, entry: str) -> List[str]:
-        entries = self.rule.process(entry)
+        entries = self.op.process(entry)
         if entries is None:
             entries = [entry]
         return entries
         
     def __str__(self):
-        return "*" + str(self.rule)        
+        return "*" + str(self.op)        
 
 
-class DeLeetify(AtomicRule):
+class DeLeetify(Operation):
     """ Deleetifies an entry by replacing the used numbers with their
         respective characters. E.g., *T3st* is deleetified to _Test_. To avoid
         the creation of irrelevant entries, a spellchecker is used to test 
@@ -256,13 +336,15 @@ class DeLeetify(AtomicRule):
     spell_fr = SpellChecker(language="fr")
     known_fr = spell_fr.known
 
+    def is_transformer(self) -> bool: return True
+
     def process(self, entry: str) -> List[str]:
-        # see Wikipedia for details; we currently only consider
+        # (See Wikipedia for more details!) We currently only consider
         # the basic visual transliterations related to numbers and
         # we assume that a user only uses one specific transliteration
         # if multiple alternatives exists. I.e., a word such as _Hallo_
         # will either be rewritten as: _4allo_ or _H4llo_ or _H411o_, but 
-        # will never be rewritten to _44llo_. In the last case the mapping is
+        # will never be rewritten to _44llo_. In the last case, the mapping is
         # no longer bijective. Additionally, we assume that a user uses
         # at most three transliterations and only transliterates vowels. 
         # The last two decisions are made based on "practical" observations
@@ -271,7 +353,7 @@ class DeLeetify(AtomicRule):
         # The following tests are just an optimization:
         if  not DeLeetify._re_has_at_least_one_seq_with_at_most_three_numbers.match(entry) or\
             not DeLeetify._re_has_leetspeak.match(entry):
-            return []
+            return None
 
         # TODO [IMPROVEMENT] First scan for all numbers in the entry and then perform the relevant transformations instead of testing all combinations of transformations.
 
@@ -310,8 +392,10 @@ class DeLeetify(AtomicRule):
 DELEETIFY = DeLeetify()   
 
 
-class RemoveWhitespace(AtomicRule):
+class RemoveWhitespace(Operation):
     """Removes all whitespace."""
+
+    def is_transformer(self) -> bool: return True
 
     def process(self, entry: str) -> List[str]:
         split_entries = entry.split()
@@ -329,8 +413,10 @@ class RemoveWhitespace(AtomicRule):
 REMOVE_WHITESPACE = RemoveWhitespace()        
 
 
-class Strip(AtomicRule):
+class Strip(Operation):
     """Removes leading and trailing whitespace."""
+
+    def is_transformer(self) -> bool: return True
 
     def process(self, entry: str) -> List[str]:
         stripped_entry = entry.strip()
@@ -342,7 +428,6 @@ class Strip(AtomicRule):
         else: # stripped_entry != entry:
             # The entry is not empty
             return [stripped_entry]
-            
 
     def __str__(self):
         return "strip"
@@ -350,8 +435,10 @@ class Strip(AtomicRule):
 STRIP = Strip()    
 
 
-class ToLower(AtomicRule):
+class ToLower(Operation):
     """Converts an entry to all lower case."""
+
+    def is_transformer(self) -> bool: return True
 
     def process(self, entry: str) -> List[str]:
         lower = entry.lower()
@@ -366,8 +453,10 @@ class ToLower(AtomicRule):
 TO_LOWER = ToLower()            
 
 
-class ToUpper(AtomicRule):
+class ToUpper(Operation):
     """Converts an entry to all upper case."""
+
+    def is_transformer(self) -> bool: return True
 
     def process(self, entry: str) -> List[str]:
         upper = entry.upper()
@@ -382,12 +471,18 @@ class ToUpper(AtomicRule):
 TO_UPPER = ToUpper()   
 
 
-class RemoveSpecialChars(AtomicRule):
+class RemoveSpecialChars(Operation):
     """ Removes all special chars; whitespace is not considered as a
-        special char.
+        special char. In general it is recommend to remove whitespace
+        and/or strip the entries afterwards.
     """
 
-    re_non_special_char = re.compile("[a-zA-Z0-9\s]+")
+    #re_non_special_char = re.compile("[a-zA-Z0-9\s]+")
+    re_non_special_char = re.compile(
+        "[^<>|,;.:_#'+*~@€²³`'^°!\"§$%&/()\[\]{}\\\-]+"
+        )
+
+    def is_transformer(self) -> bool: return True
 
     def process(self, entry: str) -> List[str]:
         entries = [
@@ -409,17 +504,20 @@ class RemoveSpecialChars(AtomicRule):
 REMOVE_SPECIAL_CHARS = RemoveSpecialChars()
 
 
-class GetSpecialChars(AtomicRule):
+class GetSpecialChars(Operation):
     """Extracts the used special char (sequences)."""
 
-    re_special_chars = re.compile("[^a-zA-Z0-9\s]+")
+    #re_special_chars = re.compile("[^a-zA-Z0-9\s]+")
+    re_special_chars = "[<>|,;.:_#'+*~@€²³`'^°!\"§$%&/()\[\]{}\\\-]+"
+
+    def is_extractor(self) -> bool: return True
 
     def process(self, entry: str) -> List[str]:
         entries = [
             i.group(0) 
             for i in GetSpecialChars.re_special_chars.finditer(entry)
         ]
-        if len(entries) >= 1 and entry != entries[0]:
+        if len(entries) >= 1:
             return entries
         else:
             return None
@@ -430,17 +528,19 @@ class GetSpecialChars(AtomicRule):
 GET_SPECIAL_CHARS = GetSpecialChars()
 
 
-class GetNumbers(AtomicRule):
-    """ Extracts all numbers. """
+class GetNumbers(Operation):
+    """Extracts all numbers."""
 
     re_numbers = re.compile("[0-9]+")
+
+    def is_extractor(self) -> bool: return True
 
     def process(self, entry: str) -> List[str]:
         entries = [
             i.group(0) 
             for i in GetNumbers.re_numbers.finditer(entry)
         ]
-        if len(entries) >= 1 and entry != entries[0]:
+        if len(entries) >= 1:
             return entries
         else:
             return None
@@ -451,10 +551,12 @@ class GetNumbers(AtomicRule):
 GET_NUMBERS = GetNumbers()
 
 
-class RemoveNumbers(AtomicRule):
+class RemoveNumbers(Operation):
     """Removes all numbers from an entry."""
 
     re_no_numbers = re.compile("[^0-9]+")
+
+    def is_transformer(self) -> bool: return True
 
     def process(self, entry: str) -> List[str]:
         entries = [
@@ -463,7 +565,7 @@ class RemoveNumbers(AtomicRule):
         ]
         if len(entries) == 0:
             return []
-        if entry != entries[0]:
+        elif entry != entries[0]:
             return ["".join(entries)]
         else:
             return None
@@ -474,8 +576,10 @@ class RemoveNumbers(AtomicRule):
 REMOVE_NUMBERS = RemoveNumbers()
 
 
-class FoldWhitespace(AtomicRule):
-    """ Folds multiple consecutive whitespace (spaces and tabs) to one space. """
+class FoldWhitespace(Operation):
+    """ Folds multiple whitespace (spaces and tabs) to one space."""
+
+    def is_transformer(self) -> bool: return True
 
     def process(self, entry: str) -> List[str]:
         last_entry = ""
@@ -484,7 +588,7 @@ class FoldWhitespace(AtomicRule):
             last_entry = folded_entry
             folded_entry = folded_entry\
                 .replace("  "," ")\
-                .replace("\t"," ") # May result in two or three subsequent spaces
+                .replace("\t"," ") # May result in 2 or 3 subsequent spaces
         if entry != folded_entry:
             return [folded_entry]
         else:
@@ -496,8 +600,10 @@ class FoldWhitespace(AtomicRule):
 FOLD_WHITESPACE = FoldWhitespace()
 
 
-class Capitalize(AtomicRule):
-    """Capitalize a given entry."""
+class Capitalize(Operation):
+    """Capitalizes a given entry."""
+
+    def is_transformer(self) -> bool: return True
 
     def process(self, entry: str) -> List[str]:
         capitalized = entry.capitalize()
@@ -511,9 +617,48 @@ class Capitalize(AtomicRule):
 
 CAPITALIZE = Capitalize()
 
-class MangleDates(AtomicRule):
+
+class MinLength(Operation):
+    """Only accepts entries with a given minimum length."""
+
+    def __init__(self, min_length : int):
+        self.min_length = min_length
+        return
+
+    def is_filter(self) -> bool: return True
+
+    def process(self, entry: str) -> List[str]:
+        if len(entry) >= self.min_length:
+            return [entry]
+        else:
+            return []
+
+    def __str__(self):
+        return f"min_length {self.min_length}"
+
+class MaxLength(Operation):
+    """Only accepts entries with a given maximum length."""
+
+    def __init__(self, max_length : int):
+        self.max_length = max_length
+        return
+
+    def is_filter(self) -> bool: return True
+
+    def process(self, entry: str) -> List[str]:
+        if len(entry) <= self.max_length:
+            return [entry]
+        else:
+            return []
+
+    def __str__(self):
+        return f"max_length {self.max_length}"
+
+class MangleDates(Operation):
     """ Tries to identify numbers which are dates and then creates various
         representations for the respective date.
+
+        Currently, we try to identify german and english dates.
     """
 
     re_german_date = re.compile("[^0-9]*([0-9]{1,2})\.?([0-9]{1,2})\.?(19|20)?([0-9]{2})")
@@ -521,12 +666,13 @@ class MangleDates(AtomicRule):
 
     def __init__(self): pass
 
+    def is_transformer(self) -> bool: return True
+
     def process(self, entry: str) -> List[str]:
         r = MangleDates.re_german_date.match(entry)
         if r:
             (d,m,c,y) = r.groups()
-        
-        if not r:
+        else:
             r = MangleDates.re_english_date.match(entry)
             if r:
                 (m,d,c,y) = r.groups()
@@ -578,7 +724,7 @@ class MangleDates(AtomicRule):
 MANGLE_DATES = MangleDates()      
 
 
-class Split(AtomicRule):
+class Split(Operation):
     """ Splits up an entry using the given split_char as a separator.
     """
 
@@ -586,19 +732,18 @@ class Split(AtomicRule):
         self.split_char = split_char
         return
 
-    def process(self, entry: str) -> List[str]:
-        segments = entry.split(self.split_char)
-        if all(len(s) == 0 for s in segments):
-            # entry was either the empty string 
-            # or just consisted of the split character
-            if len(entry) == 0:
-                return None
-            else:
-                return []
+    def is_transformer(self) -> bool: return True
 
-        if len(segments) ==  1:
+    def process(self, entry: str) -> List[str]:
+        assert len(entry) > 0
+
+        all_segments = entry.split(self.split_char)
+        # all_segments will have at least two elements
+        # if a split char is found
+        if len(all_segments) == 1:
             return None
-            
+                
+        segments = filter(lambda e: len(e) > 0, all_segments)
         return segments
 
     def __str__ (self):
@@ -608,10 +753,11 @@ class Split(AtomicRule):
         return f"split {split_char_def}"         
 
 
-class Number(AtomicRule):
-    """ Replaces every matched character by the number of previous occurrences of matched characters.
+class Number(Operation):
+    """ Replaces every matched character by the number 
+        of previous occurrences of matched characters.
 
-        E.g. if the chars to number contains of the set [aeiou] and
+        E.g. if the _chars to number_ set consists of [aeiou] and
         the string "Bullen jagen" is given, then the result of the
         transformation is: "B1ll2n j3g4n".
     """
@@ -619,8 +765,9 @@ class Number(AtomicRule):
     def __init__(self, chars_to_number : str):
         cs = chars_to_number[1:-1] # get rid of the set braces "[" and "]".
         self.chars_to_number = set(cs) 
-
         return
+
+    def is_transformer(self) -> bool: return True
 
     def process(self, entry: str) -> List[str]:
         count = 0
@@ -638,12 +785,11 @@ class Number(AtomicRule):
             return [new_e]
 
     def __str__ (self):
-        split_char_def = self.split_char\
-            .replace(' ',"\\s")\
-            .replace('\t',"\\t")
-        return f"number {split_char_def}"
+        chars = "".join(self.chars_to_number)
+        return f"number [{chars}]"
 
-class SubSplits(AtomicRule):
+
+class SubSplits(Operation):
     """ Splits up an entry using the given split_char as a separator
         creating all possible sub splits, keeping the order.
         E.g. Abc-def-ghi with - as the split char would create:
@@ -656,20 +802,24 @@ class SubSplits(AtomicRule):
         self.split_char = split_char
         return
 
+    def is_transformer(self) -> bool: return True
+
     def process(self, entry: str) -> List[str]:
-        segments = entry.split(self.split_char)
-        segments_count = len(segments)
+        assert len(entry) > 0
 
-        if all(len(s) == 0 for s in segments):
-            # entry was either the empty string 
-            # or just consisted of the split character
-            if len(entry) == 0:
-                return None
-            else:
-                return []    
-
-        if segments_count ==  1:            
+        all_segments = entry.split(self.split_char)
+        
+        all_segments_count = len(all_segments)
+        # Recall that, when the split char appears at least once,
+        # we will have at least two segments.
+        if all_segments_count == 1:            
             return None
+
+        segments = filter(lambda e: len(e) > 0, all_segments)    
+        segments_count = len(segments)
+        if segments_count == 0:
+            # the entry just consisted of the split character
+            return []    
 
         entries = []
         for i in range(2,segments_count):
@@ -680,7 +830,6 @@ class SubSplits(AtomicRule):
         entries.extend(segments)            
         return entries
             
-
     def __str__ (self):
         split_char_def = self.split_char\
             .replace(' ',"\\s")\
@@ -688,7 +837,7 @@ class SubSplits(AtomicRule):
         return f"sub_splits {split_char_def}"           
   
 
-class Replace(AtomicRule):
+class Replace(Operation):
     """Replaces a character by another (set of) character(s)."""
 
     def __init__(self, replacements_filename):
@@ -717,14 +866,15 @@ class Replace(AtomicRule):
                     replacement_table[key] = value        
         self.replacement_table = replacement_table
 
+    def is_transformer(self) -> bool: return True
+
     def process(self, entry: str) -> List[str]: 
         e = entry       
         for k,v in self.replacement_table.items():
             # RECALL:   Replace maintains object identity if there is 
             #           nothing to replace.    
             e = e.replace(k,v) 
-        if entry is e:
-            # Filter entry if there was nothing to replace.
+        if entry is e:            
             return None
         else:
             return [e]
@@ -733,40 +883,41 @@ class Replace(AtomicRule):
         return f'replace "{self.replacements_filename}"'
 
 
-class Discard(AtomicRule):
+class DiscardEndings(Operation):
     """
     Discards the last term - recursively - of a string with multiple elements
-    if the term is defined in the given file. The preceding 
-    whitespace will also be discarded. If the string has only one term, 
-    nothing will happen.
+    if the term is defined in the given file. The preceeding 
+    whitespace will also be discarded.
     
     For example, given the string:
 
         _Michael ist ein_
 
     and assuming that "ist" and "ein" should not be endings, the only
-    string that will pass this rule would be "Michael".
+    string that will pass this operation would be "Michael".
     """
 
     def __init__(self, endings_filename):
         self.endings_filename = endings_filename
 
         endings : Set[str] = set()
-        with open(locate_resource(endings_filename),"r",encoding="utf-8") as fin :
+        endings_ressource = locate_resource(endings_filename)
+        with open(endings_ressource,"r",encoding="utf-8") as fin :
             for ending in fin:
                 endings.add(ending.rstrip("\r\n"))       
         self.endings = endings
 
+    def is_transformer(self) -> bool: return True        
+
     def process(self, entry: str) -> List[str]: 
         all_terms = entry.split()
-        if len(all_terms) == 1:
-            return None
         count = 0
-        while len(all_terms) > (-count + 1) and all_terms[count -1] in self.endings:
+        while len(all_terms) > (-count) and \
+              all_terms[count -1] in self.endings:
             count -= 1
 
-        if count != 0 in self.endings:
-            return [" ".join(all_terms[0:-count])]
+        if count != 0:
+            return [" ".join(all_terms[0:count])]
         else:
             return None
         
@@ -774,27 +925,27 @@ class Discard(AtomicRule):
         return f'discard_endings"{self.endings_filename}"'
 
 
-class Rule:
-    """Representation of a complex rule.
+class ComplexOperation:
+    """ Representation of a complex operation.
 
-    Instantiation of a complex rule which is made up of 
-    multiple atomic transformations. An instance of Rule 
-    basically just handles applying the atomic rules to 
-    an entry and (potentially) every subsequently created entry.
+        Instantiation of a complex operation which is made up of 
+        multiple atomic operations. An instance of ComplexOperation 
+        basically just handles applying the atomic operations to 
+        an entry and (potentially) every subsequently created entry.
     """
 
-    def __init__(self, rules: List[AtomicRule]):
-        if not rules or len(rules) == 0:
-            raise Exception("no rules specified")
+    def __init__(self, operations: List[Operation]):
+        if not operations or len(operations) == 0:
+            raise ValueError(f"no operations specified: {operations}")
 
-        self.rules = rules
+        self.operations = operations
         return
 
     def apply(self, entry):
-        return apply_rules(entry,self.rules)
+        return apply_ops(entry,self.operations)
 
     def __str__(self) -> str:
-        return " ".join(map(str,self.rules))
+        return " ".join(map(str,self.operations))
 
 
 ### PARSER SETUP AND CONFIGURATION
@@ -802,82 +953,97 @@ class Rule:
 re_next_word = re.compile("^[^\s]+")
 re_next_quoted_word = re.compile('^"[^"]+"')
 
-def parse(rule) -> Callable[[str,str],Tuple[str,AtomicRule]]:
-    """Generic parser for rules without parameters."""
+def parse(operation) -> Callable[[str,str],Tuple[str,Operation]]:
+    """Generic parser for operations without parameters."""
 
-    def parse_it(rule_name: str, rest_of_rule: str) -> Tuple[str, AtomicRule]:
-        return (rest_of_rule,rule)
+    def parse_it(rule_name: str, rest_of_op: str) -> Tuple[str, Operation]:
+        return (rest_of_op,operation)
 
     return parse_it   
 
+def parse_min_length(rule_name: str, rest_of_op: str) -> Tuple[str, Operation]:
+    min_length_match = re_next_word.match(rest_of_op)
+    min_length = int(min_length_match.group(0))
+    new_rest_of_op = rest_of_op[min_length_match.end(0):].lstrip()
+    return (new_rest_of_op,MinLength(min_length))
 
-def parse_number(rule_name: str, rest_of_rule: str) -> Tuple[str, AtomicRule]:
-    chars_to_number_match = re_next_word.match(rest_of_rule)
+def parse_max_length(rule_name: str, rest_of_op: str) -> Tuple[str, Operation]:
+    max_length_match = re_next_word.match(rest_of_op)
+    max_length = int(max_length_match.group(0))
+    new_rest_of_op = rest_of_op[max_length_match.end(0):].lstrip()
+    return (new_rest_of_op,MaxLength(max_length))
+
+def parse_number(rule_name: str, rest_of_op: str) -> Tuple[str, Operation]:
+    chars_to_number_match = re_next_word.match(rest_of_op)
     raw_chars_to_number = chars_to_number_match.group(0)
     chars_to_number = raw_chars_to_number \
             .replace("\\t","\t") \
             .replace("\\s"," ") \
             .replace("\\\\","\\")
-    new_rest_of_rule = rest_of_rule[chars_to_number_match.end(0):].lstrip()
-    return (new_rest_of_rule,Number(chars_to_number))
+    new_rest_of_op = rest_of_op[chars_to_number_match.end(0):].lstrip()
+    return (new_rest_of_op,Number(chars_to_number))
 
-def parse_split(rule_name: str, rest_of_rule: str) -> Tuple[str, AtomicRule]:
-    split_chars_match = re_next_word.match(rest_of_rule)
+def parse_split(rule_name: str, rest_of_op: str) -> Tuple[str, Operation]:
+    split_chars_match = re_next_word.match(rest_of_op)
     raw_split_chars = split_chars_match.group(0)
     split_char = raw_split_chars \
             .replace("\\t","\t") \
             .replace("\\s"," ") \
             .replace("\\\\","\\")
-    new_rest_of_rule = rest_of_rule[split_chars_match.end(0):].lstrip()
-    return (new_rest_of_rule,Split(split_char))
+    new_rest_of_op = rest_of_op[split_chars_match.end(0):].lstrip()
+    return (new_rest_of_op,Split(split_char))
 
-def parse_sub_splits(rule_name: str, rest_of_rule: str) -> Tuple[str, AtomicRule]:
-    split_chars_match = re_next_word.match(rest_of_rule)
+def parse_sub_splits(rule_name: str, rest_of_op: str) -> Tuple[str, Operation]:
+    split_chars_match = re_next_word.match(rest_of_op)
     raw_split_chars = split_chars_match.group(0)
     split_char = raw_split_chars \
             .replace("\\t","\t") \
             .replace("\\s"," ") \
             .replace("\\\\","\\")
-    new_rest_of_rule = rest_of_rule[split_chars_match.end(0):].lstrip()
-    return (new_rest_of_rule,SubSplits(split_char))
+    new_rest_of_op = rest_of_op[split_chars_match.end(0):].lstrip()
+    return (new_rest_of_op,SubSplits(split_char))
 
-def parse_replace(rule_name: str, rest_of_rule: str) -> Tuple[str, AtomicRule]:
-    replace_filename_match = re_next_quoted_word.match(rest_of_rule)
+def parse_replace(rule_name: str, rest_of_op: str) -> Tuple[str, Operation]:
+    replace_filename_match = re_next_quoted_word.match(rest_of_op)
     replace_filename = replace_filename_match.group(0).strip("\"")
-    new_rest_of_rule = rest_of_rule[replace_filename_match.end(0):].lstrip()
-    return (new_rest_of_rule,Replace(replace_filename))
+    new_rest_of_op = rest_of_op[replace_filename_match.end(0):].lstrip()
+    return (new_rest_of_op,Replace(replace_filename))
 
-
-def parse_discard_endings(rule_name: str, rest_of_rule: str) -> Tuple[str, AtomicRule]:
-    endings_filename_match = re_next_quoted_word.match(rest_of_rule)
+def parse_discard_endings(rule_name: str, rest_of_op: str) -> Tuple[str, Operation]:
+    endings_filename_match = re_next_quoted_word.match(rest_of_op)
     if not endings_filename_match:
         raise Exception("discard_endings: file name missing (did you forgot the quotes(\")?)")
     endings_filename = endings_filename_match.group(0).strip("\"")
-    new_rest_of_rule = rest_of_rule[endings_filename_match.end(0):].lstrip()    
-    return (new_rest_of_rule,Discard(endings_filename))
+    new_rest_of_op = rest_of_op[endings_filename_match.end(0):].lstrip()    
+    return (new_rest_of_op,DiscardEndings(endings_filename))
 
 
-macro_defs : Tuple[str,Rule] = { }
+macro_defs : Tuple[str,ComplexOperation] = { }
 
-"""Mapping between the name of a rule and it's associated parameters parser."""
-rule_parsers = {
+"""Mapping between the name of an op and it's associated parameters parser."""
+operation_parsers = {
 
     "report": parse(REPORT),
     
+    # FILTERS
+    "max_length": parse_max_length,
+    "min_length": parse_min_length,
+
+    # EXTRACTORS
+    "get_numbers": parse(GET_NUMBERS),
+    "get_sc": parse(GET_SPECIAL_CHARS),
+
     # TRANSFORMERS
     "fold_ws": parse(FOLD_WHITESPACE),
     "to_lower": parse(TO_LOWER),
     "to_upper": parse(TO_UPPER),
-    "get_numbers": parse(GET_NUMBERS),
     "remove_numbers": parse(REMOVE_NUMBERS),
     "remove_ws": parse(REMOVE_WHITESPACE),
     "remove_sc": parse(REMOVE_SPECIAL_CHARS),
-    "get_sc": parse(GET_SPECIAL_CHARS),
     "capitalize" : parse(CAPITALIZE),
     "deleetify" : parse(DELEETIFY),
     "strip" : parse(STRIP),
     "mangle_dates" : parse(MANGLE_DATES),
-
     "number": parse_number,
     "split": parse_split,
     "sub_splits": parse_sub_splits,
@@ -886,29 +1052,29 @@ rule_parsers = {
 }
 
 
-def parse_rest_of_rule(previous_rules : List[AtomicRule], line_number, rest_of_rule : str) -> Tuple[str, AtomicRule]:
-    # Get name of rule parser
-    next_rule_parser_match = re_next_word.match(rest_of_rule)
+def parse_rest_of_op(previous_rules : List[Operation], line_number, rest_of_op : str) -> Tuple[str, Operation]:
+    # Get name of operation parser
+    next_rule_parser_match = re_next_word.match(rest_of_op)
     next_rule_parser_name = next_rule_parser_match.group(0)
 
-    # Check for rule modifiers
+    # Check for operation modifiers (i.e. Metaoperations)
     keep_always = (next_rule_parser_name[0] == "+")                
     keep_if_filtered = (next_rule_parser_name[0] == "*") 
     if keep_always or keep_if_filtered:
         next_rule_parser_name = next_rule_parser_name[1:]
 
-    result : Tuple[str, AtomicRule] = None
-    next_rule_parser = rule_parsers.get(next_rule_parser_name)
+    result : Tuple[str, Operation] = None
+    next_rule_parser = operation_parsers.get(next_rule_parser_name)
     if next_rule_parser is not None:
-        new_rest_of_rule = rest_of_rule[next_rule_parser_match.end(
+        new_rest_of_op = rest_of_op[next_rule_parser_match.end(
             0):].lstrip()
-        result = next_rule_parser(next_rule_parser_name, new_rest_of_rule)
+        result = next_rule_parser(next_rule_parser_name, new_rest_of_op)
     elif macro_defs.get(next_rule_parser_name) is not None:
         macro_def = macro_defs.get(next_rule_parser_name)
-        new_rest_of_rule = rest_of_rule[next_rule_parser_match.end(
+        new_rest_of_op = rest_of_op[next_rule_parser_match.end(
             0):].lstrip()
         result = (
-            new_rest_of_rule,
+            new_rest_of_op,
             Macro(next_rule_parser_name,macro_def.rules)
         )
     else:
@@ -919,22 +1085,22 @@ def parse_rest_of_rule(previous_rules : List[AtomicRule], line_number, rest_of_r
         return None        
 
     if keep_always:
-        (new_rest_of_rule,base_rule) = result
-        result = (new_rest_of_rule,KeepAlwaysModifier(base_rule))
+        (new_rest_of_op,base_rule) = result
+        result = (new_rest_of_op,KeepAlwaysModifier(base_rule))
     if keep_if_filtered:
-        (new_rest_of_rule,base_rule) = result
-        result = (new_rest_of_rule,KeepOnlyIfFilteredModifier(base_rule))
+        (new_rest_of_op,base_rule) = result
+        result = (new_rest_of_op,KeepOnlyIfFilteredModifier(base_rule))
     
     return result
     
 
 
-def parse_rule(line_number : int, is_def : bool, sline : str) -> Rule :
-    # Parse a single rule definition in collaboration with the
+def parse_op(line_number : int, is_def : bool, sline : str) -> ComplexOperation :
+    # Parse a single operation definition in collaboration with the
     # respective atomic parsers.
-    atomic_rules: List[AtomicRule] = []
+    atomic_rules: List[Operation] = []
     while len(sline) > 0:
-        parsed_atomic_rule = parse_rest_of_rule(atomic_rules, line_number, sline)
+        parsed_atomic_rule = parse_rest_of_op(atomic_rules, line_number, sline)
         if parsed_atomic_rule:
             (sline, atomic_rule) = parsed_atomic_rule
             atomic_rules.append(atomic_rule)
@@ -949,12 +1115,12 @@ def parse_rule(line_number : int, is_def : bool, sline : str) -> Rule :
                     )
                 ):
                 print(
-                    f"[info][{line_number}] adding report as the last rule", 
+                    f"[info][{line_number}] adding report at the end", 
                     file=sys.stderr
                 )
                 atomic_rules.append(Report())
         else:
-            # If the parsing of an atomic rule fails, we just
+            # If the parsing of an atomic operation fails, we just
             # ignore the line as a whole.
             print(
                     f"[error][{line_number}] parsing failed: {sline}", 
@@ -962,22 +1128,22 @@ def parse_rule(line_number : int, is_def : bool, sline : str) -> Rule :
                 )
             return None
 
-    return Rule(atomic_rules)
+    return ComplexOperation(atomic_rules)
 
 
-def parse_rules(rules_filename : str, verbose : bool) -> List[Rule]:
-    """Parses the rule definitions together with the atomic rule parsers. 
+def parse_ops(ops_filename : str, verbose : bool) -> List[ComplexOperation]:
+    """ Parses operation definitions together with atomic operations parsers. 
 
-    The split between the generic parser and the atomic rule parsers 
-    is as follows:
-    This method parses the next word to determine the next atomic rule;
-    the atomic rule is then responsible for parsing its parameters and
-    removing them from the string.
+        The split between the generic parser and the atomic operations parsers 
+        is as follows:
+        This method parses the next word to determine the next atomic operation;
+        the atomic operation is then responsible for parsing its parameters and
+        removing them from the string.
     """
 
-    rules: List[Rule] = []
+    rules: List[ComplexOperation] = []
 
-    abs_filename = locate_resource(rules_filename)
+    abs_filename = locate_resource(ops_filename)
     with open(abs_filename, 'r', encoding='utf-8') as rules_file:
         line_number = 0
         for rule_def in rules_file.readlines():
@@ -988,6 +1154,7 @@ def parse_rules(rules_filename : str, verbose : bool) -> List[Rule]:
             if sline.startswith('#') or len(sline) == 0:
                 continue
 
+            # parse ignore statement
             elif sline.startswith("ignore"):
                 filename = sline[len("ignore")+1:].strip()
 
@@ -1003,6 +1170,7 @@ def parse_rules(rules_filename : str, verbose : bool) -> List[Rule]:
                         if len(stripped_ignore_entry) > 0:
                             ignored_entries.add(stripped_ignore_entry)
 
+            # parse macro definitions
             elif sline.startswith("def"):
                 macro_def = sline[len("def")+1:]
                 macro_name_match = re_next_word.match(macro_def)
@@ -1010,19 +1178,20 @@ def parse_rules(rules_filename : str, verbose : bool) -> List[Rule]:
                 macro_body = macro_def[macro_name_match.end(0):].lstrip()
                 if macro_name.upper() != macro_name:
                     raise Exception(f"macro names need to be upper case: {macro_name}")
-                rule = parse_rule(line_number, True, macro_body)
-                if rule:
-                    macro_defs[macro_name] = rule
+                op = parse_op(line_number, True, macro_body)
+                if op:
+                    macro_defs[macro_name] = op
 
+            # parse an operation definition
             else:
-                rule = parse_rule(line_number, False, sline)
-                if rule:
-                    rules.append(rule)
+                op = parse_op(line_number, False, sline)
+                if op:
+                    rules.append(op)
 
     return rules
 
 
-def transform_entries(dict_filename: str, verbose : bool, rules: List[Rule]):
+def transform_entries(dict_filename: str, verbose : bool, ops: List[ComplexOperation]):
     """Transforms the entries of a given dictionary."""
     d_in = None
     if dict_filename:
@@ -1035,17 +1204,17 @@ def transform_entries(dict_filename: str, verbose : bool, rules: List[Rule]):
         count = count + 1
         sentry = entry.rstrip("\r\n") # stripped entry
         if sentry not in ignored_entries:
-            reported_entries.clear()
-            for r in rules:
+            __reported_entries.clear()
+            for op in ops:
                 if verbose:
                     escaped_sentry = sentry\
                         .replace("\\","\\\\")\
                         .replace("\"","\\\"")
                     print(
-                        f'[{count}:"{escaped_sentry}"] applying rule: {r}',
+                        f'[{count}:"{escaped_sentry}"] applying: {op}',
                         file=sys.stderr
                     )            
-                r.apply(sentry)            
+                op.apply(sentry)            
 
 
 def main() -> int:
@@ -1054,10 +1223,10 @@ def main() -> int:
         """Generates an attack dictionary based on a plain dictionary."""
     )
     parser.add_argument(
-        '-r', 
-        '--rules', 
-        help="a .td file with the rules that will be applied to the dictionary entries", 
-        default="default_rules.td"
+        '-o', 
+        '--operations', 
+        help="a .td file with the operations that will be applied to the dictionary entries", 
+        default="default_ops.td"
     )
     parser.add_argument(
         '-d', 
@@ -1072,9 +1241,9 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    all_rules = parse_rules(args.rules, args.verbose)
+    all_operations = parse_ops(args.operations, args.verbose)
     
-    transform_entries(args.dictionary, args.verbose, all_rules)
+    transform_entries(args.dictionary, args.verbose, all_operations)
     
     return 0
 

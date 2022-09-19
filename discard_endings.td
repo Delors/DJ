@@ -1,0 +1,1 @@
+*discard_endings "discard_endings.txt" report

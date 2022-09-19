@@ -19,7 +19,3 @@ def print_strings(result_str,l_of_l_of_strs):
 
 print_strings("",data)
 ```
-
-# 2. function to replace (e.g. vowles) by numbers counting them up
-
-_E.g._ Hallo => H1ll2

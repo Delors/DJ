@@ -4,33 +4,53 @@
 
 # Deutsch
 der
+Der
 die
+Die
 das
+Das
 den
+Den
 dem
+Dem
 des
+Des
 ein
+Ein
 einer
-eine 
+Einer
+eine
+Eine
 dies
 Dies
 
 für
+Für
 fuer
+Fuer
 
 von
+Von
 auf
+Auf
 unter
+Unter
 mit
+Mit
 
 aller 
+Aller
 
 neuen
+Neuen
+nicht
 
 ist
 
+kein
+Kein
 keine
-nicht
+Keine
 
 und
 oder
@@ -43,11 +63,21 @@ vier
 fünf
 
 Erste
+erste
 Zweite
+zweite
 Dritte
+dritte
 Vierte
+vierte
 Fünfte
 Fuenfte
+fünfte
+fuenfte
+Sechste
+sechste
+Siebte
+siebte
 
 heilige
 geprägter
@@ -57,6 +87,7 @@ euch
 # Englisch
 are
 all
+the
 
 # Spanisch
 del
