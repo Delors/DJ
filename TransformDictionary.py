@@ -743,7 +743,7 @@ class Split(Operation):
         if len(all_segments) == 1:
             return None
                 
-        segments = filter(lambda e: len(e) > 0, all_segments)
+        segments = list(filter(lambda e: len(e) > 0, all_segments))
         return segments
 
     def __str__ (self):
@@ -763,8 +763,7 @@ class Number(Operation):
     """
 
     def __init__(self, chars_to_number : str):
-        cs = chars_to_number[1:-1] # get rid of the set braces "[" and "]".
-        self.chars_to_number = set(cs) 
+        self.chars_to_number = set(chars_to_number) 
         return
 
     def is_transformer(self) -> bool: return True
@@ -787,6 +786,33 @@ class Number(Operation):
     def __str__ (self):
         chars = "".join(self.chars_to_number)
         return f"number [{chars}]"
+
+
+class Map(Operation):
+    """ Maps a given character to several alternatives.
+    """
+
+    def __init__(self, source_char : str, target_chars : str):
+        self.source_char = source_char
+        self.target_chars = set(target_chars) 
+        return
+
+    def is_transformer(self) -> bool: return True
+
+    def process(self, entry: str) -> List[str]:
+        if self.source_char in entry:
+            entries = []
+            for c in self.target_chars:
+                entries.append(entry.replace(self.source_char,c))
+            return entries
+        else:
+            return None        
+
+    def __str__ (self):
+        # TODO Escape
+        source_char = self.source_char
+        target_chars = "".join(self.target_chars)
+        return f"maps {source_char} [{target_chars}]"
 
 
 class SubSplits(Operation):
@@ -934,18 +960,18 @@ class ComplexOperation:
         an entry and (potentially) every subsequently created entry.
     """
 
-    def __init__(self, operations: List[Operation]):
-        if not operations or len(operations) == 0:
-            raise ValueError(f"no operations specified: {operations}")
+    def __init__(self, ops: List[Operation]):
+        if not ops or len(ops) == 0:
+            raise ValueError(f"no operations specified: {ops}")
 
-        self.operations = operations
+        self.ops = ops
         return
 
     def apply(self, entry):
-        return apply_ops(entry,self.operations)
+        return apply_ops(entry,self.ops)
 
     def __str__(self) -> str:
-        return " ".join(map(str,self.operations))
+        return " ".join(map(str,self.ops))
 
 
 ### PARSER SETUP AND CONFIGURATION
@@ -956,24 +982,24 @@ re_next_quoted_word = re.compile('^"[^"]+"')
 def parse(operation) -> Callable[[str,str],Tuple[str,Operation]]:
     """Generic parser for operations without parameters."""
 
-    def parse_it(rule_name: str, rest_of_op: str) -> Tuple[str, Operation]:
+    def parse_it(op_name: str, rest_of_op: str) -> Tuple[str, Operation]:
         return (rest_of_op,operation)
 
     return parse_it   
 
-def parse_min_length(rule_name: str, rest_of_op: str) -> Tuple[str, Operation]:
+def parse_min_length(op_name: str, rest_of_op: str) -> Tuple[str, Operation]:
     min_length_match = re_next_word.match(rest_of_op)
     min_length = int(min_length_match.group(0))
     new_rest_of_op = rest_of_op[min_length_match.end(0):].lstrip()
     return (new_rest_of_op,MinLength(min_length))
 
-def parse_max_length(rule_name: str, rest_of_op: str) -> Tuple[str, Operation]:
+def parse_max_length(op_name: str, rest_of_op: str) -> Tuple[str, Operation]:
     max_length_match = re_next_word.match(rest_of_op)
     max_length = int(max_length_match.group(0))
     new_rest_of_op = rest_of_op[max_length_match.end(0):].lstrip()
     return (new_rest_of_op,MaxLength(max_length))
 
-def parse_number(rule_name: str, rest_of_op: str) -> Tuple[str, Operation]:
+def parse_number(op_name: str, rest_of_op: str) -> Tuple[str, Operation]:
     chars_to_number_match = re_next_word.match(rest_of_op)
     raw_chars_to_number = chars_to_number_match.group(0)
     chars_to_number = raw_chars_to_number \
@@ -981,9 +1007,28 @@ def parse_number(rule_name: str, rest_of_op: str) -> Tuple[str, Operation]:
             .replace("\\s"," ") \
             .replace("\\\\","\\")
     new_rest_of_op = rest_of_op[chars_to_number_match.end(0):].lstrip()
-    return (new_rest_of_op,Number(chars_to_number))
+    return (new_rest_of_op,Number(chars_to_number[1:-1] ))# get rid of the set braces "[" and "]".
 
-def parse_split(rule_name: str, rest_of_op: str) -> Tuple[str, Operation]:
+def parse_map(op_name: str, rest_of_op: str) -> Tuple[str, Operation]:
+    source_char_match = re_next_word.match(rest_of_op)
+    raw_source_char = source_char_match.group(0)
+    source_char = raw_source_char \
+            .replace("\\t","\t") \
+            .replace("\\s"," ") \
+            .replace("\\\\","\\")
+    rest_of_op = rest_of_op[source_char_match.end(0):].lstrip()
+
+    target_chars_match = re_next_word.match(rest_of_op)
+    raw_target_chars = target_chars_match.group(0)
+    target_chars = raw_target_chars \
+            .replace("\\t","\t") \
+            .replace("\\s"," ") \
+            .replace("\\\\","\\")
+    new_rest_of_op = rest_of_op[target_chars_match.end(0):].lstrip()
+
+    return (new_rest_of_op,Map(source_char,target_chars[1:-1]))    
+
+def parse_split(op_name: str, rest_of_op: str) -> Tuple[str, Operation]:
     split_chars_match = re_next_word.match(rest_of_op)
     raw_split_chars = split_chars_match.group(0)
     split_char = raw_split_chars \
@@ -993,7 +1038,7 @@ def parse_split(rule_name: str, rest_of_op: str) -> Tuple[str, Operation]:
     new_rest_of_op = rest_of_op[split_chars_match.end(0):].lstrip()
     return (new_rest_of_op,Split(split_char))
 
-def parse_sub_splits(rule_name: str, rest_of_op: str) -> Tuple[str, Operation]:
+def parse_sub_splits(op_name: str, rest_of_op: str) -> Tuple[str, Operation]:
     split_chars_match = re_next_word.match(rest_of_op)
     raw_split_chars = split_chars_match.group(0)
     split_char = raw_split_chars \
@@ -1003,13 +1048,13 @@ def parse_sub_splits(rule_name: str, rest_of_op: str) -> Tuple[str, Operation]:
     new_rest_of_op = rest_of_op[split_chars_match.end(0):].lstrip()
     return (new_rest_of_op,SubSplits(split_char))
 
-def parse_replace(rule_name: str, rest_of_op: str) -> Tuple[str, Operation]:
+def parse_replace(op_name: str, rest_of_op: str) -> Tuple[str, Operation]:
     replace_filename_match = re_next_quoted_word.match(rest_of_op)
     replace_filename = replace_filename_match.group(0).strip("\"")
     new_rest_of_op = rest_of_op[replace_filename_match.end(0):].lstrip()
     return (new_rest_of_op,Replace(replace_filename))
 
-def parse_discard_endings(rule_name: str, rest_of_op: str) -> Tuple[str, Operation]:
+def parse_discard_endings(op_name: str, rest_of_op: str) -> Tuple[str, Operation]:
     endings_filename_match = re_next_quoted_word.match(rest_of_op)
     if not endings_filename_match:
         raise Exception("discard_endings: file name missing (did you forgot the quotes(\")?)")
@@ -1045,6 +1090,7 @@ operation_parsers = {
     "strip" : parse(STRIP),
     "mangle_dates" : parse(MANGLE_DATES),
     "number": parse_number,
+    "map": parse_map,
     "split": parse_split,
     "sub_splits": parse_sub_splits,
     "replace" : parse_replace,
@@ -1052,44 +1098,44 @@ operation_parsers = {
 }
 
 
-def parse_rest_of_op(previous_rules : List[Operation], line_number, rest_of_op : str) -> Tuple[str, Operation]:
+def parse_rest_of_op(previous_ops : List[Operation], line_number, rest_of_op : str) -> Tuple[str, Operation]:
     # Get name of operation parser
-    next_rule_parser_match = re_next_word.match(rest_of_op)
-    next_rule_parser_name = next_rule_parser_match.group(0)
+    next_op_parser_match = re_next_word.match(rest_of_op)
+    next_op_parser_name = next_op_parser_match.group(0)
 
     # Check for operation modifiers (i.e. Metaoperations)
-    keep_always = (next_rule_parser_name[0] == "+")                
-    keep_if_filtered = (next_rule_parser_name[0] == "*") 
+    keep_always = (next_op_parser_name[0] == "+")                
+    keep_if_filtered = (next_op_parser_name[0] == "*") 
     if keep_always or keep_if_filtered:
-        next_rule_parser_name = next_rule_parser_name[1:]
+        next_op_parser_name = next_op_parser_name[1:]
 
     result : Tuple[str, Operation] = None
-    next_rule_parser = operation_parsers.get(next_rule_parser_name)
-    if next_rule_parser is not None:
-        new_rest_of_op = rest_of_op[next_rule_parser_match.end(
+    next_op_parser = operation_parsers.get(next_op_parser_name)
+    if next_op_parser is not None:
+        new_rest_of_op = rest_of_op[next_op_parser_match.end(
             0):].lstrip()
-        result = next_rule_parser(next_rule_parser_name, new_rest_of_op)
-    elif macro_defs.get(next_rule_parser_name) is not None:
-        macro_def = macro_defs.get(next_rule_parser_name)
-        new_rest_of_op = rest_of_op[next_rule_parser_match.end(
+        result = next_op_parser(next_op_parser_name, new_rest_of_op)
+    elif macro_defs.get(next_op_parser_name) is not None:
+        macro_def = macro_defs.get(next_op_parser_name)
+        new_rest_of_op = rest_of_op[next_op_parser_match.end(
             0):].lstrip()
         result = (
             new_rest_of_op,
-            Macro(next_rule_parser_name,macro_def.rules)
+            Macro(next_op_parser_name,macro_def.ops)
         )
     else:
         print(
-            f"[error][{line_number}] unknown command: {next_rule_parser_name}", 
+            f"[error][{line_number}] unknown command: {next_op_parser_name}", 
             file=sys.stderr
         )
         return None        
 
     if keep_always:
-        (new_rest_of_op,base_rule) = result
-        result = (new_rest_of_op,KeepAlwaysModifier(base_rule))
+        (new_rest_of_op,base_op) = result
+        result = (new_rest_of_op,KeepAlwaysModifier(base_op))
     if keep_if_filtered:
-        (new_rest_of_op,base_rule) = result
-        result = (new_rest_of_op,KeepOnlyIfFilteredModifier(base_rule))
+        (new_rest_of_op,base_op) = result
+        result = (new_rest_of_op,KeepOnlyIfFilteredModifier(base_op))
     
     return result
     
@@ -1098,27 +1144,27 @@ def parse_rest_of_op(previous_rules : List[Operation], line_number, rest_of_op :
 def parse_op(line_number : int, is_def : bool, sline : str) -> ComplexOperation :
     # Parse a single operation definition in collaboration with the
     # respective atomic parsers.
-    atomic_rules: List[Operation] = []
+    atomic_ops: List[Operation] = []
     while len(sline) > 0:
-        parsed_atomic_rule = parse_rest_of_op(atomic_rules, line_number, sline)
-        if parsed_atomic_rule:
-            (sline, atomic_rule) = parsed_atomic_rule
-            atomic_rules.append(atomic_rule)
+        parsed_atomic_op = parse_rest_of_op(atomic_ops, line_number, sline)
+        if parsed_atomic_op:
+            (sline, atomic_op) = parsed_atomic_op
+            atomic_ops.append(atomic_op)
             if  not is_def and\
                 len(sline) == 0 and\
                 not (
-                    isinstance(atomic_rule,Report) 
+                    isinstance(atomic_op,Report) 
                     or 
-                    (   isinstance(atomic_rule,Macro) 
+                    (   isinstance(atomic_op,Macro) 
                         and 
-                        isinstance(atomic_rule.rules[-1],Report)
+                        isinstance(atomic_op.ops[-1],Report)
                     )
                 ):
                 print(
                     f"[info][{line_number}] adding report at the end", 
                     file=sys.stderr
                 )
-                atomic_rules.append(Report())
+                atomic_ops.append(Report())
         else:
             # If the parsing of an atomic operation fails, we just
             # ignore the line as a whole.
@@ -1128,7 +1174,7 @@ def parse_op(line_number : int, is_def : bool, sline : str) -> ComplexOperation 
                 )
             return None
 
-    return ComplexOperation(atomic_rules)
+    return ComplexOperation(atomic_ops)
 
 
 def parse_ops(ops_filename : str, verbose : bool) -> List[ComplexOperation]:
@@ -1141,14 +1187,14 @@ def parse_ops(ops_filename : str, verbose : bool) -> List[ComplexOperation]:
         removing them from the string.
     """
 
-    rules: List[ComplexOperation] = []
+    ops: List[ComplexOperation] = []
 
     abs_filename = locate_resource(ops_filename)
-    with open(abs_filename, 'r', encoding='utf-8') as rules_file:
+    with open(abs_filename, 'r', encoding='utf-8') as ops_file:
         line_number = 0
-        for rule_def in rules_file.readlines():
+        for op_def in ops_file.readlines():
             line_number = line_number + 1
-            sline = rule_def.strip()
+            sline = op_def.strip()
 
             # ignore comments and empty lines
             if sline.startswith('#') or len(sline) == 0:
@@ -1186,9 +1232,9 @@ def parse_ops(ops_filename : str, verbose : bool) -> List[ComplexOperation]:
             else:
                 op = parse_op(line_number, False, sline)
                 if op:
-                    rules.append(op)
+                    ops.append(op)
 
-    return rules
+    return ops
 
 
 def transform_entries(dict_filename: str, verbose : bool, ops: List[ComplexOperation]):
