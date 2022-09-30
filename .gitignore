@@ -1,4 +1,7 @@
 .history*
 .vscode
 __pycache__
-/html
+# FOLDERS
+html
+dicts
+demo

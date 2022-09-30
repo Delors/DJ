@@ -6,13 +6,13 @@ def P_UMLAUT_TO_ASCII +replace "UmlautToAscii.txt"
 def P_REWRITE_UMLAUT +replace "RewriteUmlaut.txt"
 def P_SC_TO_SPACE +replace "SpecialCharToSpace.txt"
 # REMARKS
-# - "to_upper" only makes sense for "non-mobile phone" passwords
+# - "upper" only makes sense for "non-mobile phone" passwords
 # - "remove_numbers" potentially leads to many non-sense words.
 # - "deleetify" is a computationally intensive operation and the results
 #             of it may depend on the time when the deleetification
 #             is performed.
 # - "number" may lead to many new entries, use sparingly!
-def BASE_TRANSFORMATIONS P_SC_TO_SPACE +strip +deleetify +capitalize +remove_sc +get_numbers +get_sc +to_lower P_UMLAUT_TO_ASCII P_REWRITE_UMLAUT +remove_ws +number [aeiou]
+def BASE_TRANSFORMATIONS P_SC_TO_SPACE +map \s [._-] +strip +deleetify +capitalize +remove_sc +get_numbers +get_sc +lower P_UMLAUT_TO_ASCII P_REWRITE_UMLAUT +remove_ws +number [aeiou]
 
 # RULES
 # A rule takes an entry and generates new candidates.
@@ -24,10 +24,10 @@ def BASE_TRANSFORMATIONS P_SC_TO_SPACE +strip +deleetify +capitalize +remove_sc 
 # entry is passed on if and only if it was not transformed. 
 
 BASE_TRANSFORMATIONS report
-#split / BASE_TRANSFORMATIONS report
-# split . BASE_TRANSFORMATIONS report
-#mangle_dates report
-#split \s discard_endings "discard_endings.txt" BASE_TRANSFORMATIONS report
+split / BASE_TRANSFORMATIONS report
+split . BASE_TRANSFORMATIONS report
+mangle_dates report
+split \s discard_endings "discard_endings.txt" BASE_TRANSFORMATIONS report
 
 
 

@@ -46,6 +46,9 @@ Neuen
 nicht
 
 ist
+sind
+bin
+nur 
 
 kein
 Kein
@@ -55,6 +58,7 @@ Keine
 und
 oder
 aber
+auch
 
 eins
 zwei
