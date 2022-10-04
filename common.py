@@ -91,12 +91,12 @@ _nlp_models = {
 
 def get_nlp_model(model : str):
     global _nlp_models
-    nlp_model = not _nlp_models[model]
+    nlp_model = _nlp_models[model]
     if isinstance(model,str):
         print(f"[info] loading {model} (this will take time)", file=stderr)
-        nlp_model = gensim.load('glove-twitter-200')
+        nlp_model = gensim.load(nlp_model)
         _nlp_models[model] = nlp_model
-        print(f"[info] loaded {model}", file=stderr)
+        print(f"[info] loaded {model}({nlp_model})", file=stderr)
     return nlp_model
 
 
