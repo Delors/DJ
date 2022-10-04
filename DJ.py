@@ -5,6 +5,7 @@
 # (c) 2022
 
 import sys
+from sys import stderr
 import os
 import argparse
 import re
@@ -13,6 +14,7 @@ from abc import ABC, abstractmethod
 from typing import List, Set, Tuple, Callable
 
 from common import IllegalStateError,escape,unescape,get_filename,locate_resource
+from operations.detriplicate import DETRIPLICATE
 
 from operations.operation import Operation
 # TRANSFORMERS
@@ -47,17 +49,20 @@ from operations.is_popular_word import IS_POPULAR_WORD
 from operations.is_pattern import IS_PATTERN
 
 
-__reported_entries : Set[str] = set()
+_reported_entries : Set[str] = set()
 """ The set of reported, i.e., printed, entries per entry. This list is cleared
     by the `transform_entries` method after completely processing an entry.
     """
+
+_verbose = False
+_trace_ops = False    
 
 def report(s : str):
     """Prints out the entry if it was not yet printed as part of the mangling
        of the same entry.
     """
-    if s not in __reported_entries:
-        __reported_entries.add(s)
+    if s not in _reported_entries:
+        _reported_entries.add(s)
         print(s)
 
 
@@ -83,17 +88,18 @@ def apply_ops(entry : str, ops : List[Operation]) -> List[str]:
         for entry in entries:
             if len(entry) > 0:
                 try:
-                    # print(f"processing [{op}]: ",entry)
                     new_candidate_entries = op.process(entry)
-                    # if new_candidate_entries: print("returned: "," ".join(new_candidate_entries))
+                    if _trace_ops:
+                        print(f"[trace] {op}({entry}): {new_candidate_entries}",file=stderr)
                     if new_candidate_entries is not None:
                         all_none = False
                         for new_entry in new_candidate_entries:
                             if new_entry not in ignored_entries:
-                                # print("added:",new_entry))
                                 new_entries.append(new_entry)
+                            elif _trace_ops:
+                                print(f"[trace] <ignored>: '{new_entry}'",file=stderr)
                 except Exception as e:
-                    print(f"operation {op} failed: {e}",file=sys.stderr)
+                    print(f"operation {op} failed: {e}",file=stderr)
                     raise
         entries = new_entries
 
@@ -360,6 +366,7 @@ operation_parsers = {
     "get_numbers": parse(GET_NUMBERS),
     "get_sc": parse(GET_SPECIAL_CHARS),
     "deduplicate" : parse(DEDUPLICATE),
+    "detriplicate" : parse(DETRIPLICATE),
 
     # TRANSFORMERS
     "fold_ws": parse(FOLD_WHITESPACE),
@@ -413,7 +420,7 @@ def parse_rest_of_op(previous_ops : List[Operation], line_number, rest_of_op : s
     else:
         print(
             f"[error][{line_number}] unknown command: {next_op_parser_name}", 
-            file=sys.stderr
+            file=stderr
         )
         return None        
 
@@ -433,8 +440,7 @@ def parse_rest_of_op(previous_ops : List[Operation], line_number, rest_of_op : s
 def parse_op(
         line_number : int, 
         is_def : bool, 
-        sline : str,
-        verbose : bool
+        sline : str
     ) -> ComplexOperation :
     # Parse a single operation definition in collaboration with the
     # respective atomic parsers.
@@ -454,25 +460,19 @@ def parse_op(
                         isinstance(atomic_op.ops[-1],Report)
                     )
                 ):
-                if verbose:
-                    print(
-                        f"[info][{line_number}] adding report at the end", 
-                        file=sys.stderr
-                    )
+                if _verbose:
+                    print(f"[info][{line_number}] added missing report",  file=stderr)
                 atomic_ops.append(Report())
         else:
             # If the parsing of an atomic operation fails, we just
             # ignore the line as a whole.
-            print(
-                    f"[error][{line_number}] parsing failed: {sline}", 
-                    file=sys.stderr
-                )
+            print(f"[error][{line_number}] parsing failed: {sline}", file=stderr)
             return None
 
     return ComplexOperation(atomic_ops)
 
 
-def parse_ops(ops_filename : str, verbose : bool) -> List[ComplexOperation]:
+def parse_ops(ops_filename : str) -> List[ComplexOperation]:
     """ Parses operation definitions together with atomic operations parsers. 
 
         The split between the two kinds of parsers is as follows:
@@ -534,7 +534,7 @@ def parse_ops(ops_filename : str, verbose : bool) -> List[ComplexOperation]:
                 macro_body = macro_def[macro_name_match.end(0):].lstrip()
                 if macro_name.upper() != macro_name:
                     raise ValueError(f"macro names need to be upper case: {macro_name}")
-                op = parse_op(line_number, True, macro_body, verbose)
+                op = parse_op(line_number, True, macro_body)
                 if op:
                     if macro_defs.get(macro_name):
                         raise IllegalStateError(f"macro ({macro_name}) already defined")
@@ -544,7 +544,7 @@ def parse_ops(ops_filename : str, verbose : bool) -> List[ComplexOperation]:
             # parse an operation definition
             else:
                 parsing_ops = True
-                op = parse_op(line_number, False, sline, verbose)
+                op = parse_op(line_number, False, sline)
                 if op:
                     ops.append(op)
 
@@ -552,8 +552,7 @@ def parse_ops(ops_filename : str, verbose : bool) -> List[ComplexOperation]:
 
 
 def transform_entries(
-        dict_filename: str, 
-        verbose : bool, 
+        dict_filename: str,
         ops: List[ComplexOperation]
     ):
     """Transforms the entries of a given dictionary."""
@@ -568,20 +567,23 @@ def transform_entries(
         count = count + 1
         sentry = entry.rstrip("\r\n") # stripped entry
         if sentry not in ignored_entries:
-            __reported_entries.clear()
+            _reported_entries.clear()
             for op in ops:
-                if verbose:
+                if _verbose:
                     escaped_sentry = sentry\
                         .replace("\\","\\\\")\
                         .replace("\"","\\\"")
                     print(
                         f'[debug][{count}:"{escaped_sentry}"] applying: {op}',
-                        file=sys.stderr
+                        file=stderr
                     )            
                 op.apply(sentry)           
 
 
 def main() -> int:
+    global _verbose
+    global _trace_ops
+
     parser = argparse.ArgumentParser(
         description=
         """Generates an attack dictionary based on a plain dictionary."""
@@ -600,14 +602,23 @@ def main() -> int:
     parser.add_argument(
         '-v',
         '--verbose',
-        help="prints extensive trace information", 
+        help="prints general trace information", 
+        action="store_true"
+    )
+    parser.add_argument(
+        '-t',
+        '--trace_ops',
+        help="prints extensive trace information about ops", 
         action="store_true"
     )
     args = parser.parse_args()
 
-    all_operations = parse_ops(args.operations, args.verbose)
+    _verbose = args.verbose
+    _trace_ops = args.trace_ops
+
+    all_operations = parse_ops(args.operations)
     
-    transform_entries(args.dictionary, args.verbose, all_operations)
+    transform_entries(args.dictionary, all_operations)
     
     return 0
 
