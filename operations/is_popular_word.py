@@ -5,16 +5,18 @@ from common import get_nlp_vocab
 
 
 class IsPopularWord(Operation):
-    # Checks if a word is a word that is used on twitter or in 
-    # google news. 
-    # This test has very high setup costs!
+    """ Checks if a word is a word that is used on twitter or in 
+        google news. 
+        This test has very high initialization costs on _first_ usage!
+    """
 
     def __init__(self):
         self._twitter_vocab = None
         self._google_vocab = None
         return
 
-    def is_filter(self) -> bool: return True
+    def is_filter(self) -> bool: 
+        return True
         
     def process(self, entry: str) -> List[str]:        
         if not self._twitter_vocab: 

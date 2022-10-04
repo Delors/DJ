@@ -5,7 +5,11 @@ from common import locate_resource
 
 
 class Replace(Operation):
-    """Replaces a character by another (set of) character(s)."""
+    """ Replaces a character by another character.
+
+        (If you want to replace a single character by multiple other 
+        characters use the "map" operation.)
+    """
 
     def __init__(self, replacements_filename):
         self.replacements_filename = replacements_filename
@@ -28,7 +32,7 @@ class Replace(Operation):
                     .replace("\\\\","\\")
                 current_values = replacement_table.get(key)       
                 if current_values:
-                    raise SyntaxError                    
+                    raise SyntaxError(f"the key ({key}) is already used")                   
                 else:
                     replacement_table[key] = value        
         self.replacement_table = replacement_table

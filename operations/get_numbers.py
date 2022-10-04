@@ -1,6 +1,5 @@
 import re
-from abc import ABC, abstractmethod
-from typing import List, Set, Tuple, Callable
+from typing import List
 
 from operations.operation import Operation
 

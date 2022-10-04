@@ -4,7 +4,7 @@ from operations.operation import Operation
 
 
 class StripNumbersAndSpecialChars(Operation):
-    """Removes leading and trailing numbers and special chars."""
+    """Removes leading and trailing numbers and ascii special chars."""
 
     def is_transformer(self) -> bool: 
         return True

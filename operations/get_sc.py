@@ -1,6 +1,5 @@
 import re
-from abc import ABC, abstractmethod
-from typing import List, Set, Tuple, Callable
+from typing import List
 
 from operations.operation import Operation
 
@@ -8,8 +7,9 @@ from operations.operation import Operation
 class GetSpecialChars(Operation):
     """Extracts the used special char (sequences)."""
 
-    #re_special_chars = re.compile("[^a-zA-Z0-9\s]+")
-    re_special_chars = re.compile("[<>|,;.:_#'+*~@€²³`'^°!\"§$%&/()\[\]{}\\\-]+")
+    re_special_chars = \
+        re.compile("[<>|,;.:_#'+*~@€²³`'^°!\"§$%&/()\[\]{}\\\-]+")
+        #re.compile("[^a-zA-Z0-9\s]+")
 
     def is_extractor(self) -> bool: return True
 

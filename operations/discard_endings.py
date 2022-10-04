@@ -1,6 +1,4 @@
-
-from abc import ABC, abstractmethod
-from typing import List, Set, Tuple, Callable
+from typing import List, Set
 
 from operations.operation import Operation
 from common import locate_resource
@@ -29,7 +27,8 @@ class DiscardEndings(Operation):
                 endings.add(ending.rstrip("\r\n"))       
         self.endings = endings
 
-    def is_transformer(self) -> bool: return True        
+    def is_transformer(self) -> bool: 
+        return True        
 
     def process(self, entry: str) -> List[str]: 
         all_terms = entry.split()

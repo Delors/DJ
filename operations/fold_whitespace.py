@@ -1,12 +1,10 @@
-import re
-from abc import ABC, abstractmethod
-from typing import List, Set, Tuple, Callable
+from typing import List
 
 from operations.operation import Operation
 
 
 class FoldWhitespace(Operation):
-    """ Folds multiple whitespace (spaces and tabs) to one space."""
+    """Folds multiple whitespace (spaces and tabs) to one space."""
 
     def is_transformer(self) -> bool: return True
 

@@ -1,18 +1,20 @@
 import re
-from abc import ABC, abstractmethod
-from typing import List, Set, Tuple, Callable
+from typing import List
 
 from operations.operation import Operation
+
 
 class MangleDates(Operation):
     """ Tries to identify numbers which are dates and then creates various
         representations for the respective date.
 
-        Currently, we try to identify german and english dates.
+        Currently, we try to identify 1st german and then 2nd english dates.
     """
 
-    re_german_date = re.compile("[^0-9]*([0-9]{1,2})\.?([0-9]{1,2})\.?(19|20)?([0-9]{2})")
-    re_english_date = re.compile("[^0-9]*([0-9]{1,2})[/-]?([0-9]{1,2})[/-]?(19|20)?([0-9]{2})")    
+    re_german_date = \
+        re.compile("[^0-9]*([0-9]{1,2})\.?([0-9]{1,2})\.?(19|20)?([0-9]{2})")
+    re_english_date = \
+        re.compile("[^0-9]*([0-9]{1,2})[/-]?([0-9]{1,2})[/-]?(19|20)?([0-9]{2})")    
 
     def __init__(self): pass
 
@@ -34,7 +36,10 @@ class MangleDates(Operation):
             The test ist not extremely precise, but should be acceptable for
             our purposes.
         """
-        if int(d) > 31 or int(d) == 0 or int(m) > 12 or int(m) == 0 or (int(y) > 25 and int(y) < 75) or (c and (c == 19 or c == 20)):
+        if  int(d) > 31 or int(d) == 0 or \
+            int(m) > 12 or int(m) == 0 or \
+            (   int(y) > 25 and int(y) < 75) or \
+                (c and (c == 19 or c == 20)):
             return []
 
         mangled_dates = [d+m+y,y]

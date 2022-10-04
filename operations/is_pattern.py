@@ -7,7 +7,8 @@ class IsPattern(Operation):
     """Identifies repetitions of a single character or a pair of characters.
     """
 
-    def is_filter(self) -> bool: return True
+    def is_filter(self) -> bool: 
+        return True
 
     def process(self, entry: str) -> List[str]:
         length = len(entry)

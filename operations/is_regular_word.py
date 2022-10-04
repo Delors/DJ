@@ -1,7 +1,5 @@
-import itertools
 import re
-from abc import ABC, abstractmethod
-from typing import List, Set, Tuple, Callable
+from typing import List
 
 from Levenshtein import distance
 
@@ -9,8 +7,9 @@ from operations.operation import Operation
 from common import dictionaries
 
 class IsRegularWord(Operation):
-    # Checks if a word is a real word by looking it up in several
-    # dictionaries.
+    """ Checks if a word is a real word by looking it up in several
+        dictionaries.
+    """
 
     _match_words = re.compile("[^\W\d_]+")
 
