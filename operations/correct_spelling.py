@@ -12,7 +12,8 @@ class CorrectSpelling(Operation):
     Here, we only consider misspellings with at most one typing
     mistake.
     The costs of this operation depends on the number
-    of installed dictionaries.
+    of installed dictionaries, however, with a large set of
+    dictionaries, the costs can be very(!) high.
     """
 
     def __init__(self):
@@ -27,12 +28,12 @@ class CorrectSpelling(Operation):
         for d in dictionaries.values():
             for c in d.suggest(entry):
                 # If we have a plural word the spellchecker may
-                # propose to split up the trainling "s". We don't
+                # propose to split up the trailing "s". We don't
                 # want that and therefore filter proposals which
                 # contain spaces.
                 if distance(entry,c) == 1 and c.find(" ") == -1:
                     if c.lower() == lentry:
-                        # "just" the capitalization was incorrect;
+                        # "Just" the capitalization was incorrect;
                         # we don't want to report other words.
                         return [c]
                     else:
