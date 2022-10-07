@@ -6,7 +6,7 @@ from common import locate_resource
 class DiscardEndings(Operation):
     """
     Discards the last term - recursively - of a string with multiple elements
-    if the term is defined in the given file. The preceeding 
+    if the term is defined in the given file. The preceding 
     whitespace will also be discarded.
     
     For example, given the string:
