@@ -5,3 +5,5 @@ __pycache__
 html
 dicts
 demo
+# GENERATED FILES
+*.202*_*_*.*
