@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
-# Bundeskriminalamt KT53
-# Dr. Michael Eichberg (michael.eichberg@bka.bund.de)
+# Dr. Michael Eichberg (mail@michael-eichberg.de)
 # (c) 2022
 
 import sys
@@ -13,8 +12,9 @@ import re
 from abc import ABC, abstractmethod
 from typing import List, Set, Tuple, Callable
 
-from common import IllegalStateError,escape,unescape,get_filename,locate_resource
+from common import IllegalStateError,escape,unescape,get_filename,locate_resource,enrich_filename
 from operations.detriplicate import DETRIPLICATE
+from operations.is_keyboard_walk import IS_KEYBOARD_WALK
 
 from operations.operation import Operation
 # TRANSFORMERS
@@ -47,6 +47,7 @@ from operations.max_length import MaxLength
 from operations.is_regular_word import IS_REGULAR_WORD
 from operations.is_popular_word import IS_POPULAR_WORD
 from operations.is_pattern import IS_PATTERN
+from operations.is_keyboard_walk import IS_KEYBOARD_WALK
 
 
 _reported_entries : Set[str] = set()
@@ -64,7 +65,6 @@ def report(s : str):
     if s not in _reported_entries:
         _reported_entries.add(s)
         print(s)
-
 
 ignored_entries = set()
 """ The global list of all entries which will always be ignored.
@@ -156,6 +156,30 @@ class Report(Operation):
 REPORT = Report()        
 
 
+class Write(Report):
+
+    def __init__(self,filename) -> None:
+        super().__init__()
+        self.filename = filename
+        self.file = open(enrich_filename(filename),"w",encoding="utf-8")
+
+    def is_reporter(self) -> bool: return True   
+
+    def process(self, entry: str) -> List[str]:
+        print(entry,file=self.file)
+        return [entry]
+
+    def close(self):
+        try:
+            self.file.close()
+        except Exception as e:
+            print(f"failed closing {self.filename}",file=stderr)
+            pass
+               
+    def __str__(self):
+        return f"write \"{self.filename}\""
+
+
 class Macro(Operation):
     """Definition of a macro."""
 
@@ -169,6 +193,9 @@ class Macro(Operation):
 
     def process(self, entry: str) -> List[str]:
         return apply_ops(entry,self.ops)
+
+    def close(self):
+        for op in self.ops: op.close()    
 
     def __str__(self):
         return self.name
@@ -255,7 +282,7 @@ class ComplexOperation:
     """ Representation of a complex operation.
 
         Instantiation of a complex operation which is made up of 
-        multiple atomic operations. An instance of ComplexOperation 
+        multiple atomic/macro operations. An instance of ComplexOperation 
         basically just handles applying the atomic operations to 
         an entry and (potentially) every subsequently created entry.
     """
@@ -269,6 +296,9 @@ class ComplexOperation:
 
     def apply(self, entry):
         return apply_ops(entry,self.ops)
+
+    def close(self):
+        for op in self.ops: op.close()
 
     def __str__(self) -> str:
         return " ".join(map(str,self.ops))
@@ -287,6 +317,18 @@ def parse(operation) -> Callable[[str,str],Tuple[str,Operation]]:
 
     return parse_it   
 
+def parse_int_parameter(operation_constructor) -> Callable[[str,str],Tuple[str,Operation]]:
+    """Generic parser for operations with an int parameter. """
+
+    def parse_it(op_name: str, rest_of_op: str) -> Tuple[str, Operation]:
+        int_match = re_next_word.match(rest_of_op)
+        value = int(int_match.group(0))
+        new_rest_of_op = rest_of_op[int_match.end(0):].lstrip()
+        return (new_rest_of_op,operation_constructor(value))
+
+    return parse_it
+
+"""
 def parse_min_length(op_name: str, rest_of_op: str) -> Tuple[str, Operation]:
     min_length_match = re_next_word.match(rest_of_op)
     min_length = int(min_length_match.group(0))
@@ -298,6 +340,7 @@ def parse_max_length(op_name: str, rest_of_op: str) -> Tuple[str, Operation]:
     max_length = int(max_length_match.group(0))
     new_rest_of_op = rest_of_op[max_length_match.end(0):].lstrip()
     return (new_rest_of_op,MaxLength(max_length))
+"""    
 
 def parse_number(op_name: str, rest_of_op: str) -> Tuple[str, Operation]:
     chars_to_number_match = re_next_word.match(rest_of_op)
@@ -339,6 +382,12 @@ def parse_replace(op_name: str, rest_of_op: str) -> Tuple[str, Operation]:
     new_rest_of_op = rest_of_op[replace_filename_match.end(0):].lstrip()
     return (new_rest_of_op,Replace(replace_filename))
 
+def parse_write(op_name: str, rest_of_op: str) -> Tuple[str, Operation]:
+    filename_match = re_next_quoted_word.match(rest_of_op)
+    filename = filename_match.group(0).strip("\"")
+    new_rest_of_op = rest_of_op[filename_match.end(0):].lstrip()
+    return (new_rest_of_op,Write(filename))
+
 def parse_discard_endings(op_name: str, rest_of_op: str) -> Tuple[str, Operation]:
     endings_filename_match = re_next_quoted_word.match(rest_of_op)
     if not endings_filename_match:
@@ -353,38 +402,40 @@ macro_defs : Tuple[str,ComplexOperation] = { }
 """Mapping between the name of an op and it's associated parameters parser."""
 operation_parsers = {
 
-    "report": parse(REPORT),
+    "report" : parse(REPORT),
+    "write" : parse_write,
     
     # FILTERS
-    "max_length": parse_max_length,
-    "min_length": parse_min_length,
+    "max_length" : parse_int_parameter(MaxLength),
+    "min_length" : parse_int_parameter(MinLength),
     "is_regular_word" : parse(IS_REGULAR_WORD),
     "is_popular_word" : parse(IS_POPULAR_WORD),
     "is_pattern" : parse(IS_PATTERN),
+    "is_keyboard_walk" : parse(IS_KEYBOARD_WALK),
 
     # EXTRACTORS
-    "get_numbers": parse(GET_NUMBERS),
-    "get_sc": parse(GET_SPECIAL_CHARS),
+    "get_numbers" : parse(GET_NUMBERS),
+    "get_sc" : parse(GET_SPECIAL_CHARS),
     "deduplicate" : parse(DEDUPLICATE),
     "detriplicate" : parse(DETRIPLICATE),
 
     # TRANSFORMERS
-    "fold_ws": parse(FOLD_WHITESPACE),
-    "lower": parse(LOWER),
-    "upper": parse(UPPER),
-    "remove_numbers": parse(REMOVE_NUMBERS),
-    "remove_ws": parse(REMOVE_WHITESPACE),
-    "remove_sc": parse(REMOVE_SPECIAL_CHARS),
+    "fold_ws" : parse(FOLD_WHITESPACE),
+    "lower" : parse(LOWER),
+    "upper" : parse(UPPER),
+    "remove_numbers" : parse(REMOVE_NUMBERS),
+    "remove_ws" : parse(REMOVE_WHITESPACE),
+    "remove_sc" : parse(REMOVE_SPECIAL_CHARS),
     "capitalize" : parse(CAPITALIZE),
     "deleetify" : parse(DELEETIFY),
     "strip_ws" : parse(STRIP_WHITESPACE),
     "strip_numbers_and_sc" : parse(STRIP_NUMBERS_AND_SPECIAL_CHARS),
     "mangle_dates" : parse(MANGLE_DATES),
-    "number": parse_number,
-    "map": parse_map,
-    "related": parse(RELATED),
-    "split": parse_split,
-    "sub_splits": parse_sub_splits,
+    "number" : parse_number,
+    "map" : parse_map,
+    "related" : parse(RELATED),
+    "split" : parse_split,
+    "sub_splits" : parse_sub_splits,
     "replace" : parse_replace,
     "discard_endings" : parse_discard_endings,
     "correct_spelling" : parse(CORRECT_SPELLING),
@@ -450,12 +501,13 @@ def parse_op(
         if parsed_atomic_op:
             (sline, atomic_op) = parsed_atomic_op
             atomic_ops.append(atomic_op)
-            if  not is_def and\
-                len(sline) == 0 and\
+            if  not is_def and \
+                len(sline) == 0 and \
                 not (
                     isinstance(atomic_op,Report) 
                     or 
-                    (   isinstance(atomic_op,Macro) 
+                    (   # ... a macro with a report at the end!
+                        isinstance(atomic_op,Macro) 
                         and 
                         isinstance(atomic_op.ops[-1],Report)
                     )
@@ -616,10 +668,15 @@ def main() -> int:
     _verbose = args.verbose
     _trace_ops = args.trace_ops
 
+    # 1. parse operations
     all_operations = parse_ops(args.operations)
     
+    # 2. apply operations
     transform_entries(args.dictionary, all_operations)
-    
+
+    # 3. cleanup operations
+    for op in all_operations: op.close()
+
     return 0
 
 
