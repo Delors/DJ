@@ -4,7 +4,8 @@ from operations.operation import Operation
 
 
 class IsPattern(Operation):
-    """Identifies repetitions of a single character or a pair of characters.
+    """ Identifies repetitions of a single character or a pair of characters.
+        E.g., "aaaaa" or "qpqpqp" are identified as patterns.
     """
 
     def is_filter(self) -> bool: 
