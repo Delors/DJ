@@ -59,6 +59,8 @@ class Operation(ABC):
         """
         pass
 
+    def close(self): pass  
+
     def is_transformer(self) -> bool: return False
 
     def is_extractor(self) -> bool: return False    
