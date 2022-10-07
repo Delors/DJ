@@ -1,8 +1,6 @@
 import os
-import sys
 from sys import stderr
-from abc import ABC
-from typing import List, Set, Tuple, Callable
+from datetime import datetime
 
 import hunspell
 import gensim.downloader as gensim
@@ -43,8 +41,19 @@ def locate_resource(filename : str) -> str:
             error = f"neither ./{filename} nor {abs_filename} exists"
             raise FileNotFoundError(error)
     except Exception as e:
-        print(f"can't locate {filename}: {e}", file=sys.stderr)
+        print(f"can't locate {filename}: {e}", file=stderr)
         raise
+
+def enrich_filename(filename: str) -> str:
+    date = datetime.today().strftime('%Y_%m_%d')
+    if filename.find(date) >= 0:
+        return filename
+
+    last_dot_index = filename.rfind(".")    
+    if last_dot_index == -1:
+        return filename+"."+date
+    
+    return filename[0:last_dot_index]+"."+date+filename[last_dot_index:]
 
 def get_filename(filename : str) -> str:
     if filename[0] != "\"" or filename[len(filename)-1] != "\"":
@@ -82,8 +91,9 @@ dictionaries = {
 
 
 _nlp_models = {
-    # the value object (string) will be replaced 
-    # by the GENSIM model when the model was loaded
+    # The initial value object (string) will be replaced 
+    # by the GENSIM model when the model was loaded by
+    # a call to the `get_nlp_model` method.
     "twitter" : 'glove-twitter-200',        
     "google"  : 'word2vec-google-news-300',
     "wiki"    : 'glove-wiki-gigaword-300'
