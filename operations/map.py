@@ -9,7 +9,11 @@ class Map(Operation):
     """
 
     def __init__(self, source_char : str, target_chars : str):
+        if not set(source_char).isdisjoint(set(target_chars)):
+            raise ValueError(f"useless identity mapping {source_char} [{target_chars}]")
+
         self.source_char = source_char
+        self.raw_target_chars = target_chars
         self.target_chars = set(target_chars) 
         return
 
@@ -26,6 +30,6 @@ class Map(Operation):
 
     def __str__ (self):
         source_char = escape(self.source_char)
-        target_chars = escape("".join(self.target_chars))
-        return f"maps {source_char} [{target_chars}]"
+        target_chars = escape(self.raw_target_chars)
+        return f"map {source_char} [{target_chars}]"
 
