@@ -2,7 +2,8 @@ import os
 from sys import stderr
 from datetime import datetime
 
-import hunspell
+#import hunspell
+import pynuspell
 import gensim.downloader as gensim
 
 from operations.operation import Operation
@@ -60,7 +61,7 @@ def get_filename(filename : str) -> str:
         raise Exception("the filename has to be quoted (\")")
     return filename[1:-1]
 
-
+""" Hunspell
 def _load_dict(lang : str):
     try:
         dic = 'dicts/'+lang+'.dic'
@@ -88,6 +89,35 @@ dictionaries = {
     "pt":_load_dict('pt_PT/pt_PT'),         # Portugese
     "es":_load_dict('es/es_ES')             # Spanish (Spain)
 }
+"""
+
+def _load_dict(lang : str):
+    try:
+        return pynuspell.load_from_path(lang)
+    except Exception as e:
+        raise ValueError("can't load: "+lang+"; "+str(e))
+
+dictionaries = {
+    "en":_load_dict("dicts/en/en_US"),            # American English
+    "de":_load_dict("dicts/de/de_DE_frami"),      # German (Modern)
+    "nl":_load_dict('dicts/nl_NL/nl_NL'),         # Netherlands
+}
+"""
+    "da":_load_dict('dicts/da_DK/da_DK'),         # Danish
+    "pl":_load_dict('dicts/pl_PL/pl_PL'),         # Polish
+    "fr":_load_dict('dicts/fr_FR/fr'),            # French
+    "ro":_load_dict('dicts/ro/ro_RO'),            # Romanian
+    "sr":_load_dict('dicts/sr/sr'),               # Serbian
+    "sl":_load_dict('dicts/sl_SI/sl_SI'),         # Slovenian
+    "sq":_load_dict('dicts/sq_AL/sq_AL'),         # Albanian
+    "bs":_load_dict('dicts/bs_BA/bs_BA'),         # Bosnian
+    "bg":_load_dict('dicts/bg_BG/bg_BG'),         # Bulgarian
+    "hr":_load_dict('dicts/hr_HR/hr_HR'),         # Croatian
+    "hu":_load_dict('dicts/hu_HU/hu_HU'),         # Hungarian
+    "it":_load_dict('dicts/it_IT/it_IT'),         # Italian
+    "pt":_load_dict('dicts/pt_PT/pt_PT'),         # Portugese
+    "es":_load_dict('dicts/es/es_ES')             # Spanish (Spain)
+"""
 
 
 _nlp_models = {

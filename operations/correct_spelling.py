@@ -8,7 +8,7 @@ from common import dictionaries
 
 class CorrectSpelling(Operation):
     """
-    Tries to correct the spelling of an entry by using Hunspell.
+    Tries to correct the spelling of an entry by using Nuspell.
     Here, we only consider misspellings with at most one typing
     mistake.
     The costs of this operation depends on the number
@@ -27,11 +27,12 @@ class CorrectSpelling(Operation):
         words = []
         for d in dictionaries.values():
             for c in d.suggest(entry):
-                # If we have a plural word the spellchecker may
-                # propose to split up the trailing "s". We don't
-                # want that and therefore filter proposals which
-                # contain spaces.
-                if distance(entry,c) == 1 and c.find(" ") == -1:
+                edit_distance = distance(entry,c)
+                if edit_distance == 0:
+                    # This indicates that "correct spelling" was used 
+                    # on well defined terms.
+                    return []
+                elif edit_distance == 1:
                     if c.lower() == lentry:
                         # "Just" the capitalization was incorrect;
                         # we don't want to report other words.

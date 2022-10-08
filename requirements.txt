@@ -1,4 +1,5 @@
-pyspellchecker==0.6.3
-hunspell==0.5.5
+#pyspellchecker==0.6.3
+#hunspell==0.5.5
 python-Levenshtein==0.12.2
 gensim==4.2.0
+pynuspell==1.0.0
