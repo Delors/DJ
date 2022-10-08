@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from typing import List
 
 from operations.operation import Operation
@@ -121,7 +122,7 @@ class IsKeyboardWalk(Operation):
         return True
 
     def process(self, entry: str) -> List[str]:
-        if len(entry) <= 0:
+        if len(entry) <= 2:
             return []
 
         last_e = entry[0]
