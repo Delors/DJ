@@ -322,25 +322,29 @@ def parse_int_parameter(operation_constructor) -> Callable[[str,str],Tuple[str,O
 
     def parse_it(op_name: str, rest_of_op: str) -> Tuple[str, Operation]:
         int_match = re_next_word.match(rest_of_op)
-        value = int(int_match.group(0))
+        if not int_match:
+           raise Exception(f"{op_name}: int parameter missing") 
+        try:   
+            raw_value = int_match.group(0)
+            value = int(raw_value)
+        except ValueError as ve:
+            raise Exception(f"{op_name}: parameter {raw_value} is no int") 
         new_rest_of_op = rest_of_op[int_match.end(0):].lstrip()
         return (new_rest_of_op,operation_constructor(value))
 
     return parse_it
 
-"""
-def parse_min_length(op_name: str, rest_of_op: str) -> Tuple[str, Operation]:
-    min_length_match = re_next_word.match(rest_of_op)
-    min_length = int(min_length_match.group(0))
-    new_rest_of_op = rest_of_op[min_length_match.end(0):].lstrip()
-    return (new_rest_of_op,MinLength(min_length))
+def parse_filename_parameter(operation_constructor):
+    """Generic parser for operations with a filename as a parameter."""
+    def parse_it(op_name: str, rest_of_op: str) -> Tuple[str, Operation]:
+        filename_match = re_next_quoted_word.match(rest_of_op)
+        if not filename_match:
+            raise Exception(f"{op_name}: file name missing (did you forgot the quotes(\")?)")
+        filename = filename_match.group(0).strip("\"")
+        new_rest_of_op = rest_of_op[filename_match.end(0):].lstrip()        
+        return (new_rest_of_op,operation_constructor(filename))    
 
-def parse_max_length(op_name: str, rest_of_op: str) -> Tuple[str, Operation]:
-    max_length_match = re_next_word.match(rest_of_op)
-    max_length = int(max_length_match.group(0))
-    new_rest_of_op = rest_of_op[max_length_match.end(0):].lstrip()
-    return (new_rest_of_op,MaxLength(max_length))
-"""    
+    return parse_it
 
 def parse_number(op_name: str, rest_of_op: str) -> Tuple[str, Operation]:
     chars_to_number_match = re_next_word.match(rest_of_op)
@@ -376,26 +380,6 @@ def parse_sub_splits(op_name: str, rest_of_op: str) -> Tuple[str, Operation]:
     new_rest_of_op = rest_of_op[split_chars_match.end(0):].lstrip()
     return (new_rest_of_op,SubSplits(split_char))
 
-def parse_replace(op_name: str, rest_of_op: str) -> Tuple[str, Operation]:
-    replace_filename_match = re_next_quoted_word.match(rest_of_op)
-    replace_filename = replace_filename_match.group(0).strip("\"")
-    new_rest_of_op = rest_of_op[replace_filename_match.end(0):].lstrip()
-    return (new_rest_of_op,Replace(replace_filename))
-
-def parse_write(op_name: str, rest_of_op: str) -> Tuple[str, Operation]:
-    filename_match = re_next_quoted_word.match(rest_of_op)
-    filename = filename_match.group(0).strip("\"")
-    new_rest_of_op = rest_of_op[filename_match.end(0):].lstrip()
-    return (new_rest_of_op,Write(filename))
-
-def parse_discard_endings(op_name: str, rest_of_op: str) -> Tuple[str, Operation]:
-    endings_filename_match = re_next_quoted_word.match(rest_of_op)
-    if not endings_filename_match:
-        raise Exception("discard_endings: file name missing (did you forgot the quotes(\")?)")
-    endings_filename = endings_filename_match.group(0).strip("\"")
-    new_rest_of_op = rest_of_op[endings_filename_match.end(0):].lstrip()    
-    return (new_rest_of_op,DiscardEndings(endings_filename))
-
 
 macro_defs : Tuple[str,ComplexOperation] = { }
 
@@ -403,7 +387,7 @@ macro_defs : Tuple[str,ComplexOperation] = { }
 operation_parsers = {
 
     "report" : parse(REPORT),
-    "write" : parse_write,
+    "write" : parse_filename_parameter(Write),
     
     # FILTERS
     "max_length" : parse_int_parameter(MaxLength),
@@ -436,8 +420,8 @@ operation_parsers = {
     "related" : parse(RELATED),
     "split" : parse_split,
     "sub_splits" : parse_sub_splits,
-    "replace" : parse_replace,
-    "discard_endings" : parse_discard_endings,
+    "replace" : parse_filename_parameter(Replace),
+    "discard_endings" : parse_filename_parameter(DiscardEndings),
     "correct_spelling" : parse(CORRECT_SPELLING),
 }
 
