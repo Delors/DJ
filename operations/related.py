@@ -15,16 +15,17 @@ class Related(Operation):
         all models. 
     """
 
-    KEEP_ALL_RELATEDNESS = 0.75
-    MIN_RELATEDNESS = 0.6
+    
     MAX_RELATED = 5
     TOPN = 10
     assert MAX_RELATED <= TOPN
 
-    def __init__(self):
+    def __init__(self,MIN_RELATEDNESS : float = 0.6):
         self._twitter = None
         # self._google = None
         self._wiki = None
+        self.MIN_RELATEDNESS = MIN_RELATEDNESS
+        self.KEEP_ALL_RELATEDNESS = min(MIN_RELATEDNESS + 0.15, 1.0)
         return
 
     def is_transformer(self) -> bool: 
@@ -71,6 +72,4 @@ class Related(Operation):
         return  list(result)
 
     def __str__(self):
-        return "related"
-
-RELATED = Related()
+        return f"related {self.MIN_RELATEDNESS}"

@@ -6,7 +6,12 @@ from common import get_nlp_vocab
 
 class IsPopularWord(Operation):
     """ Checks if a word is a word that is used on twitter or in 
-        google news. 
+        google news. In case of twitter, the given term is always lowered
+        and then tested, because the twitter model only uses lower case
+        entries. In case of google the term is taken as is. However,
+        it may be necessary/meaning ful to first correct the spelling.
+        Otherwise, proper nouns may not be correctly identified. 
+
         This test has very high initialization costs on _first_ usage!
     """
 
@@ -25,9 +30,15 @@ class IsPopularWord(Operation):
             self._google_vocab = get_nlp_vocab("google")            
             
         # NOTE: the twitter model only contains lower case entries!
+        # NOTE: in case of the google model it may make sense to check
+        #       both capitalizations as a given "password" may use 
+        #       small letters, even though it is a proper noun
         if not self._twitter_vocab.get(entry.lower()) and \
-            not self._google_vocab.get(entry): 
+            not self._google_vocab.get(entry):
             return []
+        # centry = entry.capitalize() 
+        # if centry != entry and not self._google_vocab.get(entry):
+        #     return []    
         else:
             return [entry]
 

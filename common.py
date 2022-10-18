@@ -132,7 +132,7 @@ _nlp_models = {
 def get_nlp_model(model : str):
     global _nlp_models
     nlp_model = _nlp_models[model]
-    if isinstance(model,str):
+    if isinstance(nlp_model,str):
         print(f"[info] loading {model} (this will take time)", file=stderr)
         nlp_model = gensim.load(nlp_model)
         _nlp_models[model] = nlp_model

@@ -36,7 +36,7 @@ from operations.sub_splits import SubSplits
 from operations.discard_endings import DiscardEndings
 from operations.number import Number
 from operations.correct_spelling import CORRECT_SPELLING
-from operations.related import RELATED
+from operations.related import Related
 # EXTRACTORS
 from operations.get_numbers import GET_NUMBERS
 from operations.get_sc import GET_SPECIAL_CHARS
@@ -306,6 +306,7 @@ class ComplexOperation:
 
 ### PARSER SETUP AND CONFIGURATION
 
+re_next_float = re.compile("^[0-9]+\.?[0-9]*")
 re_next_word = re.compile("^[^\s]+")
 re_next_quoted_word = re.compile('^"[^"]+"')
 
@@ -318,7 +319,7 @@ def parse(operation) -> Callable[[str,str],Tuple[str,Operation]]:
     return parse_it   
 
 def parse_int_parameter(operation_constructor) -> Callable[[str,str],Tuple[str,Operation]]:
-    """Generic parser for operations with an int parameter. """
+    """Generic parser for operations with a single int parameter. """
 
     def parse_it(op_name: str, rest_of_op: str) -> Tuple[str, Operation]:
         int_match = re_next_word.match(rest_of_op)
@@ -328,8 +329,25 @@ def parse_int_parameter(operation_constructor) -> Callable[[str,str],Tuple[str,O
             raw_value = int_match.group(0)
             value = int(raw_value)
         except ValueError as ve:
-            raise Exception(f"{op_name}: parameter {raw_value} is no int") 
+            raise Exception(f"{op_name}: parameter {raw_value} is not an int") 
         new_rest_of_op = rest_of_op[int_match.end(0):].lstrip()
+        return (new_rest_of_op,operation_constructor(value))
+
+    return parse_it
+
+def parse_float_parameter(operation_constructor) -> Callable[[str,str],Tuple[str,Operation]]:
+    """Generic parser for operations with a single float parameter. """
+
+    def parse_it(op_name: str, rest_of_op: str) -> Tuple[str, Operation]:
+        float_match = re_next_float.match(rest_of_op)
+        if not float_match:
+           raise Exception(f"{op_name}: float parameter missing") 
+        try:   
+            raw_value = float_match.group(0)
+            value = float(raw_value)
+        except ValueError as ve:
+            raise Exception(f"{op_name}: parameter {raw_value} is not a float") 
+        new_rest_of_op = rest_of_op[float_match.end(0):].lstrip()
         return (new_rest_of_op,operation_constructor(value))
 
     return parse_it
@@ -417,7 +435,7 @@ operation_parsers = {
     "mangle_dates" : parse(MANGLE_DATES),
     "number" : parse_number,
     "map" : parse_map,
-    "related" : parse(RELATED),
+    "related" : parse_float_parameter(Related),
     "split" : parse_split,
     "sub_splits" : parse_sub_splits,
     "replace" : parse_filename_parameter(Replace),
