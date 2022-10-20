@@ -8,6 +8,7 @@ from sys import stderr
 import os
 import argparse
 import re
+import importlib
 
 from abc import ABC, abstractmethod
 from typing import List, Set, Tuple, Callable
@@ -37,6 +38,7 @@ from operations.discard_endings import DiscardEndings
 from operations.number import Number
 from operations.correct_spelling import CORRECT_SPELLING
 from operations.related import Related
+from operations.reverse import REVERSE
 # EXTRACTORS
 from operations.get_numbers import GET_NUMBERS
 from operations.get_sc import GET_SPECIAL_CHARS
@@ -422,6 +424,7 @@ operation_parsers = {
     "detriplicate" : parse(DETRIPLICATE),
 
     # TRANSFORMERS
+    "reverse" : parse(REVERSE),
     "fold_ws" : parse(FOLD_WHITESPACE),
     "lower" : parse(LOWER),
     "upper" : parse(UPPER),
@@ -594,6 +597,42 @@ def parse_ops(ops_filename : str) -> List[ComplexOperation]:
                         raise IllegalStateError(f"macro ({macro_name}) already defined")
                     else:
                         macro_defs[macro_name] = op
+
+            elif sline.startswith("config"):
+                if parsing_ops:
+                    raise IllegalStateError(
+                        f"config statements ({sline}) have to be defined before operation definitions"
+                    )
+
+                raw_config = sline[len("config")+1:].split()
+                if len(raw_config) != 3:
+                    raise ValueError(
+                        f"invalid config: {raw_config} (expected format: <op-class> <field> <value>)"
+                    )
+                (op_class_name,field_name,raw_value) = raw_config
+                op_module = importlib.import_module("operations."+op_class_name.lower())
+                op_class = getattr(op_module,op_class_name)
+                value = None
+                try:
+                    old_value = getattr(op_class,field_name)
+                except AttributeError:
+                    # we don't want to create "new" fields 
+                    raise ValueError(
+                        f"unknown field name: {op_class_name}.{field_name}"
+                    )
+                value_type = type(old_value)
+                if value_type == int:
+                    value = int(raw_value)
+                elif value_type == float:
+                    value = float(raw_value)
+                elif value_type == str:
+                    value = raw_value
+                else:
+                    raise ValueError(
+                        f"unkown type: {value_type}; expected: integer, float or strings"
+                    )
+                setattr(op_class,field_name,value)
+
 
             # parse an operation definition
             else:
