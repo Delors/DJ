@@ -14,6 +14,7 @@ def BASE_TRANSFORMATIONS
 \ *fold_ws 
 \ *split \s 
 \ *deduplicate
+\ *deduplicate_reversed
 \ *detriplicate
 \ min_length 3 
 \ *deleetify
