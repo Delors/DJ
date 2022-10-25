@@ -1,8 +1,7 @@
 # Dictionary Transformation and Generation aka `Dictionary Juggling` (DJ)
 
-Processes the entries of a dictionary by applying one to multiple user-definable transformations, extractions and/or filtering operations. 
-Basically, DJ enables the trivial definition of user-defineable transformation 
-pipelines.
+Processes the entries of a dictionary by applying one to multiple user-definable transformations, extractions,  filtering or generating operations. 
+Basically, DJ enables the trivial definition of user-defineable transformation pipelines.
 
 ## Installation
 
@@ -10,7 +9,7 @@ To execute basic operations (e.g. `strip`,`remove`,`fold`,..), no special instal
 
 ### 1. Download dictionaries
 Some of the available operations need well defined dictionaries as a foundation. 
-These dictionaries need to be the `hunspell` dictionaries used by [libreoffice](https://github.com/LibreOffice/dictionaries) and need to be placed in the folder `dicts`.
+These dictionaries need to be `hunspell` dictionaries. Most operations rely on those used by [libreoffice](https://github.com/LibreOffice/dictionaries) and the dictionaries need to be placed in the folder `dicts`.
 
 ```sh
 mkdir dicts
@@ -26,7 +25,7 @@ pip3 install -r requirements.txt
 
 ## Usage
 
-Reads in a (case) specific dictionary and generates an output dictionary by processing each input entry according to some well defined operations. Additionally, this tool can also be used to analyze existing dictionaries.
+Reads in a (case) specific dictionary and generates an output dictionary by processing each input entry according to some well defined operations. Additionally, this tool can also be used to "just" analyze existing dictionaries.
 
 ```sh
 python3 TransformDictionary.py [-o <Operations File>] [-d <Dictionary.utf8.txt>]
@@ -104,6 +103,10 @@ audi_rs
 Audi_RS
 ``` 
 
+I.e., the second `+split \s` operation is effectively useless.
+
+### Formatting long operation definitions
+
 To foster readability of long operation definitions it is possible to split up an operations definition over multiple lines by starting the next lines using "\ " at the beginning of a line. This is then treated as a continuation of the previous line.  Hence, the above rule (Example 2) can also be written as:
 
 ``` 
@@ -115,3 +118,60 @@ To foster readability of long operation definitions it is possible to split up a
 
 ## Atomic Operations
 (See code for now.)
+
+## Development/Debugging of Operations
+
+A design principle of DJ is to make it possible to develop and test operations independently. For example, to test the **related** operation it is trivially possible to use a python console to instantiate the class and to then call the **related** operation as shown in the next example:
+
+```python
+/DJ% python3
+In [1]: from operations.related import Related
+In [2]: R = Related()
+In [3]: R.process("barca")
+[info] loading twitter (this will take time)
+[info] loaded twitter(KeyedVectors<vector_size=200, 1193514 keys>)
+[info] loading wiki (this will take time)
+[info] loaded wiki(KeyedVectors<vector_size=300, 400000 keys>)
+Out[3]: ['madrid', 'arsenal', 'chelsea', 'milan', 'barcelona', 'bayern', 'barça']
+```
+
+For example, in the above example, it may make sense to _play around_ with the parameters of the related operation as shown in the next example:
+
+```python
+import importlib
+m = importlib.import_module("operations.related")
+ClassR = getattr(m,"Related")
+setattr(ClassR,"K",25)
+setattr(ClassR,"KEEP_ALL_RELATEDNESS",0.75)
+R = ClassR(0.3)
+R.process("barca")               
+```
+Using the above settings, which are much more relaxed than the standard settings, the following result will be generated:
+
+```python
+['munchen',
+ 'messi',
+ 'juventus',
+ 'madrid',
+ 'ronaldo',
+ 'visca',
+ 'barcelona',
+ 'chelsea',
+ 'liverpool',
+ 'barça',
+ 'manchester',
+ 'ucl',
+ 'spanyol',
+ 'bayern',
+ 'juve',
+ 'fabregas',
+ 'malaga',
+ 'dortmund',
+ 'arsenal',
+ 'psg',
+ 'fcb',
+ 'guardiola',
+ 'inter',
+ 'milan',
+ 'atletico']
+ ```
