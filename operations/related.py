@@ -1,3 +1,4 @@
+from math import isnan
 from typing import List
 from contextlib import suppress
 
@@ -15,17 +16,22 @@ class Related(Operation):
         all models. 
     """
 
-    
-    MAX_RELATED = 5
-    TOPN = 10
-    assert MAX_RELATED <= TOPN
+    K                    = 5
+    KEEP_ALL_RELATEDNESS = 0.75
 
     def __init__(self,MIN_RELATEDNESS : float = 0.6):
+        # The test is required here, because both variables are user
+        # configurable.
+        if self.KEEP_ALL_RELATEDNESS < MIN_RELATEDNESS:
+            raise ValueError(f"KEEP_ALL_RELATEDNESS has to be larger than the MIN_RELATEDNESS")
+        if MIN_RELATEDNESS >= 1.0:
+            raise ValueError(f"the minimal relatedness has to be in range [0,1.0]")
+
         self._twitter = None
         # self._google = None
         self._wiki = None
         self.MIN_RELATEDNESS = MIN_RELATEDNESS
-        self.KEEP_ALL_RELATEDNESS = min(MIN_RELATEDNESS + 0.15, 1.0)
+
         return
 
     def is_transformer(self) -> bool: 
@@ -48,12 +54,12 @@ class Related(Operation):
         ms = []        
 
         # recall that the twitter model only uses small letters
-        with suppress(KeyError): ms = get_tms(topn=self.TOPN,positive=[lentry]) 
+        with suppress(KeyError): ms = get_tms(topn=self.K*2,positive=[lentry]) 
 
-        #with suppress(KeyError): ms.extend(get_gms(topn=TOPN,positive=[entry])) 
+        #with suppress(KeyError): ms.extend(get_gms(topn=self.K,positive=[entry])) 
         
         # recall that the wiki model only uses small letters
-        with suppress(KeyError): ms.extend(get_wms(topn=self.TOPN,positive=[lentry]))
+        with suppress(KeyError): ms.extend(get_wms(topn=self.K*2,positive=[lentry]))
 
 
         ms.sort(key = lambda e : e[1], reverse = True)
@@ -62,7 +68,7 @@ class Related(Operation):
             if v >= self.KEEP_ALL_RELATEDNESS:
                 result.add(k)
             elif v >= self.MIN_RELATEDNESS:
-                if len(result) >= self.MAX_RELATED:
+                if len(result) >= self.K:
                     break
                 else:
                     result.add(k)
