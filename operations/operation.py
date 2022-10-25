@@ -59,7 +59,13 @@ class Operation(ABC):
         """
         pass
 
-    def close(self): pass  
+    
+    def close(self):           
+        """
+        Close is called after all entries of the dictionary have been
+        processed and all operations have been executed.
+        """
+        pass
 
     def is_transformer(self) -> bool: return False
 
