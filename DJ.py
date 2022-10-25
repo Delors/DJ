@@ -43,6 +43,7 @@ from operations.reverse import REVERSE
 from operations.get_numbers import GET_NUMBERS
 from operations.get_sc import GET_SPECIAL_CHARS
 from operations.deduplicate import DEDUPLICATE
+from operations.deduplicate_reversed import DEDUPLICATE_REVERSED
 # FILTERS
 from operations.min_length import MinLength
 from operations.max_length import MaxLength
@@ -310,7 +311,10 @@ class ComplexOperation:
 
 re_next_float = re.compile("^[0-9]+\.?[0-9]*")
 re_next_word = re.compile("^[^\s]+")
-re_next_quoted_word = re.compile('^"[^"]+"')
+# OLD: re_next_quoted_word = re.compile('^"[^"]+"')
+re_next_quoted_word = re.compile(r'^"(?:\\.|[^\\])*?"') # supports escapes
+re_next_char_set = re.compile(r'^\[(?:\\.|[^\\])*?\]') # supports escapes
+
 
 def parse(operation) -> Callable[[str,str],Tuple[str,Operation]]:
     """Generic parser for operations without parameters."""
@@ -354,15 +358,19 @@ def parse_float_parameter(operation_constructor) -> Callable[[str,str],Tuple[str
 
     return parse_it
 
-def parse_filename_parameter(operation_constructor):
-    """Generic parser for operations with a filename as a parameter."""
+def parse_quoted_string(operation_constructor):
+    """Generic parser for operations with a quoted parameter."""
     def parse_it(op_name: str, rest_of_op: str) -> Tuple[str, Operation]:
-        filename_match = re_next_quoted_word.match(rest_of_op)
-        if not filename_match:
-            raise Exception(f"{op_name}: file name missing (did you forgot the quotes(\")?)")
-        filename = filename_match.group(0).strip("\"")
-        new_rest_of_op = rest_of_op[filename_match.end(0):].lstrip()        
-        return (new_rest_of_op,operation_constructor(filename))    
+        string_match = re_next_quoted_word.match(rest_of_op)
+        if not string_match:
+            raise Exception(f"{op_name}: empty match (did you forgot the quotes?)")
+        string = string_match.\
+            group(0).\
+            strip("\"").\
+            replace("\\\"","\"").\
+            replace("\\\\","\\")
+        new_rest_of_op = rest_of_op[string_match.end(0):].lstrip()        
+        return (new_rest_of_op,operation_constructor(string))    
 
     return parse_it
 
@@ -372,6 +380,7 @@ def parse_number(op_name: str, rest_of_op: str) -> Tuple[str, Operation]:
     chars_to_number = unescape(raw_chars_to_number)
     new_rest_of_op = rest_of_op[chars_to_number_match.end(0):].lstrip()
     return (new_rest_of_op,Number(chars_to_number[1:-1] ))# get rid of the set braces "[" and "]".
+
 
 def parse_map(op_name: str, rest_of_op: str) -> Tuple[str, Operation]:
     source_char_match = re_next_word.match(rest_of_op)
@@ -384,6 +393,7 @@ def parse_map(op_name: str, rest_of_op: str) -> Tuple[str, Operation]:
     target_chars = unescape(raw_target_chars)
     new_rest_of_op = rest_of_op[target_chars_match.end(0):].lstrip()
 
+    # TODO make parse set...
     return (new_rest_of_op,Map(source_char,target_chars[1:-1]))    
 
 def parse_split(op_name: str, rest_of_op: str) -> Tuple[str, Operation]:
@@ -407,7 +417,7 @@ macro_defs : Tuple[str,ComplexOperation] = { }
 operation_parsers = {
 
     "report" : parse(REPORT),
-    "write" : parse_filename_parameter(Write),
+    "write" : parse_quoted_string(Write),
     
     # FILTERS
     "max_length" : parse_int_parameter(MaxLength),
@@ -421,6 +431,7 @@ operation_parsers = {
     "get_numbers" : parse(GET_NUMBERS),
     "get_sc" : parse(GET_SPECIAL_CHARS),
     "deduplicate" : parse(DEDUPLICATE),
+    "deduplicate_reversed" : parse(DEDUPLICATE_REVERSED),
     "detriplicate" : parse(DETRIPLICATE),
 
     # TRANSFORMERS
@@ -441,8 +452,8 @@ operation_parsers = {
     "related" : parse_float_parameter(Related),
     "split" : parse_split,
     "sub_splits" : parse_sub_splits,
-    "replace" : parse_filename_parameter(Replace),
-    "discard_endings" : parse_filename_parameter(DiscardEndings),
+    "replace" : parse_quoted_string(Replace),
+    "discard_endings" : parse_quoted_string(DiscardEndings),
     "correct_spelling" : parse(CORRECT_SPELLING),
 }
 
@@ -529,7 +540,18 @@ def parse_op(
     return ComplexOperation(atomic_ops)
 
 
-def parse_ops(ops_filename : str) -> List[ComplexOperation]:
+def parse_ops_file(ops_filename : str) -> List[ComplexOperation]:
+    """ Parses a file containing operation definitions.
+    """
+    abs_filename = locate_resource(ops_filename)
+    raw_lines : List[str] = []
+    with open(abs_filename, 'r', encoding='utf-8') as ops_file:
+        raw_lines = ops_file.readlines()
+
+    return parse_ops(raw_lines)
+
+
+def parse_ops(raw_lines : List[str]) -> List[ComplexOperation]:
     """ Parses operation definitions together with atomic operations parsers. 
 
         The split between the two kinds of parsers is as follows:
@@ -538,108 +560,102 @@ def parse_ops(ops_filename : str) -> List[ComplexOperation]:
         the atomic operation is then responsible for parsing its parameters and
         removing them from the string.
     """
-
     ops: List[ComplexOperation] = []
+    line_number = 0
+    parsing_ops = False
+    effective_lines = []
+    current_line = ""
+    for i in range (len(raw_lines)-1,0-1,-1):
+        raw_line = raw_lines[i].rstrip("\r\n")
+        if raw_line.startswith('\ '):
+            current_line = raw_line[2:] + " " + current_line
+        else:
+            effective_lines.append(raw_line + current_line)
+            current_line = ""
+    effective_lines.reverse()
 
-    abs_filename = locate_resource(ops_filename)
-    with open(abs_filename, 'r', encoding='utf-8') as ops_file:
-        line_number = 0
-        parsing_ops = False
+    for op_def in effective_lines:
+        line_number = line_number + 1
+        sline = op_def.strip()
 
-        raw_lines = ops_file.readlines()
-        effective_lines = []
-        current_line = ""
-        for i in range (len(raw_lines)-1,0-1,-1):
-            raw_line = raw_lines[i].rstrip("\r\n")
-            if raw_line.startswith('\ '):
-                current_line = raw_line[2:] + " " + current_line
-            else:
-                effective_lines.append(raw_line + current_line)
-                current_line = ""
-        effective_lines.reverse()
+        # ignore comments and empty lines
+        if sline.startswith('#') or len(sline) == 0:
+            continue
 
-        for op_def in effective_lines:
-            line_number = line_number + 1
-            sline = op_def.strip()
+        # parse ignore statement
+        elif sline.startswith("ignore"):
+            if parsing_ops:
+                raise IllegalStateError(
+                    f"ignore statements ({sline}) have to be defined before operation definitions"
+                )
 
-            # ignore comments and empty lines
-            if sline.startswith('#') or len(sline) == 0:
-                continue
+            filename = get_filename(sline[len("ignore")+1:].strip())
+            abs_filename = locate_resource(filename)
+            with open(abs_filename, 'r', encoding='utf-8') as fin:
+                for ignore_entry in fin:
+                    # We want to be able to strip words with spaces
+                    # at the beginning or end.
+                    stripped_ignore_entry = ignore_entry.rstrip("\r\n")
+                    if len(stripped_ignore_entry) > 0:
+                        ignored_entries.add(stripped_ignore_entry)
 
-            # parse ignore statement
-            elif sline.startswith("ignore"):
-                if parsing_ops:
-                    raise IllegalStateError(
-                        f"ignore statements ({sline}) have to be defined before operation definitions"
-                    )
-
-                filename = get_filename(sline[len("ignore")+1:].strip())
-                abs_filename = locate_resource(filename)
-                with open(abs_filename, 'r', encoding='utf-8') as fin:
-                    for ignore_entry in fin:
-                        # We want to be able to strip words with spaces
-                        # at the beginning or end.
-                        stripped_ignore_entry = ignore_entry.rstrip("\r\n")
-                        if len(stripped_ignore_entry) > 0:
-                            ignored_entries.add(stripped_ignore_entry)
-
-            # parse macro definitions
-            elif sline.startswith("def"):
-                macro_def = sline[len("def")+1:]
-                macro_name_match = re_next_word.match(macro_def)
-                macro_name = macro_name_match.group(0)
-                macro_body = macro_def[macro_name_match.end(0):].lstrip()
-                if macro_name.upper() != macro_name:
-                    raise ValueError(f"macro names need to be upper case: {macro_name}")
-                op = parse_op(line_number, True, macro_body)
-                if op:
-                    if macro_defs.get(macro_name):
-                        raise IllegalStateError(f"macro ({macro_name}) already defined")
-                    else:
-                        macro_defs[macro_name] = op
-
-            elif sline.startswith("config"):
-                if parsing_ops:
-                    raise IllegalStateError(
-                        f"config statements ({sline}) have to be defined before operation definitions"
-                    )
-
-                raw_config = sline[len("config")+1:].split()
-                if len(raw_config) != 3:
-                    raise ValueError(
-                        f"invalid config: {raw_config} (expected format: <op-class> <field> <value>)"
-                    )
-                (op_class_name,field_name,raw_value) = raw_config
-                op_module = importlib.import_module("operations."+op_class_name.lower())
-                op_class = getattr(op_module,op_class_name)
-                value = None
-                try:
-                    old_value = getattr(op_class,field_name)
-                except AttributeError:
-                    # we don't want to create "new" fields 
-                    raise ValueError(
-                        f"unknown field name: {op_class_name}.{field_name}"
-                    )
-                value_type = type(old_value)
-                if value_type == int:
-                    value = int(raw_value)
-                elif value_type == float:
-                    value = float(raw_value)
-                elif value_type == str:
-                    value = raw_value
+        # parse macro definitions
+        elif sline.startswith("def"):
+            macro_def = sline[len("def")+1:]
+            macro_name_match = re_next_word.match(macro_def)
+            macro_name = macro_name_match.group(0)
+            macro_body = macro_def[macro_name_match.end(0):].lstrip()
+            if macro_name.upper() != macro_name:
+                raise ValueError(f"macro names need to be upper case: {macro_name}")
+            op = parse_op(line_number, True, macro_body)
+            if op:
+                if macro_defs.get(macro_name):
+                    raise IllegalStateError(f"macro ({macro_name}) already defined")
                 else:
-                    raise ValueError(
-                        f"unkown type: {value_type}; expected: integer, float or strings"
-                    )
-                setattr(op_class,field_name,value)
+                    macro_defs[macro_name] = op
 
+        elif sline.startswith("config"):
+            if parsing_ops:
+                raise IllegalStateError(
+                    f"config statements ({sline}) have to be defined before operation definitions"
+                )
 
-            # parse an operation definition
+            raw_config = sline[len("config")+1:].split()
+            if len(raw_config) != 3:
+                raise ValueError(
+                    f"invalid config: {raw_config} (expected format: <op-class> <field> <value>)"
+                )
+            (op_class_name,field_name,raw_value) = raw_config
+            op_module = importlib.import_module("operations."+op_class_name.lower())
+            op_class = getattr(op_module,op_class_name)
+            value = None
+            try:
+                old_value = getattr(op_class,field_name)
+            except AttributeError:
+                # we don't want to create "new" fields 
+                raise ValueError(
+                    f"unknown field name: {op_class_name}.{field_name}"
+                )
+            value_type = type(old_value)
+            if value_type == int:
+                value = int(raw_value)
+            elif value_type == float:
+                value = float(raw_value)
+            elif value_type == str:
+                value = raw_value
             else:
-                parsing_ops = True
-                op = parse_op(line_number, False, sline)
-                if op:
-                    ops.append(op)
+                raise ValueError(
+                    f"unkown type: {value_type}; expected: integer, float or strings"
+                )
+            setattr(op_class,field_name,value)
+
+
+        # parse an operation definition
+        else:
+            parsing_ops = True
+            op = parse_op(line_number, False, sline)
+            if op:
+                ops.append(op)
 
     return ops
 
@@ -684,8 +700,7 @@ def main() -> int:
     parser.add_argument(
         '-o', 
         '--operations', 
-        help="a .td file with the operations that will be applied to the dictionary entries", 
-        default="default_ops.td"
+        help="a .td file with the operations that will be applied to the dictionary entries"
     )
     parser.add_argument(
         '-d', 
@@ -704,19 +719,33 @@ def main() -> int:
         help="prints extensive trace information about ops", 
         action="store_true"
     )
+    parser.add_argument(
+        'adhoc_operations', 
+        metavar='OPs', 
+        type=str, 
+        nargs='*',
+        help='an operations definition')
+
     args = parser.parse_args()
 
     _verbose = args.verbose
     _trace_ops = args.trace_ops
 
     # 1. parse operations
-    all_operations = parse_ops(args.operations)
+    all_operations : List[ComplexOperation] = []
+    if args.operations:
+        all_operations.extend(parse_ops_file(args.operations))
+    all_operations.extend(parse_ops([" ".join(args.adhoc_operations)]))
+    if len(all_operations) == 0:
+        raise IllegalStateError("no operations specified")
+    
     
     # 2. apply operations
     transform_entries(args.dictionary, all_operations)
 
     # 3. cleanup operations
-    for op in all_operations: op.close()
+    for op in all_operations: 
+        op.close()
 
     return 0
 
