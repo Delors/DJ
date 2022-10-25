@@ -35,17 +35,23 @@ def locate_resource(filename : str) -> str:
         return filename
     
     try:
-        abs_filename = os.path.join(os.path.dirname(__file__),filename)
-        if os.path.exists(abs_filename):
-            return abs_filename
+        common_path = os.path.dirname(__file__)
+        dj_filename = os.path.join(common_path,filename)
+        operations_filename = os.path.join(common_path,"operations",filename)
+        if os.path.exists(dj_filename):
+            return dj_filename
+        elif os.path.exists(operations_filename):
+            return operations_filename
         else:
-            error = f"neither ./{filename} nor {abs_filename} exists"
+            error = f"neither ./{filename} nor {dj_filename} nor {operations_filename} exists"
             raise FileNotFoundError(error)
     except Exception as e:
         print(f"can't locate {filename}: {e}", file=stderr)
         raise
 
 def enrich_filename(filename: str) -> str:
+    """ Extends the current filename with the current date.
+    """
     date = datetime.today().strftime('%Y_%m_%d')
     if filename.find(date) >= 0:
         return filename
