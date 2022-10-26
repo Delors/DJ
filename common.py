@@ -1,10 +1,10 @@
 import os
 from sys import stderr
 from datetime import datetime
+import importlib
 
 #import hunspell
 import pynuspell
-import gensim.downloader as gensim
 
 from operations.operation import Operation
 
@@ -139,8 +139,10 @@ def get_nlp_model(model : str):
     global _nlp_models
     nlp_model = _nlp_models[model]
     if isinstance(nlp_model,str):
+        gensim_module = importlib.import_module("gensim.downloader")
+        gensim_load = getattr(gensim_module,"load")
         print(f"[info] loading {model} (this will take time)", file=stderr)
-        nlp_model = gensim.load(nlp_model)
+        nlp_model = gensim_load(nlp_model)
         _nlp_models[model] = nlp_model
         print(f"[info] loaded {model}({nlp_model})", file=stderr)
     return nlp_model
