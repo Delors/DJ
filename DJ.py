@@ -640,6 +640,8 @@ def parse_ops(raw_lines : List[str]) -> List[ComplexOperation]:
             value_type = type(old_value)
             if value_type == int:
                 value = int(raw_value)
+            elif value_type == bool:
+                value = bool(raw_value)                
             elif value_type == float:
                 value = float(raw_value)
             elif value_type == str:
