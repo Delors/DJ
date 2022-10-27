@@ -571,7 +571,10 @@ def parse_ops(raw_lines : List[str]) -> List[ComplexOperation]:
         if raw_line.startswith('\ '):
             current_line = raw_line[2:] + " " + current_line
         else:
-            effective_lines.append(raw_line + current_line)
+            if len(current_line) > 0:
+                effective_lines.append(raw_line + " " + current_line)
+            else:
+                effective_lines.append(raw_line)
             current_line = ""
     effective_lines.reverse()
 
