@@ -629,8 +629,11 @@ def parse_ops(raw_lines : List[str]) -> List[ComplexOperation]:
                 raise ValueError(
                     f"invalid config: {raw_config} (expected format: <op-class> <field> <value>)"
                 )
-            (op_class_name,field_name,raw_value) = raw_config
-            op_module = importlib.import_module("operations."+op_class_name.lower())
+            (op_module_name,field_name,raw_value) = raw_config
+            op_module = importlib.import_module("operations."+op_module_name)
+            op_class_name = "".join(
+                    map (lambda x: x.capitalize(), op_module_name.split("_"))
+                )
             op_class = getattr(op_module,op_class_name)
             value = None
             try:
