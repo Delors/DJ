@@ -20,7 +20,7 @@ from operations.is_keyboard_walk import IS_KEYBOARD_WALK
 from operations.operation import Operation
 # TRANSFORMERS
 from operations.deleetify import DELEETIFY
-from operations.remove_whitespace import REMOVE_WHITESPACE
+from operations.remove_ws import REMOVE_WHITESPACE
 from operations.capitalize import CAPITALIZE
 from operations.lower import LOWER
 from operations.upper import UPPER
