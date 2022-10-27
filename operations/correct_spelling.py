@@ -16,6 +16,8 @@ class CorrectSpelling(Operation):
     dictionaries, the costs can be very(!) high.
     """
 
+    FILTER_CORRECTIONS_WITH_SPACE = True
+
     def __init__(self):
         return
 
@@ -37,6 +39,9 @@ class CorrectSpelling(Operation):
                         # "Just" the capitalization was incorrect;
                         # we don't want to report other words.
                         return [c]
+                    elif self.FILTER_CORRECTIONS_WITH_SPACE and \
+                         c.find(" ") != -1:
+                        pass
                     else:
                         words.append(c)
         if len(words) == 0:
