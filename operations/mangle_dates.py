@@ -11,34 +11,46 @@ class MangleDates(Operation):
         Currently, we try to identify 1st german and then 2nd english dates.
     """
 
-    re_german_date = \
+    _re_german_date = \
         re.compile("[^0-9]*([0-9]{1,2})\.?([0-9]{1,2})\.?(19|20)?([0-9]{2})")
-    re_english_date = \
+    _re_english_date = \
         re.compile("[^0-9]*([0-9]{1,2})[/-]?([0-9]{1,2})[/-]?(19|20)?([0-9]{2})")    
 
-    def __init__(self): pass
+    START_YEAR_20TH = 75
+    """Start year in the 20th century; i.e. 19XX."""
+
+    END_YEAR_21ST = 25    
+    """End year in the 21th century; i.e. 20XX."""
+
+    def __init__(self): 
+        if self.END_YEAR_21ST >= self.START_YEAR_20TH: 
+            raise ValueError(
+                f"19{self.START_YEAR_20TH} has to be < 20{self.END_YEAR_21ST}"
+            )
+        pass
 
     def is_transformer(self) -> bool: return True
 
     def process(self, entry: str) -> List[str]:
-        r = MangleDates.re_german_date.match(entry)
+        r = MangleDates._re_german_date.match(entry)
         if r:
             (d,m,c,y) = r.groups()
         else:
-            r = MangleDates.re_english_date.match(entry)
+            r = MangleDates._re_english_date.match(entry)
             if r:
                 (m,d,c,y) = r.groups()
 
         if not r:    
             return None
 
-        """Currently we only accept dates between 1975 and 2025.
+        """Currently we only accept dates between 19START_YEAR and 20ENDYEAR.
             The test ist not extremely precise, but should be acceptable for
             our purposes.
         """
         if  int(d) > 31 or int(d) == 0 or \
             int(m) > 12 or int(m) == 0 or \
-            (   int(y) > 25 and int(y) < 75) or \
+            (   int(y) > self.END_YEAR_21ST and \
+                int(y) < self.START_YEAR_20TH) or \
                 (c and (c == 19 or c == 20)):
             return []
 
