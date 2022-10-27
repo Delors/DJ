@@ -99,7 +99,10 @@ dictionaries = {
 
 def _load_dict(lang : str):
     try:
-        return pynuspell.load_from_path(lang)
+        last_folder_seperator = lang.rfind("/")
+        lang_path = lang[0:last_folder_seperator]        
+        abs_lang = os.path.join(locate_resource(lang_path),lang[last_folder_seperator+1:])
+        return pynuspell.load_from_path(abs_lang)
     except Exception as e:
         raise ValueError("can't load: "+lang+"; "+str(e))
 
