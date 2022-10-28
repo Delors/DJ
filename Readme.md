@@ -61,7 +61,7 @@ Wiesbaden
 
 ## Usage
 
-Reads in a (case) specific dictionary and generates an output dictionary by processing each input entry according to some well defined operations. Additionally, this tool can also be used to "just" analyze existing dictionaries to filter entries.
+Reads in a (case) specific dictionary and generates an output dictionary by processing each input entry according to some well defined operations. Additionally, DJ can also be used to _just_ analyze existing dictionaries to filter entries.
 
 ### Basic Usage
 
@@ -168,11 +168,11 @@ To foster readability of long operation definitions it is possible to split up a
 Each atomic operation (e.g., `lower`, `min_length`, `related`, `get_numbers`) performs one well-defined transformation, extraction, filtering operation and most operations provide some level of configurability. 
 
 ### Built-in Operations
-Additionally, DJ has some built-in operations for special purposes:
+Additionally, DJ has some built-in keywords for special purposes:
 
  - `def` to define a macro
  - `config` to configure an operation's global parameters
- - `ignore` to specify a file with terms that will always be ignored
+ - `ignore` to specify a file with terms that will always be ignored; for example, when processing a dictionary that contains names of locations (e.g., "Frankfurt an der Oder" or "Rotenburg ob der Tauber" or "South Beach" you often want to ignore specific words to avoid cluttering of the generated dictionary (here, "an", "ob", "der", or "South" are potentially candidates you want to ignore.))
 
 Controlling the output
  - `report` to write the result of an operations sequence to stdout. 
