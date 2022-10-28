@@ -1,5 +1,6 @@
-#pyspellchecker==0.6.3
-#hunspell==0.5.5
 python-Levenshtein==0.12.2
 gensim==4.2.0
+
+# Currently (as of Oct. 2022) not available for python 3.10
+# need to be built from source.
 pynuspell==1.0.0
