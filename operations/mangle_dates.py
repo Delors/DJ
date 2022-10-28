@@ -11,16 +11,16 @@ class MangleDates(Operation):
         Currently, we try to identify 1st german and then 2nd english dates.
     """
 
-    _re_german_date = \
-        re.compile("[^0-9]*([0-9]{1,2})\.?([0-9]{1,2})\.?(19|20)?([0-9]{2})")
-    _re_english_date = \
-        re.compile("[^0-9]*([0-9]{1,2})[/-]?([0-9]{1,2})[/-]?(19|20)?([0-9]{2})")    
-
     START_YEAR_20TH = 75
     """Start year in the 20th century; i.e. 19XX."""
 
     END_YEAR_21ST = 25    
     """End year in the 21th century; i.e. 20XX."""
+
+    _re_german_date = \
+        re.compile("[^0-9]*([0-9]{1,2})\.?([0-9]{1,2})\.?(19|20)?([0-9]{2})")
+    _re_english_date = \
+        re.compile("[^0-9]*([0-9]{1,2})[/-]?([0-9]{1,2})[/-]?(19|20)?([0-9]{2})")    
 
     def __init__(self): 
         if self.END_YEAR_21ST >= self.START_YEAR_20TH: 
