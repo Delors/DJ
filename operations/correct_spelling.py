@@ -17,6 +17,10 @@ class CorrectSpelling(Operation):
     """
 
     FILTER_CORRECTIONS_WITH_SPACE = True
+    """
+    Sometimes the correction of a word can lead to two words. 
+    If this setting is set to true, such "corrections" are ignored.
+    """
 
     def __init__(self):
         return
