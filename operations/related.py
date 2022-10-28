@@ -23,9 +23,14 @@ class Related(Operation):
         # The test is required here, because both variables are user
         # configurable.
         if self.KEEP_ALL_RELATEDNESS < MIN_RELATEDNESS:
-            raise ValueError(f"KEEP_ALL_RELATEDNESS has to be larger than the MIN_RELATEDNESS")
-        if MIN_RELATEDNESS >= 1.0:
-            raise ValueError(f"the minimal relatedness has to be in range [0,1.0]")
+            raise ValueError(
+                f"KEEP_ALL_RELATEDNESS {self.KEEP_ALL_RELATEDNESS} has to be "+
+                f"larger than the MIN_RELATEDNESS {MIN_RELATEDNESS}"
+            )
+        if MIN_RELATEDNESS <= 0 or MIN_RELATEDNESS >= 1.0:
+            raise ValueError(
+                f"MIN_RELATEDNESS {MIN_RELATEDNESS} has to be in range (0,1.0)"
+            )
 
         self._twitter = None
         # self._google = None
