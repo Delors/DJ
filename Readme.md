@@ -19,19 +19,67 @@ cd ..
 ```
 
 ### 2. Install necessary libraries  
+First, make sure that `nuspell` is installed. E.g., `sudo apt install nuspell`.
+
+Second, install the python libraries.
 ```sh
 pip3 install -r requirements.txt
 ```
 
-## Usage
+#### Potential Installation Issues
 
-Reads in a (case) specific dictionary and generates an output dictionary by processing each input entry according to some well defined operations. Additionally, this tool can also be used to "just" analyze existing dictionaries.
+__Gensim and Numpy__
+If you install Gensim using pip and Numpy was already installed using "apt" (i.e., using the system's package manager), errors may appear when you want to use respective operations (e.g., `related` or `is_popular_word`). In this case, _first_ remove the global Numpy installation (e.g., `sudo apt remove python3-numpy`) 
 
-```sh
-python3 TransformDictionary.py [-o <Operations File>] [-d <Dictionary.utf8.txt>]
+__Pynuspell and Python >3.10__
+
+The `pynuspell` module is not (as of Oct. 2022) available for Python 3.10 and above in the PIP repository. In this case, it must be installed from source if operations (e.g., `correct_spelling` or `is_regular_word`) that use dictionaries are going to be used. 
+
+To install pynuspell from source, you first have to install `nuspell` _and_ also the development package `libnuspell-dev`. After that, head over to [https://pypi.org/project/pynuspell/](https://pypi.org/project/pynuspell/)
+and follow the installation instructions; however, be aware that the instructions are not correct for Linux. For Linux (Debian/Ubuntu) you need to do the following:
+
+```bash
+sudo apt install cmake
+sudo apt install ninja-build
+git clone --recurse-submodules https://github.com/scherzocrk/pynuspell.git
+cd pynuspell
+./extern/vcpkg/bootstrap-vcpkg.sh
+export VCPKG_ROOT=./extern/vcpkg
+./extern/vcpkg/vcpkg install
+pip3 install .
 ```
 
-Reads from standard-in or the specified file (`-d`) a dictionary and performs the operations specified in the given operations file. If no operations-file is specified, the default file: `default_ops.td` will be used, which - however - primarily serves demonstration purposes.
+### 3. Prepare for offline Usage
+In general, DJ can be used offline. However, some operations (in particular `related`) require data that will be loaded on demand and will then be stored in the user's home folder. If DJ is to be used on an offline computer this data then needs to be copied to the offline machine. 
+
+To force DJ to download the necessary data just start DJ with the `related` operation and type a single word:
+
+```bash
+$ ./DJ.py is_popular_word
+Wiesbaden
+``` 
+
+## Usage
+
+Reads in a (case) specific dictionary and generates an output dictionary by processing each input entry according to some well defined operations. Additionally, this tool can also be used to "just" analyze existing dictionaries to filter entries.
+
+### Basic Usage
+
+```sh
+python3 DJ.py <operations>
+```
+
+In this case a dictionary will be read from stdin and then the specified operations will be performed for each entry. 
+
+For example, in case of `python3 DJ.py lower` every entry of the given dictionary will be converted to lower case and will then be output. Entries which are already in lower case will be ignored.
+
+### Standard Usage
+
+```sh
+python3 DJ.py [-o <Operations File>] [-d <Dictionary.utf8.txt>]
+```
+
+Reads from standard-in or the specified file (`-d`) a dictionary and performs the operations specified in the given operations file. A default file: `default_ops.td` exists, which - however - primarily serves demonstration purposes.
 
 ## Operations File
 
@@ -117,7 +165,20 @@ To foster readability of long operation definitions it is possible to split up a
 ```
 
 ## Atomic Operations
-(See code for now.)
+Each atomic operation (e.g., `lower`, `min_length`, `related`, `get_numbers`) performs one well-defined transformation, extraction, filtering operation and most operations provide some level of configurability. 
+
+### Built-in Operations
+Additionally, DJ has some built-in operations for special purposes:
+
+ - `def` to define a macro
+ - `config` to configure an operation's global parameters
+ - `ignore` to specify a file with terms that will always be ignored
+
+Controlling the output
+ - `report` to write the result of an operations sequence to stdout. 
+ - `write` to write out the results of a transformation to a specific file instead of `stdout`.
+
+(For the documentation of specific operations see the code for now.)
 
 ## Development/Debugging of Operations
 
