@@ -1,6 +1,0 @@
-# Characters which are always just removed by the corresponding rule.
-,
-.
-(
-)
-/
