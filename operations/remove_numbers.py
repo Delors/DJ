@@ -7,14 +7,17 @@ from operations.operation import Operation
 class RemoveNumbers(Operation):
     """Removes all numbers from an entry."""
 
-    _re_no_numbers = re.compile("[^0-9]+")
+    NO_NUMBERS_REGEXP = "[^0-9]+"
+
+    def __init__(self):
+        self._re_no_numbers = re.compile(self.NO_NUMBERS_REGEXP)
 
     def is_transformer(self) -> bool: return True
 
     def process(self, entry: str) -> List[str]:
         entries = [
             i.group(0) 
-            for i in RemoveNumbers._re_no_numbers.finditer(entry)
+            for i in self._re_no_numbers.finditer(entry)
         ]
         if len(entries) == 0:
             return []

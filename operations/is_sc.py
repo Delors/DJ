@@ -7,13 +7,13 @@ class IsSpecialChars(Operation):
     """ Identifies entries which only consists of special chars.
     """
 
+    SPECIAL_CHARS = set("^<>|,;.:_#'+*~@€²³`'^°!\"§$%&/()[]{}\\-")
+
     def is_filter(self) -> bool: 
         return True
 
-    _SPECIAL_CHARS = set("^<>|,;.:_#'+*~@€²³`'^°!\"§$%&/()[]{}\\-")
-
     def process(self, entry: str) -> List[str]:
-        if any(e for e in entry if e not in self._SPECIAL_CHARS):
+        if any(e for e in entry if e not in self.SPECIAL_CHARS):
             return []        
         else:
             return [entry]

@@ -6,12 +6,14 @@ from operations.operation import Operation
 class StripNumbersAndSpecialChars(Operation):
     """Removes leading and trailing numbers and ascii special chars."""
 
+    STRIP_CHARS = "0123456789<>|,;.:_#'+*~@€²³`'^°!\"§$%&/()\[\]{}\\\-"
+
     def is_transformer(self) -> bool: 
         return True
 
     def process(self, entry: str) -> List[str]:
-        strip_chars = "0123456789<>|,;.:_#'+*~@€²³`'^°!\"§$%&/()\[\]{}\\\-"
-        stripped_entry = entry.strip(strip_chars)
+        
+        stripped_entry = entry.strip(self.STRIP_CHARS)
         if stripped_entry is entry:
             return None
         elif len(stripped_entry) == 0:
