@@ -4,9 +4,12 @@ from operations.operation import Operation
 
 
 class Deduplicate(Operation):
-    # If an entry is a duplication of a sequence, the first part
-    # will be returned. E.g. "TestTest" will be transformed to 
-    # "Test"
+    """
+    Transforms entries where the second half is a duplication 
+    of the first half.
+    
+    E.g. "TestTest" will be transformed to "Test".
+    """
    
     def is_extractor(self) -> bool: 
         return True

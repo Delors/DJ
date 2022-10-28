@@ -4,9 +4,12 @@ from operations.operation import Operation
 
 
 class Detriplicate(Operation):
-    # If an entry is a triplication of a sequence, the first part
-    # will be returned. E.g. "TestTestTest" will be transformed to 
-    # "Test"
+    """
+    Transforms entries where the second and third thirds are a 
+    repetition of the first third.
+    
+    E.g. "TestTestTest" will be transformed to "Test".
+    """
    
     def is_extractor(self) -> bool: 
         return True

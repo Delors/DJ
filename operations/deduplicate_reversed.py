@@ -4,8 +4,10 @@ from operations.operation import Operation
 
 
 class DeduplicateReversed(Operation):
-    # Where the second part of an entry is the duplication of the
-    # first part, but reversed. E.g., "testtset"
+    """
+    Identifies entries where the second part of an entry is the 
+    duplication of the first part, but reversed. E.g., "testtset".
+    """
    
     def is_extractor(self) -> bool: 
         return True
