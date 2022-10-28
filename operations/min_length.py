@@ -6,6 +6,9 @@ class MinLength(Operation):
     """Only accepts entries with a given minimum length."""
 
     def __init__(self, min_length : int):
+        if min_length < 0:
+            raise ValueError("min_length has to be >= 0")
+
         self.min_length = min_length
         return
 

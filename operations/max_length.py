@@ -7,6 +7,9 @@ class MaxLength(Operation):
     """Only accepts entries with a given maximum length."""
 
     def __init__(self, max_length : int):
+        if max_length <= 0:
+            raise ValueError("max_length has to > 0")
+
         self.max_length = max_length
         return
 
