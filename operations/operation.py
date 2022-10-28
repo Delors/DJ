@@ -25,8 +25,8 @@ class Operation(ABC):
           the entry just consists of numbers.
           An extractor which does not extract a single entry is not
           considered to be applicable and None is returned.
-        - a meta operation which manipulates the behavior of an
-          extractor or a transformation.
+        - a meta operation which manipulates the behavior of a filter,
+          an extractor or a transformation.
         - a filter operation which takes an entry and either returns
           the entry (`[entry]`) or the empty list (`[]`). Hence, a filter
           is considered to be always applicable.
