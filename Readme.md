@@ -1,7 +1,7 @@
-# Dictionary Transformation and Generation aka `Dictionary Juggling` (DJ)
+# Dictionary Transformation and Generation for Password Recovery aka `Dictionary Juggling` (DJ)
 
-Processes the entries of a dictionary by applying one to multiple user-definable transformations, extractions,  filtering or generating operations. 
-Basically, DJ enables the trivial definition of user-defineable transformation pipelines.
+Processes the entries of a _base_ dictionary by applying one to multiple user-definable transformations, extractions,  filtering or generating operations. 
+Basically, DJ enables the trivial definition of user-defineable transformation pipelines to generate dictionaries useable for password recovery.
 
 ## Installation
 
