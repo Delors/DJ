@@ -168,7 +168,7 @@ To foster readability of long operation definitions it is possible to split up a
 Each atomic operation (e.g., `lower`, `min_length`, `related`, `get_numbers`) performs one well-defined transformation, extraction, filtering operation and most operations provide some level of configurability. 
 
 ### Built-in Operations
-Additionally, DJ has some built-in keywords for special purposes:
+Additionally, DJ has some built-in directives for special purposes:
 
  - `def` to define a macro
  - `config` to configure an operation's global parameters
