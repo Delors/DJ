@@ -7,7 +7,7 @@ from operations.operation import Operation
 from common import dictionaries
 
 class IsRegularWord(Operation):
-    """ Checks if a word is a "real" word by looking it up in several
+    """ Checks if a word is a _real_ word by looking it up in several
         dictionaries. The set of dictionaries that is used is based 
         on those defined in `common.dictionaries`.
     """

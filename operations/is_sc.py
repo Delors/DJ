@@ -4,7 +4,7 @@ from operations.operation import Operation
 
 
 class IsSpecialChars(Operation):
-    """ Identifies entries which only consists of special chars.
+    """ Identifies entries which only consist of special chars.
     """
 
     SPECIAL_CHARS = set("^<>|,;.:_#'+*~@€²³`'^°!\"§$%&/()[]{}\\-")

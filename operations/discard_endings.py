@@ -5,8 +5,8 @@ from common import locate_resource
 
 class DiscardEndings(Operation):
     """
-    Discards the last term - recursively - of a string with multiple elements
-    if the term is defined in the given file. The preceding 
+    Discards the last term - recursively - of a string with multiple 
+    elements if the term is defined in the given file. The preceding 
     whitespace will also be discarded.
     
     For example, given the string:
@@ -15,6 +15,8 @@ class DiscardEndings(Operation):
 
     and assuming that "ist" and "ein" should not be endings, the only
     string that will pass this operation would be "Michael".
+
+    (See also the ignore directive for a similar mechanism.)
     """
 
     def __init__(self, endings_filename):
