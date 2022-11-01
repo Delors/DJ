@@ -1,12 +1,13 @@
 from typing import List
 
-from Levenshtein import distance
+from Levenshtein import distance as levenshtein_distance
+from jellyfish import damerau_levenshtein_distance
 
-from operations.operation import Operation
+from operations.operation import Transformer
 from common import dictionaries
 
 
-class CorrectSpelling(Operation):
+class CorrectSpelling(Transformer):
     """
     Tries to correct the spelling of an entry by using Nuspell.
     Here, we only consider misspellings with at most one typing
@@ -15,6 +16,8 @@ class CorrectSpelling(Operation):
     of installed dictionaries, however, with a large set of
     dictionaries, the costs can be very(!) high.
     """
+
+    USE_DAMERAU_LEVENSHTEIN = True 
 
     FILTER_CORRECTIONS_WITH_SPACE = True
     """
@@ -25,18 +28,17 @@ class CorrectSpelling(Operation):
     def __init__(self):
         return
 
-    def is_transformer(self) -> bool: 
-        return True
-
     def process(self, entry: str) -> List[str]:
         lentry = entry.lower()
         words = []
-        for d in dictionaries.values():
+        for d in dictionaries.values():            
             for c in d.suggest(entry):
-                edit_distance = distance(entry,c)
+                if self.USE_DAMERAU_LEVENSHTEIN:
+                    edit_distance = damerau_levenshtein_distance(entry,c)
+                else:
+                    edit_distance = levenshtein_distance(entry,c)
                 if edit_distance == 0:
-                    # This indicates that "correct spelling" was used 
-                    # on well defined terms.
+                    # The word is not misspelled (w.r.t. the analyzed langs.)
                     return []
                 elif edit_distance == 1:
                     if c.lower() == lentry:
