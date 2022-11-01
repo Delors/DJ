@@ -1,9 +1,9 @@
 from typing import List
 
-from operations.operation import Operation
+from operations.operation import Transformer
 
 
-class SubSplits(Operation):
+class SubSplits(Transformer):
     """ Splits up an entry using the given split_char as a separator
         creating all possible sub splits, keeping the order.
         E.g. Abc-def-ghi with "-" as the split char would create:
@@ -15,8 +15,6 @@ class SubSplits(Operation):
     def __init__(self, split_char : str):
         self.split_char = split_char
         return
-
-    def is_transformer(self) -> bool: return True
 
     def process(self, entry: str) -> List[str]:
         assert len(entry) > 0

@@ -1,15 +1,12 @@
 from typing import List
 
-from operations.operation import Operation
+from operations.operation import Filter
 
 
-class IsPattern(Operation):
+class IsPattern(Filter):
     """ Identifies repetitions of a single character or a pair of characters.
         E.g., "aaaaa" or "qpqpqp" are identified as patterns.
     """
-
-    def is_filter(self) -> bool: 
-        return True
 
     def process(self, entry: str) -> List[str]:
         length = len(entry)

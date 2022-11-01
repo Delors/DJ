@@ -1,10 +1,10 @@
 import re
 from typing import List
 
-from operations.operation import Operation
+from operations.operation import Transformer
 
 
-class RemoveSpecialChars(Operation):
+class RemoveSpecialChars(Transformer):
     """ Removes all special chars; whitespace is not considered as a
         special char. In general it is recommend to remove/fold 
         whitespace and/or strip the entries afterwards.
@@ -17,8 +17,6 @@ class RemoveSpecialChars(Operation):
     def __init__(self):
         self._re_non_special_char = \
             re.compile(self.NON_SPECIAL_CHARACTERS_REGEXP)
-
-    def is_transformer(self) -> bool: return True
 
     def process(self, entry: str) -> List[str]:
         re_non_special_char = self._re_non_special_char        

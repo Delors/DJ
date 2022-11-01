@@ -1,17 +1,14 @@
 from typing import List
 
-from operations.operation import Operation
+from operations.operation import Transformer
 
 
-class DeduplicateReversed(Operation):
+class DeduplicateReversed(Transformer):
     """
     Identifies entries where the second part of an entry is the 
     duplication of the first part, but reversed. E.g., "testtset".
     """
    
-    def is_extractor(self) -> bool: 
-        return True
-
     def process(self, entry: str) -> List[str]:
         length = len(entry)
         if  length % 2 == 1:

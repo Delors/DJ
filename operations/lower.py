@@ -1,11 +1,9 @@
 from typing import List
 
-from operations.operation import Operation
+from operations.operation import Transformer
 
-class Lower(Operation):
+class Lower(Transformer):
     """Converts an entry to all lower case."""
-
-    def is_transformer(self) -> bool: return True
 
     def process(self, entry: str) -> List[str]:
         lower = entry.lower()

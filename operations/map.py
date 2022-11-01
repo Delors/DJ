@@ -1,10 +1,10 @@
 from typing import List
 
-from operations.operation import Operation
+from operations.operation import Transformer
 from common import escape
 
 
-class Map(Operation):
+class Map(Transformer):
     """ Maps a given character to several alternatives.
     """
 
@@ -16,8 +16,6 @@ class Map(Operation):
         self.raw_target_chars = target_chars
         self.target_chars = set(target_chars) 
         return
-
-    def is_transformer(self) -> bool: return True
 
     def process(self, entry: str) -> List[str]:
         if self.source_char in entry:

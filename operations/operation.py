@@ -78,3 +78,18 @@ class Operation(ABC):
     def is_reporter(self) -> bool: return False        
 
     def is_filter(self) -> bool: return False 
+
+
+class Transformer(Operation):
+
+    def is_transformer(self) -> bool: return True
+
+
+class Filter(Operation):
+
+    def is_filter(self) -> bool: return True
+  
+
+class Extractor(Operation):
+
+    def is_extractor(self) -> bool: return True    

@@ -1,18 +1,16 @@
 import re
 from typing import List
 
-from operations.operation import Operation
+from operations.operation import Transformer
 
 
-class RemoveNumbers(Operation):
+class RemoveNumbers(Transformer):
     """Removes all numbers from an entry."""
 
     NO_NUMBERS_REGEXP = "[^0-9]+"
 
     def __init__(self):
         self._re_no_numbers = re.compile(self.NO_NUMBERS_REGEXP)
-
-    def is_transformer(self) -> bool: return True
 
     def process(self, entry: str) -> List[str]:
         entries = [

@@ -1,13 +1,10 @@
 from typing import List
 
-from operations.operation import Operation
+from operations.operation import Transformer
 
 
-class StripWhitespace(Operation):
+class StripWhitespace(Transformer):
     """Removes leading and trailing whitespace."""
-
-    def is_transformer(self) -> bool: 
-        return True
 
     def process(self, entry: str) -> List[str]:
         stripped_entry = entry.strip()

@@ -1,16 +1,13 @@
 from typing import List
 
-from operations.operation import Operation
+from operations.operation import Filter
 
 
-class IsSpecialChars(Operation):
+class IsSpecialChars(Filter):
     """ Identifies entries which only consist of special chars.
     """
 
     SPECIAL_CHARS = set("^<>|,;.:_#'+*~@€²³`'^°!\"§$%&/()[]{}\\-")
-
-    def is_filter(self) -> bool: 
-        return True
 
     def process(self, entry: str) -> List[str]:
         if any(e for e in entry if e not in self.SPECIAL_CHARS):

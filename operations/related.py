@@ -2,11 +2,11 @@ from math import isnan
 from typing import List
 from contextlib import suppress
 
-from operations.operation import Operation
+from operations.operation import Transformer
 from common import get_nlp_model
 
 
-class Related(Operation):
+class Related(Transformer):
     """ Returns those terms that are most related; i.e. surpass the 
         RELATEDNESS factor.
 
@@ -38,8 +38,6 @@ class Related(Operation):
         self.MIN_RELATEDNESS = MIN_RELATEDNESS
 
         return
-
-    def is_transformer(self) -> bool: 
         return True
         
     def process(self, entry: str) -> List[str]:

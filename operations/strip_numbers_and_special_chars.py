@@ -1,15 +1,12 @@
 from typing import List
 
-from operations.operation import Operation
+from operations.operation import Transformer
 
 
-class StripNumbersAndSpecialChars(Operation):
+class StripNumbersAndSpecialChars(Transformer):
     """Removes leading and trailing numbers and ascii special chars."""
 
     STRIP_CHARS = "0123456789<>|,;.:_#'+*~@€²³`'^°!\"§$%&/()\[\]{}\\\-"
-
-    def is_transformer(self) -> bool: 
-        return True
 
     def process(self, entry: str) -> List[str]:
         

@@ -1,9 +1,9 @@
 from typing import List, Set
 
-from operations.operation import Operation
+from operations.operation import Transformer
 from common import locate_resource
 
-class DiscardEndings(Operation):
+class DiscardEndings(Transformer):
     """
     Discards the last term - recursively - of a string with multiple 
     elements if the term is defined in the given file. The preceding 
@@ -28,9 +28,6 @@ class DiscardEndings(Operation):
             for ending in fin:
                 endings.add(ending.rstrip("\r\n"))       
         self.endings = endings
-
-    def is_transformer(self) -> bool: 
-        return True        
 
     def process(self, entry: str) -> List[str]: 
         all_terms = entry.split()

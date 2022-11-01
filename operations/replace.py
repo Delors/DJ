@@ -1,10 +1,10 @@
 from typing import List
 
-from operations.operation import Operation
+from operations.operation import Transformer
 from common import locate_resource
 
 
-class Replace(Operation):
+class Replace(Transformer):
     """ Replaces a character by another character.
 
         (If you want to replace a single character by multiple other 
@@ -36,9 +36,6 @@ class Replace(Operation):
                 else:
                     replacement_table[key] = value        
         self.replacement_table = replacement_table
-
-    def is_transformer(self) -> bool: 
-        return True
 
     def process(self, entry: str) -> List[str]: 
         e = entry       

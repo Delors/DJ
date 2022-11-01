@@ -1,17 +1,15 @@
 import re
 from typing import List
 
-from operations.operation import Operation
+from operations.operation import Extractor
 
 
-class GetSpecialChars(Operation):
+class GetSpecialChars(Extractor):
     """Extracts the used special char (sequences)."""
 
     re_special_chars = \
         re.compile("[<>|,;.:_#'+*~@€²³`'^°!\"§$%&/()\[\]{}\\\-]+")
         #re.compile("[^a-zA-Z0-9\s]+")
-
-    def is_extractor(self) -> bool: return True
 
     def process(self, entry: str) -> List[str]:
         entries = [

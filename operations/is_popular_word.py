@@ -1,10 +1,10 @@
 from typing import List
 
-from operations.operation import Operation
+from operations.operation import Filter
 from common import get_nlp_vocab
 
 
-class IsPopularWord(Operation):
+class IsPopularWord(Filter):
     """ Checks if a word is a word that is used on twitter or in 
         google news. In case of twitter, the given term is always lowered
         and then tested, because the twitter model only uses lower case
@@ -19,9 +19,6 @@ class IsPopularWord(Operation):
         self._twitter_vocab = None
         self._google_vocab = None
         return
-
-    def is_filter(self) -> bool: 
-        return True
         
     def process(self, entry: str) -> List[str]:        
         if not self._twitter_vocab: 

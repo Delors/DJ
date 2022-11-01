@@ -1,12 +1,10 @@
 from typing import List
 
-from operations.operation import Operation
+from operations.operation import Transformer
 
 
-class FoldWhitespace(Operation):
+class FoldWhitespace(Transformer):
     """Folds multiple whitespace (spaces and tabs) to one space."""
-
-    def is_transformer(self) -> bool: return True
 
     def process(self, entry: str) -> List[str]:
         last_entry = ""

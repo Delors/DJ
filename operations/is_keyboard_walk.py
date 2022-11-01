@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from typing import List
 
-from operations.operation import Operation
+from operations.operation import Filter
 
 KEYBOARD_INFO = {
     "layout": "de"
@@ -111,15 +111,12 @@ KEYBOARD = {
 
 # TODO Make keyboard configuration configurable by putting it into a python file which - when specified - registers itself with the set of keyboards...
 
-class IsKeyboardWalk(Operation):
+class IsKeyboardWalk(Filter):
     """ Identifies so-called keyboard walks.
 
         We make the assumption that every sub part of a keyboard walk has 
         to have at least 3 elements. I.e., this allows us to identify
     """
-
-    def is_filter(self) -> bool: 
-        return True
 
     def process(self, entry: str) -> List[str]:
         if len(entry) <= 2:

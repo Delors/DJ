@@ -1,9 +1,9 @@
 from typing import List
 
-from operations.operation import Operation
+from operations.operation import Filter
 
 
-class MaxLength(Operation):
+class MaxLength(Filter):
     """Only accepts entries with a given maximum length."""
 
     def __init__(self, max_length : int):
@@ -12,8 +12,6 @@ class MaxLength(Operation):
 
         self.max_length = max_length
         return
-
-    def is_filter(self) -> bool: return True
 
     def process(self, entry: str) -> List[str]:
         if len(entry) <= self.max_length:

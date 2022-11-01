@@ -379,7 +379,7 @@ def parse_number(op_name: str, rest_of_op: str) -> Tuple[str, Operation]:
     raw_chars_to_number = chars_to_number_match.group(0)
     chars_to_number = unescape(raw_chars_to_number)
     new_rest_of_op = rest_of_op[chars_to_number_match.end(0):].lstrip()
-    return (new_rest_of_op,Number(chars_to_number[1:-1] ))# get rid of the set braces "[" and "]".
+    return (new_rest_of_op,Number(chars_to_number[1:-1] ))
 
 
 def parse_map(op_name: str, rest_of_op: str) -> Tuple[str, Operation]:
@@ -654,7 +654,7 @@ def parse_ops(raw_lines : List[str]) -> List[ComplexOperation]:
                 value = raw_value
             else:
                 raise ValueError(
-                    f"unkown type: {value_type}; expected: integer, float or strings"
+                    f"unknown type: {value_type}; expected: integer, float or strings"
                 )
             setattr(op_class,field_name,value)
 
@@ -662,16 +662,24 @@ def parse_ops(raw_lines : List[str]) -> List[ComplexOperation]:
         # parse an operation definition
         else:
             parsing_ops = True
-            op = parse_op(line_number, False, sline)
-            if op:
-                ops.append(op)
+            try:
+                op = parse_op(line_number, False, sline)
+                if op:
+                    ops.append(op)
+            except ValueError as ve:
+                print(
+                    f"failed parsing:\n\t{sline}\n\t{ve.args[0]}\n\tparsing aborted",
+                    file=sys.stderr
+                )
+                return []
 
     return ops
 
 
 def transform_entries(
         dict_filename: str,
-        ops: List[ComplexOperation]
+        ops: List[ComplexOperation],
+        print_progress : bool
     ):
     """Transforms the entries of a given dictionary."""
     d_in = None
@@ -685,6 +693,9 @@ def transform_entries(
         count = count + 1
         sentry = entry.rstrip("\r\n") # stripped entry
         if sentry not in ignored_entries:
+            if print_progress: 
+                print(f"[progress] processing:",sentry,file=sys.stderr)           
+
             _reported_entries.clear()
             for op in ops:
                 if _verbose:
@@ -695,7 +706,10 @@ def transform_entries(
                         f'[debug][{count}:"{escaped_sentry}"] applying: {op}',
                         file=stderr
                     )            
-                op.apply(sentry)           
+                op.apply(sentry)
+        else:
+            if print_progress: 
+                print(f"[progress] ignored:",sentry,file=sys.stderr)           
 
 
 def main() -> int:
@@ -729,6 +743,12 @@ def main() -> int:
         action="store_true"
     )
     parser.add_argument(
+        '-p',
+        '--progress',
+        help="prints progress information",
+        action="store_true"
+    )
+    parser.add_argument(
         'adhoc_operations', 
         metavar='OPs', 
         type=str, 
@@ -745,12 +765,12 @@ def main() -> int:
     if args.operations:
         all_operations.extend(parse_ops_file(args.operations))
     all_operations.extend(parse_ops([" ".join(args.adhoc_operations)]))
-    if len(all_operations) == 0:
-        raise IllegalStateError("no operations specified")
-    
-    
+
     # 2. apply operations
-    transform_entries(args.dictionary, all_operations)
+    if len(all_operations) == 0:
+        print("no (valid) operations specified",file=sys.stderr)
+    else:    
+        transform_entries(args.dictionary, all_operations,args.progress)
 
     # 3. cleanup operations
     for op in all_operations: 

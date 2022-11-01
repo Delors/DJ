@@ -1,9 +1,9 @@
 from typing import List
 
-from operations.operation import Operation
+from operations.operation import Transformer
 
 
-class Number(Operation):
+class Number(Transformer):
     """ Replaces every matched character by the number 
         of previous occurrences of matched characters.
 
@@ -15,8 +15,6 @@ class Number(Operation):
     def __init__(self, chars_to_number : str):
         self.chars_to_number = set(chars_to_number) 
         return
-
-    def is_transformer(self) -> bool: return True
 
     def process(self, entry: str) -> List[str]:
         count = 0

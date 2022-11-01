@@ -1,18 +1,15 @@
 from typing import List
 
-from operations.operation import Operation
+from operations.operation import Extractor
 
 
-class Deduplicate(Operation):
+class Deduplicate(Extractor):
     """
     Transforms entries where the second half is a duplication 
     of the first half.
     
     E.g. "TestTest" will be transformed to "Test".
     """
-   
-    def is_extractor(self) -> bool: 
-        return True
 
     def process(self, entry: str) -> List[str]:
         length = len(entry)

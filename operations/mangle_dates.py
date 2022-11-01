@@ -1,10 +1,10 @@
 import re
 from typing import List
 
-from operations.operation import Operation
+from operations.operation import Transformer
 
 
-class MangleDates(Operation):
+class MangleDates(Transformer):
     """ Tries to identify numbers which are dates and then creates various
         representations for the respective date.
 
@@ -28,8 +28,6 @@ class MangleDates(Operation):
                 f"19{self.START_YEAR_20TH} has to be < 20{self.END_YEAR_21ST}"
             )
         pass
-
-    def is_transformer(self) -> bool: return True
 
     def process(self, entry: str) -> List[str]:
         r = MangleDates._re_german_date.match(entry)

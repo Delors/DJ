@@ -1,13 +1,10 @@
 from typing import List
 
-from operations.operation import Operation
+from operations.operation import Transformer
 
 
-class Capitalize(Operation):
+class Capitalize(Transformer):
     """Capitalizes a given entry."""
-
-    def is_transformer(self) -> bool: 
-        return True
 
     def process(self, entry: str) -> List[str]:
         capitalized = entry.capitalize()

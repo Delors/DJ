@@ -1,13 +1,10 @@
 from typing import List
 
-from operations.operation import Operation
+from operations.operation import Transformer
 
 
-class Upper(Operation):
+class Upper(Transformer):
     """Converts an entry to all upper case."""
-
-    def is_transformer(self) -> bool: 
-        return True
 
     def process(self, entry: str) -> List[str]:
         upper = entry.upper()

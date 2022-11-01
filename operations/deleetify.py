@@ -2,9 +2,9 @@ import itertools
 import re
 from typing import List, Set
 
-from operations.operation import Operation
+from operations.operation import Transformer
 
-class DeLeetify(Operation):
+class DeLeetify(Transformer):
     """ Deleetifies an entry by replacing the used numbers with their
         respective characters. E.g., *T3st* is deleetified to _Test_. To avoid
         the creation of irrelevant entries, a spellchecker should be used to test 
@@ -55,7 +55,6 @@ class DeLeetify(Operation):
     _re_has_leetspeak = \
         re.compile(".*[a-zA-Z]")
 
-    def is_transformer(self) -> bool: return True
 
     def process(self, entry: str) -> List[str]:
         # (See Wikipedia for more details!) We currently only consider

@@ -1,20 +1,18 @@
 import re
 from typing import List
 
-from operations.operation import Operation
+from operations.operation import Extractor
 
 
-class GetNumbers(Operation):
+class GetNumbers(Extractor):
     """Extracts all numbers."""
 
-    re_numbers = re.compile("[0-9]+")
-
-    def is_extractor(self) -> bool: return True
+    _re_numbers = re.compile("[0-9]+")
 
     def process(self, entry: str) -> List[str]:
         entries = [
             i.group(0) 
-            for i in GetNumbers.re_numbers.finditer(entry)
+            for i in GetNumbers._re_numbers.finditer(entry)
         ]
         if len(entries) >= 1:
             return entries

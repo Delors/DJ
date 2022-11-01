@@ -1,8 +1,8 @@
 from typing import List
 
-from operations.operation import Operation
+from operations.operation import Filter
 
-class MinLength(Operation):
+class MinLength(Filter):
     """Only accepts entries with a given minimum length."""
 
     def __init__(self, min_length : int):
@@ -11,9 +11,6 @@ class MinLength(Operation):
 
         self.min_length = min_length
         return
-
-    def is_filter(self) -> bool:
-        return True
 
     def process(self, entry: str) -> List[str]:
         if len(entry) >= self.min_length:

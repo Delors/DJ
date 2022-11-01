@@ -1,18 +1,15 @@
 from typing import List
 
-from operations.operation import Operation
+from operations.operation import Extractor
 
 
-class Detriplicate(Operation):
+class Detriplicate(Extractor):
     """
     Transforms entries where the second and third thirds are a 
     repetition of the first third.
     
     E.g. "TestTestTest" will be transformed to "Test".
     """
-   
-    def is_extractor(self) -> bool: 
-        return True
 
     def process(self, entry: str) -> List[str]:
         length = len(entry)

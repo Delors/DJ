@@ -1,14 +1,12 @@
 import re
 from typing import List
 
-from operations.operation import Operation
+from operations.operation import Transformer
 
 
-class Reverse(Operation):
+class Reverse(Transformer):
     """ Reverses a given string.
     """
-
-    def is_transformer(self) -> bool: return True
 
     def process(self, entry: str) -> List[str]:
         new_entry = entry[::-1]
