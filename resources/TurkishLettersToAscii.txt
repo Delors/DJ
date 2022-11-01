@@ -1,0 +1,20 @@
+# A very simple table which has two main columns
+# <1. a sequence of characters><a space><another sequence of characters>
+# If you want to replace a space use \s to escape \ use \\ to replace a # use \#
+# empty lines are ignored.
+
+# Upper case letters
+Ç C
+Ğ G
+İ I
+Ö Ö
+Ş S
+Ü Ü
+
+# Lower case letters
+ç c
+ğ g
+ı i
+ö ö
+ş s
+ü ü
