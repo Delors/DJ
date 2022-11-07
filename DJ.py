@@ -46,6 +46,7 @@ from operations.deduplicate import DEDUPLICATE
 from operations.deduplicate_reversed import DEDUPLICATE_REVERSED
 # FILTERS
 from operations.min_length import MinLength
+from operations.min import Min
 from operations.max_length import MaxLength
 from operations.is_regular_word import IS_REGULAR_WORD
 from operations.is_popular_word import IS_POPULAR_WORD
@@ -397,6 +398,23 @@ def parse_map(op_name: str, rest_of_op: str) -> Tuple[str, Operation]:
     # TODO make parse set...
     return (new_rest_of_op,Map(source_char,target_chars[1:-1]))    
 
+def parse_min(op_name: str, rest_of_op: str) -> Tuple[str, Operation]:
+    min_op_match = re_next_word.match(rest_of_op)
+    raw_min_op = min_op_match.group(0)
+    min_op = unescape(raw_min_op)
+    rest_of_op = rest_of_op[min_op_match.end(0):].lstrip()
+
+    int_match = re_next_word.match(rest_of_op)
+    if not int_match:
+        raise Exception(f"{op_name}: int parameter missing") 
+    try:   
+        raw_min_count = int_match.group(0)
+        min_count = int(raw_min_count)
+    except ValueError as ve:
+        raise Exception(f"{op_name}: parameter {raw_min_count} is not an int") 
+    rest_of_op = rest_of_op[int_match.end(0):].lstrip()
+    return (rest_of_op,Min(min_op,min_count))    
+
 def parse_split(op_name: str, rest_of_op: str) -> Tuple[str, Operation]:
     split_chars_match = re_next_word.match(rest_of_op)
     raw_split_chars = split_chars_match.group(0)
@@ -421,6 +439,7 @@ operation_parsers = {
     "write" : parse_quoted_string(Write),
     
     # FILTERS
+    "min" : parse_min,
     "max_length" : parse_int_parameter(MaxLength),
     "min_length" : parse_int_parameter(MinLength),
     "is_regular_word" : parse(IS_REGULAR_WORD),
