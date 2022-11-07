@@ -51,7 +51,8 @@ from operations.is_regular_word import IS_REGULAR_WORD
 from operations.is_popular_word import IS_POPULAR_WORD
 from operations.is_pattern import IS_PATTERN
 from operations.is_keyboard_walk import IS_KEYBOARD_WALK
-from operations.is_sc import IS_SPECIAL_CHARS
+from operations.sieve import Sieve
+
 
 _reported_entries : Set[str] = set()
 """ The set of reported, i.e., printed, entries per entry. This list is cleared
@@ -427,6 +428,7 @@ operation_parsers = {
     "is_pattern" : parse(IS_PATTERN),
     "is_keyboard_walk" : parse(IS_KEYBOARD_WALK),
     "is_sc" : parse(IS_SPECIAL_CHARS),
+    "sieve" : parse_quoted_string(Sieve),
 
     # EXTRACTORS
     "get_numbers" : parse(GET_NUMBERS),
