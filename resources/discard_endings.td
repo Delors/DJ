@@ -1,1 +1,1 @@
-*discard_endings "discard_endings.txt" report
+*discard_endings "discard_endings_de.txt" report
