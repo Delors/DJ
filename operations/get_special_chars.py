@@ -7,15 +7,19 @@ from operations.operation import Extractor
 class GetSpecialChars(Extractor):
     """Extracts the used special char (sequences)."""
 
-    re_special_chars = \
-        re.compile("[<>|,;.:_#'+*~@€²³`'^°!\"§$%&/()\[\]{}\\\-]+")
-        #re.compile("[^a-zA-Z0-9\s]+")
+    SPECIAL_CHARACTERS_REGEXP = \
+        "[<>|,;.:_#'+*~@€²³`'^°!\"§$%&/()\[\]{}\\\-]+"
+    
+    def __init__(self):
+        self._re_special_chars = \
+            re.compile(self.SPECIAL_CHARACTERS_REGEXP)
 
     def process(self, entry: str) -> List[str]:
-        entries = [
-            i.group(0) 
-            for i in GetSpecialChars.re_special_chars.finditer(entry)
-        ]
+        entries = self._re_special_chars.findall(entry)
+        # entries = [
+        #     i.group(0) 
+        #     for i in self._re_special_chars.finditer(entry)
+        # ]
         if len(entries) >= 1:
             return entries
         else:

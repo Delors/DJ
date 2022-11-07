@@ -41,7 +41,7 @@ from operations.related import Related
 from operations.reverse import REVERSE
 # EXTRACTORS
 from operations.get_numbers import GET_NUMBERS
-from operations.get_sc import GET_SPECIAL_CHARS
+from operations.get_special_chars import GET_SPECIAL_CHARS
 from operations.deduplicate import DEDUPLICATE
 from operations.deduplicate_reversed import DEDUPLICATE_REVERSED
 # FILTERS
@@ -52,6 +52,7 @@ from operations.is_regular_word import IS_REGULAR_WORD
 from operations.is_popular_word import IS_POPULAR_WORD
 from operations.is_pattern import IS_PATTERN
 from operations.is_keyboard_walk import IS_KEYBOARD_WALK
+from operations.is_special_chars import IS_SPECIAL_CHARS
 from operations.sieve import Sieve
 
 
@@ -91,9 +92,9 @@ def apply_ops(entry : str, ops : List[Operation]) -> List[str]:
         if _trace_ops:
             print(f"[trace] {op}({entries})",file=stderr)
 
-                try:
+        try:
             new_entries = op.process_entries(entries)
-                except Exception as e:
+        except Exception as e:
             print(f"[error] {op}({entries}) failed: {str(e)}",file=stderr)              
             return
 
@@ -101,7 +102,7 @@ def apply_ops(entry : str, ops : List[Operation]) -> List[str]:
             print(f"[trace] result:   {new_entries}",file=stderr)
 
         if new_entries is None:
-                return None
+            return None
 
         entries = []
         for new_entry in new_entries:
