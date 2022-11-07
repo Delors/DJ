@@ -82,37 +82,39 @@ ignored_entries = set()
 def apply_ops(entry : str, ops : List[Operation]) -> List[str]:
     """ Applies all operations to the given entry. As a result multiple new 
         entries may be generated. None is returned if and only if the 
-        application of an operation to all (intermediate) entries results in 
-        `None`.
+        application of an operation to all (intermediate) entries resulted in 
+        `None`. (cf. Operation.processEntries)
     """
     
     entries = [entry]    
     for op in ops:
-        all_none = True
-        new_entries = []
-        for entry in entries:
-            if len(entry) > 0:
+        if _trace_ops:
+            print(f"[trace] {op}({entries})",file=stderr)
+
                 try:
-                    new_candidate_entries = op.process(entry)
-                    if _trace_ops:
-                        print(f"[trace] {op}({entry}): {new_candidate_entries}",file=stderr)
-                    if new_candidate_entries is not None:
-                        all_none = False
-                        for new_entry in new_candidate_entries:
-                            if new_entry not in ignored_entries:
-                                new_entries.append(new_entry)
-                            elif _trace_ops:
-                                print(f"[trace] <ignored>: '{new_entry}'",file=stderr)
+            new_entries = op.process_entries(entries)
                 except Exception as e:
-                    print(f"operation {op} failed: {e}",file=stderr)
-                    raise
-        entries = new_entries
+            print(f"[error] {op}({entries}) failed: {str(e)}",file=stderr)              
+            return
+
+        if _trace_ops:
+            print(f"[trace] result:   {new_entries}",file=stderr)
+
+        if new_entries is None:
+                return None
+
+        entries = []
+        for new_entry in new_entries:
+            if len(new_entry) == 0:
+                continue
+            if new_entry is ignored_entries:
+                if _trace_ops:
+                    print(f"[trace] ignoring: {new_entry}")
+            else:
+                entries.append(new_entry)
 
         if len(entries) == 0:
-            if all_none:
-                return None
-            else:
-                return []
+            return entries
 
     return entries
 

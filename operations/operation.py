@@ -1,43 +1,65 @@
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List,Callable,Tuple
 
 class Operation(ABC):
-    """ Representation of an operation. An operation processes an entry
-        and produces zero (`[]`) to many entries. An operation which 
-        does not apply to an entry returns `None`. For a precise definition
-        of "does not apply" see the documentation of the respective 
-        classes of operations.
+    """ Representation of an operation. An operation processes one to many entries
+      and produces zero (`[]`) to many entries. An operation which 
+      does not apply to an entry/a set of entries returns `None`. 
+      For a precise definition of "does not apply" see the documentation 
+      of the respective classes of operations.
 
-        An operation is either:
-        - a transformation which takes an entry and returns None or between
-          zero and many new entries; i.e., the original entry will
-          never be returned. If a transformation does not generate
-          new entries, the transformation is considered to be not
-          applicable to the entry and None is returned.
-          For example, if an entry only consists of special characters
-          and the operation removes all special characters, a empty 
-          list (not None) will be returned. But, if the entry contains
-          no special characters and, therefore, nothing would be removed
-          None would be returned.
-        - an extractor which extracts one to multiple parts of an entry. 
-          An extractor might "extract" the original entry. For example,
-          an extractor for numbers might return the original entry if 
-          the entry just consists of numbers.
-          An extractor which does not extract a single entry is not
-          considered to be applicable and None is returned.
-        - a meta operation which manipulates the behavior of a filter,
-          an extractor or a transformation.
-        - a filter operation which takes an entry and either returns
-          the entry (`[entry]`) or the empty list (`[]`). Hence, a filter
-          is considered to be always applicable.
-        - a report operation which either collects some statistics or
-          which prints out an entry but always just returns the entry
-          as is.
-        - a macro which combines one to many operations and which basically
-          provides a convenience method to facilitate the definition of
-          a set of operations which should be carried out in a specific order
-          and which may be used multiple times.
+      An operation is either:
+      - a transformation which takes an entry and returns None or between
+        zero and many new entries; i.e., the original entry will
+        never be returned. If a transformation does not generate
+        new entries, the transformation is considered to be not
+        applicable to the entry and None is returned.
+        For example, if an entry only consists of special characters
+        and the operation removes all special characters, a empty 
+        list (not None) will be returned. But, if the entry contains
+        no special characters and, therefore, nothing would be removed
+        None would be returned.
+      - an extractor which extracts one to multiple parts of an entry. 
+        An extractor might "extract" the original entry. For example,
+        an extractor for numbers might return the original entry if 
+        the entry just consists of numbers.
+        An extractor which does not extract a single entry is not
+        considered to be applicable and None is returned.
+      - a meta operation which manipulates the behavior of a filter,
+        an extractor or a transformation.
+      - a filter operation which takes an entry and either returns
+        the entry (`[entry]`) or the empty list (`[]`). Hence, a filter
+        is considered to be always applicable.
+      - a report operation which either collects some statistics or
+        which prints out an entry but always just returns the entry
+        as is.
+      - a macro which combines one to many operations and which basically
+        provides a convenience method to facilitate the definition of
+        a set of operations which should be carried out in a specific order
+        and which may be used multiple times.
     """
+
+    def process_entries(self, entries : List[str]) -> List[str]:
+        """
+        Processes each entry of the list and applies the respective operation.
+
+        Returns the empty list if the operation could be applied to (at least)
+        some entries in these cases returned the empty list.
+
+        Returns None if the operation could not be applied. 
+        """
+        all_none = True
+        all_new_entries = []
+        for entry in entries:
+          new_entries = self.process(entry)
+          if new_entries is not None:
+            all_none = False
+            all_new_entries.extend(new_entries)
+        if all_none:
+          return None
+        else:
+          return all_new_entries
+
 
     @abstractmethod
     def process(self, entry: str) -> List[str]:
