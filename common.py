@@ -37,13 +37,13 @@ def locate_resource(filename : str) -> str:
     try:
         common_path = os.path.dirname(__file__)
         dj_filename = os.path.join(common_path,filename)
-        operations_filename = os.path.join(common_path,"operations",filename)
+        resources_filename = os.path.join(common_path,"resources",filename)
         if os.path.exists(dj_filename):
             return dj_filename
-        elif os.path.exists(operations_filename):
-            return operations_filename
+        elif os.path.exists(resources_filename):
+            return resources_filename
         else:
-            error = f"neither ./{filename} nor {dj_filename} nor {operations_filename} exists"
+            error = f"neither ./{filename} nor {dj_filename} nor {resources_filename} exists"
             raise FileNotFoundError(error)
     except Exception as e:
         print(f"can't locate {filename}: {e}", file=stderr)
