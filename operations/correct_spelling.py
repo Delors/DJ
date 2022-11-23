@@ -17,8 +17,6 @@ class CorrectSpelling(Transformer):
     dictionaries, the costs can be very(!) high.
     """
 
-    def op_name() -> str: return "correct_spelling"
-
     USE_DAMERAU_LEVENSHTEIN = True 
 
     FILTER_CORRECTIONS_WITH_SPACE = True
@@ -26,6 +24,10 @@ class CorrectSpelling(Transformer):
     Sometimes the correction of a word can lead to two words. 
     If this setting is set to true, such "corrections" are ignored.
     """
+
+    MAX_EDIT_DISTANCE = 1
+
+    def op_name() -> str: return "correct_spelling"
 
     def __init__(self):
         return
@@ -42,13 +44,13 @@ class CorrectSpelling(Transformer):
                 if edit_distance == 0:
                     # The word is not misspelled (w.r.t. the analyzed langs.)
                     return []
-                elif edit_distance == 1:
+                elif edit_distance <= CorrectSpelling.MAX_EDIT_DISTANCE:
                     if c.lower() == lentry:
                         # "Just" the capitalization was incorrect;
                         # we don't want to report other words.
                         return [c]
                     elif self.FILTER_CORRECTIONS_WITH_SPACE and \
-                         c.find(" ") != -1:
+                        c.find(" ") != -1:
                         pass
                     else:
                         words.append(c)
