@@ -21,7 +21,7 @@ def BASE_TRANSFORMATIONS
 \ +capitalize
 
 is_pattern write "found_patterns.txt"
-is_keyboard_walk "found_keyboard_walks.txt"
+is_walk write "found_keyboard_walks.txt"
 
 BASE_TRANSFORMATIONS is_popular_word related 0.6
 BASE_TRANSFORMATIONS is_regular_word related 0.5
