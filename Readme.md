@@ -41,6 +41,7 @@ and follow the installation instructions; however, be aware that the instruction
 ```bash
 sudo apt install cmake
 sudo apt install ninja-build
+sudo apt-get install pkg-config
 git clone --recurse-submodules https://github.com/scherzocrk/pynuspell.git
 cd pynuspell
 ./extern/vcpkg/bootstrap-vcpkg.sh
