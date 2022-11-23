@@ -11,6 +11,8 @@ class Deduplicate(Extractor):
     E.g. "TestTest" will be transformed to "Test".
     """
 
+    def op_name() -> str: return "deduplicate"
+
     def process(self, entry: str) -> List[str]:
         length = len(entry)
         if  length % 2 == 1:
@@ -23,7 +25,5 @@ class Deduplicate(Extractor):
         else:
             return None
 
-    def __str__(self):
-        return "deduplicate"
 
 DEDUPLICATE = Deduplicate() 

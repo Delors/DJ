@@ -7,6 +7,8 @@ from operations.operation import Extractor
 class GetSpecialChars(Extractor):
     """Extracts the used special char (sequences)."""
 
+    def op_name() -> str: return "get_sc"
+
     SPECIAL_CHARACTERS_REGEXP = \
         "[<>|,;.:_#'+*~@€²³`'^°!\"§$%&/()\[\]{}\\\-]+"
     
@@ -25,7 +27,5 @@ class GetSpecialChars(Extractor):
         else:
             return None
 
-    def __str__(self):
-        return "get_sc"
 
 GET_SPECIAL_CHARS = GetSpecialChars()

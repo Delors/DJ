@@ -6,6 +6,8 @@ from operations.operation import Filter
 class Sieve(Filter):
     """Only accepts entries which consists of the chars found in the specified file."""
 
+    def op_name() -> str: return "sieve"
+
     def __init__(self, sieve_filename : str):
         self.sieve_filename = sieve_filename
         abs_filename = locate_resource(sieve_filename)
@@ -25,5 +27,5 @@ class Sieve(Filter):
             return []
 
     def __str__(self):
-        return f"sieve \"{self.sieve_filename}\""
+        return f"{Sieve.op_name()} \"{self.sieve_filename}\""
 

@@ -11,6 +11,8 @@ class Replace(Transformer):
         characters use the "map" operation.)
     """
 
+    def op_name() -> str: return "replace"
+
     def __init__(self, replacements_filename):
         self.replacements_filename = replacements_filename
         abs_filename = locate_resource(replacements_filename)
@@ -49,4 +51,4 @@ class Replace(Transformer):
             return [e]
         
     def __str__(self):
-        return f'replace "{self.replacements_filename}"'
+        return f'{Replace.op_name()} "{self.replacements_filename}"'

@@ -6,6 +6,8 @@ from operations.operation import Transformer
 class StripNumbersAndSpecialChars(Transformer):
     """Removes leading and trailing numbers and ascii special chars."""
 
+    def op_name() -> str: return "strip_numbers_and_sc"
+
     STRIP_CHARS = "0123456789<>|,;.:_#'+*~@€²³`'^°!\"§$%&/()\[\]{}\\\-"
 
     def process(self, entry: str) -> List[str]:
@@ -20,7 +22,5 @@ class StripNumbersAndSpecialChars(Transformer):
             # The entry is not empty
             return [stripped_entry]
 
-    def __str__(self):
-        return "strip_numbers_and_sc"
 
 STRIP_NUMBERS_AND_SPECIAL_CHARS = StripNumbersAndSpecialChars()    

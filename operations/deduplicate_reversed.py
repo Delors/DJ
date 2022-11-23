@@ -8,6 +8,8 @@ class DeduplicateReversed(Transformer):
     Identifies entries where the second part of an entry is the 
     duplication of the first part, but reversed. E.g., "testtset".
     """
+
+    def op_name() -> str: return "deduplicate_reversed"
    
     def process(self, entry: str) -> List[str]:
         length = len(entry)
@@ -21,7 +23,5 @@ class DeduplicateReversed(Transformer):
         else:
             return None
 
-    def __str__(self):
-        return "deduplicate_reversed"
 
 DEDUPLICATE_REVERSED = DeduplicateReversed() 

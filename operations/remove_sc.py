@@ -10,6 +10,8 @@ class RemoveSpecialChars(Transformer):
         whitespace and/or strip the entries afterwards.
     """
 
+    def op_name() -> str: return "remove_sc"
+
     NON_SPECIAL_CHARACTERS_REGEXP = \
         "[^<>|,;.:_#'+*~@€²³`'^°!\"§$%&/()\[\]{}\\\-]+"
 
@@ -30,7 +32,5 @@ class RemoveSpecialChars(Transformer):
             # there were no special chars
             return None
 
-    def __str__(self):
-        return "remove_sc"
 
 REMOVE_SPECIAL_CHARS = RemoveSpecialChars()

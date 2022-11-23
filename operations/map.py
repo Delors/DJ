@@ -8,6 +8,8 @@ class Map(Transformer):
     """ Maps a given character to several alternatives.
     """
 
+    def op_name() -> str: return "map"
+
     def __init__(self, source_char : str, target_chars : str):
         if not set(source_char).isdisjoint(set(target_chars)):
             raise ValueError(f"useless identity mapping {source_char} [{target_chars}]")
@@ -29,5 +31,5 @@ class Map(Transformer):
     def __str__ (self):
         source_char = escape(self.source_char)
         target_chars = escape(self.raw_target_chars)
-        return f"map {source_char} [{target_chars}]"
+        return f"{Map.op_name()} {source_char} [{target_chars}]"
 

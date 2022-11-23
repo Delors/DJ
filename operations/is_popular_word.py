@@ -15,6 +15,8 @@ class IsPopularWord(Filter):
         This test has very high initialization costs on _first_ usage!
     """
 
+    def op_name() -> str: return "is_popular_word"
+
     def __init__(self):
         self._twitter_vocab = None
         self._google_vocab = None
@@ -41,7 +43,5 @@ class IsPopularWord(Filter):
         else:
             return [entry]
 
-    def __str__(self):
-        return "is_popular_word"
 
 IS_POPULAR_WORD = IsPopularWord()

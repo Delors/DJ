@@ -1,10 +1,12 @@
 # GENERAL FILTER
-ignore "Ignore.txt"
+ignore "ignore/de.txt"
+ignore "ignore/en.txt"
 
 # DEFINITIONS OF MACROS
-def P_UMLAUT_TO_ASCII +replace "UmlautToAscii.txt"
-def P_REWRITE_UMLAUT +replace "RewriteUmlaut.txt"
-def P_SC_TO_SPACE +replace "SpecialCharToSpace.txt"
+def P_UMLAUT_TO_ASCII +replace "replace/UmlautToAscii.txt"
+def P_REWRITE_UMLAUT +replace "replace/RewriteUmlaut.txt"
+def P_SC_TO_SPACE +replace "replace/SpecialCharToSpace.txt"
+
 # REMARKS
 # - "upper" only makes sense for "non-mobile phone" passwords
 # - "remove_numbers" potentially leads to many non-sense words.
@@ -12,7 +14,17 @@ def P_SC_TO_SPACE +replace "SpecialCharToSpace.txt"
 #             of it may depend on the time when the deleetification
 #             is performed.
 # - "number" may lead to many new entries, use sparingly!
-def BASE_TRANSFORMATIONS P_SC_TO_SPACE +map \s [._-] +strip_ws +deleetify +capitalize +remove_sc +get_numbers +get_sc +lower P_UMLAUT_TO_ASCII P_REWRITE_UMLAUT +remove_ws +number [aeiou]
+def BASE_TRANSFORMATIONS 
+\ P_SC_TO_SPACE +map \s [._-] +strip_ws 
+\ +deleetify 
+\ +capitalize 
+\ +remove_sc 
+\ +get_numbers 
+\ +get_sc 
+\ +lower 
+\ P_UMLAUT_TO_ASCII P_REWRITE_UMLAUT 
+\ +remove_ws 
+\ +number [aeiou]
 
 # RULES
 # A rule takes an entry and generates new candidates.
@@ -24,10 +36,17 @@ def BASE_TRANSFORMATIONS P_SC_TO_SPACE +map \s [._-] +strip_ws +deleetify +capit
 # entry is passed on if and only if it was not transformed. 
 
 BASE_TRANSFORMATIONS report
+
 split / BASE_TRANSFORMATIONS report
+
 split . BASE_TRANSFORMATIONS report
+
 mangle_dates report
-split \s discard_endings "discard_endings.txt" BASE_TRANSFORMATIONS report
+
+split \s 
+\ discard_endings "discard_endings/en.txt" 
+\ discard_endings "discard_endings/en.txt"
+\ BASE_TRANSFORMATIONS report
 
 
 

@@ -6,6 +6,8 @@ from operations.operation import Transformer
 class FoldWhitespace(Transformer):
     """Folds multiple whitespace (spaces and tabs) to one space."""
 
+    def op_name() -> str: return "fold_ws"
+
     def process(self, entry: str) -> List[str]:
         last_entry = ""
         folded_entry = entry
@@ -19,7 +21,5 @@ class FoldWhitespace(Transformer):
         else:
             return None
 
-    def __str__(self):
-        return "fold_ws"
 
 FOLD_WHITESPACE = FoldWhitespace()

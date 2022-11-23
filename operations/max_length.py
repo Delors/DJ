@@ -6,6 +6,8 @@ from operations.operation import Filter
 class MaxLength(Filter):
     """Only accepts entries with a given maximum length."""
 
+    def op_name() -> str: return "max_length"
+
     def __init__(self, max_length : int):
         if max_length <= 0:
             raise ValueError("max_length has to > 0")
@@ -20,4 +22,4 @@ class MaxLength(Filter):
             return []
 
     def __str__(self):
-        return f"max_length {self.max_length}"
+        return f"{MaxLength.op_name()} {self.max_length}"

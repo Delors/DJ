@@ -17,6 +17,8 @@ class DeLeetify(Transformer):
         a, e, i and o.
     """
 
+    def op_name() -> str: return "deleetify"
+
     """
     mappings = {
             ("0","o"),
@@ -88,7 +90,5 @@ class DeLeetify(Transformer):
         else:
             return list(deleetified_entries)
 
-    def __str__(self):
-        return "deleetify"
 
 DELEETIFY = DeLeetify() 

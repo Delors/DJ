@@ -16,6 +16,8 @@ class Related(Transformer):
         all models. 
     """
 
+    def op_name() -> str: return "related"
+
     K                    = 5
     KEEP_ALL_RELATEDNESS = 0.75
 
@@ -81,4 +83,4 @@ class Related(Transformer):
         return  list(result)
 
     def __str__(self):
-        return f"related {self.MIN_RELATEDNESS}"
+        return f"{Related.op_name()} {self.MIN_RELATEDNESS}"

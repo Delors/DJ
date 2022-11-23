@@ -12,6 +12,8 @@ class SubSplits(Transformer):
             Abc-ghi
     """
 
+    def op_name() -> str: return "sub_splits"
+
     def __init__(self, split_char : str):
         self.split_char = split_char
         return
@@ -47,5 +49,5 @@ class SubSplits(Transformer):
         split_char_def = self.split_char\
             .replace(' ',"\\s")\
             .replace('\t',"\\t")
-        return f"sub_splits {split_char_def}"           
+        return f"{SubSplits.op_name()} {split_char_def}"           
  

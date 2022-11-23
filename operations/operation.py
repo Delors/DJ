@@ -39,6 +39,17 @@ class Operation(ABC):
         and which may be used multiple times.
     """
 
+    @staticmethod 
+    @abstractmethod
+    def op_name() -> str: 
+        raise NotImplementedError()
+    """The operation's name need to be set by an operation!"""
+
+    @staticmethod
+    #@abstractmethod
+    def parse(op_name: str, rest_of_def: str) -> Tuple[str,'Operation']: 
+        raise NotImplementedError()
+
     def process_entries(self, entries : List[str]) -> List[str]:
         """
         Processes each entry of the list and applies the respective operation.
@@ -59,9 +70,7 @@ class Operation(ABC):
           return None
         else:
           return all_new_entries
-
-
-    @abstractmethod
+    
     def process(self, entry: str) -> List[str]:
         """
         Processes the given entry and returns the list of new entries.
@@ -100,6 +109,9 @@ class Operation(ABC):
     def is_reporter(self) -> bool: return False        
 
     def is_filter(self) -> bool: return False 
+
+    def __str__(self):
+        return self.__class__.op_name()
 
 
 class Transformer(Operation):

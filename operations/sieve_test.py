@@ -5,13 +5,13 @@ from operations.sieve import Sieve
 class TestMin(unittest.TestCase):
 
     def setUp(self):
-        self.s = Sieve("graphene_os_12_password_chars.txt")
+        self.s = Sieve("sieve/graphene_os_12_password_chars.txt")
 
     def test_is_filter(self):
         self.assertTrue(self.s.is_filter())
 
     def test__str__(self):
-        self.assertEqual(self.s.__str__(),"sieve \"graphene_os_12_password_chars.txt\"")
+        self.assertEqual(self.s.__str__(),"sieve \"sieve/graphene_os_12_password_chars.txt\"")
 
     def test_process_filter(self):
         self.assertListEqual(self.s.process("§bgb"),[])

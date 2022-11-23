@@ -11,6 +11,8 @@ class MangleDates(Transformer):
         Currently, we try to identify 1st german and then 2nd english dates.
     """
 
+    def op_name() -> str: return "mangle_dates"
+
     START_YEAR_20TH = 75
     """Start year in the 20th century; i.e. 19XX."""
 
@@ -81,9 +83,6 @@ class MangleDates(Transformer):
                 mangled_dates.append(m+d)
 
         return mangled_dates
-            
 
-    def __str__ (self):
-        return "mangle_dates"
 
 MANGLE_DATES = MangleDates() 

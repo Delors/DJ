@@ -7,6 +7,8 @@ class IsSpecialChars(Filter):
     """ Identifies entries which only consist of certain special chars.
     """
 
+    def op_name() -> str: return "is_sc"
+
     SPECIAL_CHARS = set("^<>|,;.:_#'+*~@€²³`'^°!\"§$%&/()[]{}\\-")
 
     def process(self, entry: str) -> List[str]:
@@ -15,7 +17,5 @@ class IsSpecialChars(Filter):
         else:
             return [entry]
 
-    def __str__(self):
-        return "is_sc"   
 
 IS_SPECIAL_CHARS = IsSpecialChars()

@@ -11,6 +11,8 @@ class Detriplicate(Extractor):
     E.g. "TestTestTest" will be transformed to "Test".
     """
 
+    def op_name() -> str: return "detriplicate"
+
     def process(self, entry: str) -> List[str]:
         length = len(entry)
         if  length % 3 != 0:
@@ -24,7 +26,5 @@ class Detriplicate(Extractor):
         else:
             return None
 
-    def __str__(self):
-        return "detriplicate"
 
 DETRIPLICATE = Detriplicate() 

@@ -7,6 +7,8 @@ from operations.operation import Extractor
 class GetNumbers(Extractor):
     """Extracts all numbers."""
 
+    def op_name() -> str: return "get_numbers"
+
     _re_numbers = re.compile("[0-9]+")
 
     def process(self, entry: str) -> List[str]:
@@ -19,7 +21,5 @@ class GetNumbers(Extractor):
         else:
             return None
 
-    def __str__(self):
-        return "get_numbers"   
 
 GET_NUMBERS = GetNumbers()

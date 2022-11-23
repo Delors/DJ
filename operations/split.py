@@ -8,6 +8,8 @@ class Split(Transformer):
     """ Splits up an entry using the given split_char as a separator.
     """
 
+    def op_name() -> str: return "split"
+
     def __init__(self, split_char : str):
         self.split_char = split_char
         return
@@ -26,5 +28,5 @@ class Split(Transformer):
 
     def __str__ (self):
         split_char_def = escape(self.split_char)
-        return f"split {split_char_def}"         
+        return f"{Split.op_name()} {split_char_def}"         
 

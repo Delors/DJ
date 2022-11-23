@@ -8,6 +8,8 @@ class IsPattern(Filter):
         E.g., "aaaaa" or "qpqpqp" are identified as patterns.
     """
 
+    def op_name() -> str: return "is_pattern"
+
     def process(self, entry: str) -> List[str]:
         length = len(entry)
         if length <= 2:
@@ -28,8 +30,5 @@ class IsPattern(Filter):
         else:
             return []
               
-
-    def __str__(self):
-        return "is_pattern"   
 
 IS_PATTERN = IsPattern()

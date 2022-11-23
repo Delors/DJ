@@ -19,6 +19,8 @@ class DiscardEndings(Transformer):
     (See also the ignore directive for a similar mechanism.)
     """
 
+    def op_name() -> str: return "discard_endings"
+
     def __init__(self, endings_filename):
         self.endings_filename = endings_filename
 
@@ -42,4 +44,4 @@ class DiscardEndings(Transformer):
             return None
         
     def __str__(self):
-        return f'discard_endings "{self.endings_filename}"'
+        return f'{DiscardEndings.op_name()} "{self.endings_filename}"'

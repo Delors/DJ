@@ -7,6 +7,8 @@ from operations.operation import Transformer
 class RemoveNumbers(Transformer):
     """Removes all numbers from an entry."""
 
+    def op_name() -> str: return "remove_numbers"
+
     NO_NUMBERS_REGEXP = "[^0-9]+"
 
     def __init__(self):
@@ -24,7 +26,5 @@ class RemoveNumbers(Transformer):
         else:
             return None
 
-    def __str__(self):
-        return "remove_numbers"   
 
 REMOVE_NUMBERS = RemoveNumbers()

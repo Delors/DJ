@@ -12,6 +12,8 @@ class IsRegularWord(Filter):
         on those defined in `common.dictionaries`.
     """
 
+    def op_name() -> str: return "is_regular_word"
+
     def __init__(self):
         return
 
@@ -24,7 +26,5 @@ class IsRegularWord(Filter):
         except:
             pass
 
-    def __str__(self):
-        return "is_regular_word"
 
 IS_REGULAR_WORD = IsRegularWord()

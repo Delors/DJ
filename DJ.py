@@ -9,13 +9,12 @@ import os
 import argparse
 import re
 import importlib
+import traceback
 
 from abc import ABC, abstractmethod
 from typing import List, Set, Tuple, Callable
 
 from common import IllegalStateError,escape,unescape,get_filename,locate_resource,enrich_filename
-from operations.detriplicate import DETRIPLICATE
-from operations.is_keyboard_walk import IS_KEYBOARD_WALK
 
 from operations.operation import Operation
 # TRANSFORMERS
@@ -43,7 +42,9 @@ from operations.reverse import REVERSE
 from operations.get_numbers import GET_NUMBERS
 from operations.get_special_chars import GET_SPECIAL_CHARS
 from operations.deduplicate import DEDUPLICATE
+from operations.detriplicate import DETRIPLICATE
 from operations.deduplicate_reversed import DEDUPLICATE_REVERSED
+from operations.segments import Segments
 # FILTERS
 from operations.min_length import MinLength
 from operations.min import Min
@@ -51,7 +52,7 @@ from operations.max_length import MaxLength
 from operations.is_regular_word import IS_REGULAR_WORD
 from operations.is_popular_word import IS_POPULAR_WORD
 from operations.is_pattern import IS_PATTERN
-from operations.is_keyboard_walk import IS_KEYBOARD_WALK
+from operations.is_walk import IsWalk
 from operations.is_special_chars import IS_SPECIAL_CHARS
 from operations.sieve import Sieve
 
@@ -86,7 +87,7 @@ def apply_ops(entry : str, ops : List[Operation]) -> List[str]:
         application of an operation to all (intermediate) entries resulted in 
         `None`. (cf. Operation.processEntries)
     """
-    
+
     entries = [entry]    
     for op in ops:
         if _trace_ops:
@@ -95,6 +96,7 @@ def apply_ops(entry : str, ops : List[Operation]) -> List[str]:
         try:
             new_entries = op.process_entries(entries)
         except Exception as e:
+            print(traceback.format_exc())
             print(f"[error] {op}({entries}) failed: {str(e)}",file=stderr)              
             return
 
@@ -108,14 +110,14 @@ def apply_ops(entry : str, ops : List[Operation]) -> List[str]:
         for new_entry in new_entries:
             if len(new_entry) == 0:
                 continue
-            if new_entry is ignored_entries:
+            if new_entry in ignored_entries:
                 if _trace_ops:
                     print(f"[trace] ignoring: {new_entry}")
             else:
                 entries.append(new_entry)
 
         if len(entries) == 0:
-            return entries
+            return []
 
     return entries
 
@@ -152,19 +154,21 @@ class Report(Operation):
     will not be output.
     """
 
+    def op_name() -> str: return "report"
+
     def is_reporter(self) -> bool: return True   
 
     def process(self, entry: str) -> List[str]:
         report(entry)
         return [entry]
 
-    def __str__(self):
-        return "report"
 
 REPORT = Report()        
 
 
 class Write(Report):
+
+    def op_name() -> str: return "write"
 
     def __init__(self,filename) -> None:
         super().__init__()
@@ -185,11 +189,13 @@ class Write(Report):
             pass
                
     def __str__(self):
-        return f"write \"{self.filename}\""
+        return f"{Write.op_name()} \"{self.filename}\""
 
 
 class Macro(Operation):
     """Definition of a macro."""
+
+    def op_name() -> str: raise NotImplementedError("macros have dynamic names")
 
     def __init__(self, name :str, ops : List[Operation]):
         self.name = name
@@ -216,6 +222,8 @@ class KeepAlwaysModifier(Operation):
         wrapped operation.
     """
 
+    def op_name() -> str: return "+"
+
     def __init__(self, op : Operation):
         self.op = op
 
@@ -232,7 +240,7 @@ class KeepAlwaysModifier(Operation):
         return entries
         
     def __str__(self):
-        return "+" + str(self.op)
+        return KeepAlwaysModifier.op_name() + str(self.op)
 
 
 class KeepOnlyIfFilteredModifier(Operation):
@@ -242,6 +250,8 @@ class KeepOnlyIfFilteredModifier(Operation):
         returns None, the entry is passed on otherwise the result
         of the wrapped operation is passed on as is.
     """
+
+    def op_name() -> str: return "*"
 
     def __init__(self, op : Operation):
         self.op = op
@@ -258,7 +268,7 @@ class KeepOnlyIfFilteredModifier(Operation):
         return entries
         
     def __str__(self):
-        return "*" + str(self.op)        
+        return KeepOnlyIfFilteredModifier.op_name() + str(self.op)        
 
 
 class NegateFilterModifier(Operation):
@@ -266,6 +276,8 @@ class NegateFilterModifier(Operation):
         given entry is returned by the underlying filter, an empty 
         list will be returned and vice versa.
     """
+
+    def op_name() -> str : return "!"
 
     def __init__(self, op : Operation):
         self.op = op
@@ -283,7 +295,7 @@ class NegateFilterModifier(Operation):
             return []
         
     def __str__(self):
-        return "!" + str(self.op)        
+        return NegateFilterModifier.op_name() + str(self.op)        
 
 
 class ComplexOperation:
@@ -328,6 +340,14 @@ def parse(operation) -> Callable[[str,str],Tuple[str,Operation]]:
         return (rest_of_op,operation)
 
     return parse_it   
+
+def parse_only_static_parameters(operation_constructor) -> Callable[[str,str],Tuple[str,Operation]]:
+    """Generic parser for operations with a single int parameter. """
+
+    def parse_it(op_name: str, rest_of_op: str) -> Tuple[str, Operation]:
+        return (rest_of_op,operation_constructor())
+
+    return parse_it
 
 def parse_int_parameter(operation_constructor) -> Callable[[str,str],Tuple[str,Operation]]:
     """Generic parser for operations with a single int parameter. """
@@ -448,7 +468,7 @@ operation_parsers = {
     "is_regular_word" : parse(IS_REGULAR_WORD),
     "is_popular_word" : parse(IS_POPULAR_WORD),
     "is_pattern" : parse(IS_PATTERN),
-    "is_keyboard_walk" : parse(IS_KEYBOARD_WALK),
+    "is_walk" : parse_only_static_parameters(IsWalk),
     "is_sc" : parse(IS_SPECIAL_CHARS),
     "sieve" : parse_quoted_string(Sieve),
 
@@ -458,6 +478,7 @@ operation_parsers = {
     "deduplicate" : parse(DEDUPLICATE),
     "deduplicate_reversed" : parse(DEDUPLICATE_REVERSED),
     "detriplicate" : parse(DETRIPLICATE),
+    "segments" : parse_int_parameter(Segments),
 
     # TRANSFORMERS
     "reverse" : parse(REVERSE),
@@ -667,6 +688,14 @@ def parse_ops(raw_lines : List[str]) -> List[ComplexOperation]:
                 raise ValueError(
                     f"unknown field name: {op_class_name}.{field_name}"
                 )
+
+            if _verbose:
+                print(
+                    f"[debug] config:"+
+                    f"{op_module.__name__}.{op_class.__name__}.{field_name} = "+
+                    f"{raw_value} (old:{old_value})",file=sys.stderr)
+
+
             value_type = type(old_value)
             if value_type == int:
                 value = int(raw_value)
@@ -733,7 +762,7 @@ def transform_entries(
                 op.apply(sentry)
         else:
             if print_progress: 
-                print(f"[progress] ignored:",sentry,file=sys.stderr)           
+                print(f"[progress] ignoring: {sentry}",file=sys.stderr)
 
 
 def main() -> int:

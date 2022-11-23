@@ -3,10 +3,7 @@ from typing import List
 
 from operations.operation import Filter
 
-KEYBOARD_INFO = {
-    "layout": "de"
-}
-KEYBOARD = {
+KEYBOARD_DE = {
     "HORIZONTAL_NO_SHIFT" : {
         "^":["1",""],
         "1":["^","2"],
@@ -109,17 +106,49 @@ KEYBOARD = {
     }
 }
 
+PIN_PAD = {
+    "ADJACENT" : {
+        "1":["2","4","5"],
+        "2":["1","3","4","5","6"],
+        "3":["2","5","6"],
+        "4":["1","2","5","8","7"],
+        "5":["1","2","3","4","6","7","8","9"],
+        "6":["2","3","5","8","9"],
+        "7":["4","5","8","0"],
+        "8":["4","5","6","7","9","0"],
+        "9":["5","6","8","0"],
+        "0":["7","8","9"],
+    }
+}
+
 # TODO Make keyboard configuration configurable by putting it into a python file which - when specified - registers itself with the set of keyboards...
 
-class IsKeyboardWalk(Filter):
-    """ Identifies so-called keyboard walks.
+class IsWalk(Filter):
+    """ Identifies so-called keyboard/pin-pad walks which have at least MIN_WALK_LENGTH
+        characters.
 
         We make the assumption that every sub part of a keyboard walk has 
-        to have at least 3 elements. I.e., this allows us to identify
+        to have at least MIN_SUB_WALK_LENGTH elements. I.e., this allows 
+        us to identify walks such as "qwerasdf".
     """
 
+    def op_name() -> str: return "is_walk"
+
+    # We create a copy of these "global" variables at instantiation time
+    # to facilitate testing the "IsWalk" filter.
+    LAYOUT = "KEYBOARD_DE"
+    MIN_SUB_WALK_LENGTH = 3.0 # +inf has to be used if the walk has to go up to the full length of the entry
+    MIN_WALK_LENGTH = 3.0 # with 3.0 "just" two adjacent characters are not enough
+
+    def __init__(self) -> None:
+        super().__init__()
+        configured_layout = IsWalk.LAYOUT
+        self._keyboard_layout = globals()[configured_layout]   
+        self._min_walk_length = IsWalk.MIN_WALK_LENGTH
+        self._min_sub_walk_length = IsWalk.MIN_SUB_WALK_LENGTH     
+
     def process(self, entry: str) -> List[str]:
-        if len(entry) <= 2:
+        if len(entry) < self._min_walk_length:
             return []
 
         last_e = entry[0]
@@ -127,7 +156,7 @@ class IsKeyboardWalk(Filter):
         for e in entry[1:]:
             current_length += 1
             found = False
-            for adjacent in (dir for dir in KEYBOARD.values()):
+            for adjacent in (dir for dir in self._keyboard_layout.values()):
                 a = adjacent.get(last_e)
                 if a is None: 
                     # we found a character that is not in the keyboard definition
@@ -137,7 +166,7 @@ class IsKeyboardWalk(Filter):
                     break
 
             if not found:
-                if current_length < 4:
+                if current_length <= self._min_sub_walk_length:
                     return []
                 else:
                     current_length = 1
@@ -145,7 +174,3 @@ class IsKeyboardWalk(Filter):
 
         return [entry]
         
-    def __str__(self):
-        return "is_keyboard_walk"   
-
-IS_KEYBOARD_WALK = IsKeyboardWalk()

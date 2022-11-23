@@ -6,6 +6,8 @@ from operations.operation import Transformer
 class RemoveWhitespace(Transformer):
     """Removes all whitespace."""
 
+    def op_name() -> str: return "remove_ws"
+
     def process(self, entry: str) -> List[str]:
         split_entries = entry.split()
         if len(split_entries) == 0:
@@ -16,7 +18,5 @@ class RemoveWhitespace(Transformer):
         else:
             return ["".join(split_entries)]
 
-    def __str__(self):
-        return "remove_ws"
 
 REMOVE_WHITESPACE = RemoveWhitespace()  

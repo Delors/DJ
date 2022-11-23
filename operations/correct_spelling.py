@@ -17,6 +17,8 @@ class CorrectSpelling(Transformer):
     dictionaries, the costs can be very(!) high.
     """
 
+    def op_name() -> str: return "correct_spelling"
+
     USE_DAMERAU_LEVENSHTEIN = True 
 
     FILTER_CORRECTIONS_WITH_SPACE = True
@@ -55,7 +57,5 @@ class CorrectSpelling(Transformer):
         else:
             return words
 
-    def __str__(self):
-        return "correct_spelling"
 
 CORRECT_SPELLING = CorrectSpelling()

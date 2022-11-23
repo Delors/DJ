@@ -5,6 +5,8 @@ from operations.operation import Filter
 class Min(Filter):
     """Only accepts entries with a given minimum number of the specified character class."""
 
+    def op_name() -> str: return "min"
+
     def _test_lower(c : str) -> bool : return c.islower()
     def _test_upper(c : str) -> bool : return c.isupper()
     def _test_numeric(c : str) -> bool : return c.isnumeric()
@@ -41,5 +43,5 @@ class Min(Filter):
         return []
 
     def __str__(self):
-        return f"min {self.operator} {self.min_count}"
+        return f"{Min.op_name()} {self.operator} {self.min_count}"
 

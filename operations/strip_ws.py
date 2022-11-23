@@ -6,6 +6,8 @@ from operations.operation import Transformer
 class StripWhitespace(Transformer):
     """Removes leading and trailing whitespace."""
 
+    def op_name() -> str: return "strip_ws"
+
     def process(self, entry: str) -> List[str]:
         stripped_entry = entry.strip()
         if stripped_entry is entry:
@@ -16,7 +18,5 @@ class StripWhitespace(Transformer):
         else: # stripped_entry != entry and len(entry) > 0
             return [stripped_entry]
 
-    def __str__(self):
-        return "strip_ws"
 
 STRIP_WHITESPACE = StripWhitespace()    
