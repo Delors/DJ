@@ -30,7 +30,7 @@ BASE_TRANSFORMATIONS report
 split / BASE_TRANSFORMATIONS report
 # split . BASE_TRANSFORMATIONS report
 mangle_dates report
-split \s discard_endings "discard_endings.txt" BASE_TRANSFORMATIONS report
+split \s discard_endings "discard_endings/de.txt" BASE_TRANSFORMATIONS report
 
 
 

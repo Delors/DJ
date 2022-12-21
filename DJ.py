@@ -31,6 +31,7 @@ from operations.strip_numbers_and_special_chars import STRIP_NUMBERS_AND_SPECIAL
 from operations.mangle_dates import MANGLE_DATES
 from operations.replace import Replace
 from operations.map import Map
+from operations.pos_map import PosMap
 from operations.split import Split
 from operations.sub_splits import SubSplits
 from operations.discard_endings import DiscardEndings
@@ -79,6 +80,14 @@ ignored_entries = set()
     a specific point in time, an entry will - after each step -
     always be checked against entries in the ignored_entries set.
 """
+
+sets : Tuple[str,List[str]] = {}
+""" The sets which are created while processing the entries. The
+    sets are cleared whenever a new dictionary entry is analyzed.
+"""
+
+def _clear_sets():
+    for k in sets.keys(): sets[k] = []
 
 
 def apply_ops(entry : str, ops : List[Operation]) -> List[str]:
@@ -192,12 +201,60 @@ class Write(Report):
         return f"{Write.op_name()} \"{self.filename}\""
 
 
-class Macro(Operation):
-    """Definition of a macro."""
 
-    def op_name() -> str: raise NotImplementedError("macros have dynamic names")
+class Use(Operation):
 
-    def __init__(self, name :str, ops : List[Operation]):
+    def op_name() -> str: return "use"
+
+    def __init__(self,setname) -> None:
+        super().__init__()
+        self.setname = setname
+
+    def process(self, entry: str) -> List[str]:
+        return sets[self.setname]
+               
+    def __str__(self):
+        return f"{Use.op_name()} {self.setname}" 
+
+class StoreInSet(Operation):
+
+    def op_name() -> str: return "store_in"
+
+    def __init__(self,setname,ops : ComplexOperation) -> None:
+        super().__init__()
+        self.setname = setname
+        self.ops = ops
+
+    def process(self, entry: str) -> List[str]:
+        return entry
+               
+    def __str__(self):
+        return f"{StoreInSet.op_name()} {self.setname}({self.ops})" 
+
+
+class StoreFilteredInSet(Operation):
+
+    def op_name() -> str: return "store_filtered_in"
+
+    def __init__(self,setname,ops : ComplexOperation) -> None:
+        super().__init__()
+        self.setname = setname
+        self.ops = ops
+
+    def process(self, entry: str) -> List[str]:
+        return entry
+               
+    def __str__(self):
+        return f"{StoreFilteredInSet.op_name()} {self.setname}({self.ops})" 
+
+
+
+class MacroCall(Operation):
+    """Represents a macro call."""
+
+    def op_name() -> str: return "do"
+
+    def __init__(self, name :str, ops : List[Operation]): # TODO set ops in init step
         self.name = name
         self.ops = ops
         return
@@ -212,7 +269,7 @@ class Macro(Operation):
         for op in self.ops: op.close()    
 
     def __str__(self):
-        return self.name
+        return f"{Macro.op_name()} {self.name}"
 
 
 class KeepAlwaysModifier(Operation):
@@ -342,7 +399,7 @@ def parse(operation) -> Callable[[str,str],Tuple[str,Operation]]:
     return parse_it   
 
 def parse_only_static_parameters(operation_constructor) -> Callable[[str,str],Tuple[str,Operation]]:
-    """Generic parser for operations with a single int parameter. """
+    """Generic parser for operations without a parameter. """
 
     def parse_it(op_name: str, rest_of_op: str) -> Tuple[str, Operation]:
         return (rest_of_op,operation_constructor())
@@ -379,6 +436,19 @@ def parse_float_parameter(operation_constructor) -> Callable[[str,str],Tuple[str
         except ValueError as ve:
             raise Exception(f"{op_name}: parameter {raw_value} is not a float") 
         new_rest_of_op = rest_of_op[float_match.end(0):].lstrip()
+        return (new_rest_of_op,operation_constructor(value))
+
+    return parse_it
+
+def parse_string(operation_constructor) -> Callable[[str,str],Tuple[str,Operation]]:
+    """Generic parser for operations with a single unquoted string parameter. """
+
+    def parse_it(op_name: str, rest_of_op: str) -> Tuple[str, Operation]:
+        string_match = re_next_word.match(rest_of_op)
+        if not string_match:
+           raise Exception(f"{op_name}: string parameter missing") 
+        value = string_match.group(0)
+        new_rest_of_op = rest_of_op[string_match.end(0):].lstrip()
         return (new_rest_of_op,operation_constructor(value))
 
     return parse_it
@@ -455,6 +525,7 @@ def parse_sub_splits(op_name: str, rest_of_op: str) -> Tuple[str, Operation]:
 
 macro_defs : Tuple[str,ComplexOperation] = { }
 
+
 """Mapping between the name of an op and it's associated parameters parser."""
 operation_parsers = {
 
@@ -463,8 +534,6 @@ operation_parsers = {
     
     # FILTERS
     "min" : parse_min,
-    "max_length" : parse_int_parameter(MaxLength),
-    "min_length" : parse_int_parameter(MinLength),
     "is_regular_word" : parse(IS_REGULAR_WORD),
     "is_popular_word" : parse(IS_POPULAR_WORD),
     "is_pattern" : parse(IS_PATTERN),
@@ -495,6 +564,7 @@ operation_parsers = {
     "mangle_dates" : parse(MANGLE_DATES),
     "number" : parse_number,
     "map" : parse_map,
+    "pos_map" : parse_quoted_string(PosMap),
     "related" : parse_float_parameter(Related),
     "split" : parse_split,
     "sub_splits" : parse_sub_splits,
@@ -517,35 +587,60 @@ def parse_rest_of_op(previous_ops : List[Operation], line_number, rest_of_op : s
         next_op_parser_name = next_op_parser_name[1:]
 
     result : Tuple[str, Operation] = None
-    next_op_parser = operation_parsers.get(next_op_parser_name)
-    if next_op_parser is not None:
-        new_rest_of_op = rest_of_op[next_op_parser_match.end(
-            0):].lstrip()
-        result = next_op_parser(next_op_parser_name, new_rest_of_op)
-    elif macro_defs.get(next_op_parser_name) is not None:
-        macro_def = macro_defs.get(next_op_parser_name)
-        new_rest_of_op = rest_of_op[next_op_parser_match.end(
-            0):].lstrip()
-        result = (
-            new_rest_of_op,
-            Macro(next_op_parser_name,macro_def.ops)
-        )
-    else:
-        print(
-            f"[error][{line_number}] unknown command: {next_op_parser_name}", 
-            file=stderr
-        )
-        return None        
 
-    if keep_always:
-        (new_rest_of_op,base_op) = result
-        result = (new_rest_of_op,KeepAlwaysModifier(base_op))
-    elif keep_if_filtered:
-        (new_rest_of_op,base_op) = result
-        result = (new_rest_of_op,KeepOnlyIfFilteredModifier(base_op))
-    elif negate_filter:
-        (new_rest_of_op,base_op) = result
-        result = (new_rest_of_op,NegateFilterModifier(base_op))
+    if next_op_parser_name[0] == ">":
+        if next_op_parser_name.startswith(">>"):
+            set_name = next_op_parser_name[2:]
+            store_filtered = False
+        elif next_op_parser_name.startswith(">!>"):
+            set_name = next_op_parser_name[3:]
+            store_filtered = True
+        else:
+            print(
+                f"[error][{line_number}] unsupported redirection command: {next_op_parser_name}", 
+                file=stderr
+            )
+            return None
+        if sets.get(set_name) is None:
+            print(
+                f"[error][{line_number}] unknown set: {set_name}", 
+                file=stderr
+            )
+            return None
+        new_rest_of_op = rest_of_op[next_op_parser_match.end(
+                0):].lstrip()
+        result = (new_rest_of_op, StoreInHeap(set_name,store_filtered))
+
+    else:
+        next_op_parser = operation_parsers.get(next_op_parser_name)
+        if next_op_parser is not None:
+            new_rest_of_op = rest_of_op[next_op_parser_match.end(
+                0):].lstrip()
+            result = next_op_parser(next_op_parser_name, new_rest_of_op)
+        elif macro_defs.get(next_op_parser_name) is not None:
+            macro_def = macro_defs.get(next_op_parser_name)
+            new_rest_of_op = rest_of_op[next_op_parser_match.end(
+                0):].lstrip()
+            result = (
+                new_rest_of_op,
+                Macro(next_op_parser_name,macro_def.ops)
+            )
+        else:
+            print(
+                f"[error][{line_number}] unknown command: {next_op_parser_name}", 
+                file=stderr
+            )
+            return None        
+
+        if keep_always:
+            (new_rest_of_op,base_op) = result
+            result = (new_rest_of_op,KeepAlwaysModifier(base_op))
+        elif keep_if_filtered:
+            (new_rest_of_op,base_op) = result
+            result = (new_rest_of_op,KeepOnlyIfFilteredModifier(base_op))
+        elif negate_filter:
+            (new_rest_of_op,base_op) = result
+            result = (new_rest_of_op,NegateFilterModifier(base_op))
 
     return result
     
@@ -663,6 +758,17 @@ def parse_ops(raw_lines : List[str]) -> List[ComplexOperation]:
                 else:
                     macro_defs[macro_name] = op
 
+        elif sline.startswith("set"):
+            set_def = sline[len("set")+1:]            
+            set_name_match = re_next_word.match(set_def)
+            set_name = set_name_match.group(0)
+            if set_name.upper() != set_name:
+                raise ValueError(f"set names need to be upper case: {set_name}")
+            if sets.get(set_name):
+                raise IllegalStateError(f"set ({set_name}) already defined")
+            else:
+                sets[set_name] = {}     
+
         elif sline.startswith("config"):
             if parsing_ops:
                 raise IllegalStateError(
@@ -672,7 +778,7 @@ def parse_ops(raw_lines : List[str]) -> List[ComplexOperation]:
             raw_config = sline[len("config")+1:].split()
             if len(raw_config) != 3:
                 raise ValueError(
-                    f"invalid config: {raw_config} (expected format: <op-class> <field> <value>)"
+                    f"invalid config: {raw_config} (expected format: <op-module> <field> <value>)"
                 )
             (op_module_name,field_name,raw_value) = raw_config
             op_module = importlib.import_module("operations."+op_module_name)
@@ -750,6 +856,7 @@ def transform_entries(
                 print(f"[progress] processing:",sentry,file=sys.stderr)           
 
             _reported_entries.clear()
+            _clear_sets()
             for op in ops:
                 if _verbose:
                     escaped_sentry = sentry\
@@ -823,7 +930,7 @@ def main() -> int:
     if len(all_operations) == 0:
         print("no (valid) operations specified",file=sys.stderr)
     else:    
-        transform_entries(args.dictionary, all_operations,args.progress)
+        transform_entries(args.dictionary, all_operations, args.progress)
 
     # 3. cleanup operations
     for op in all_operations: 

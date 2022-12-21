@@ -2,10 +2,10 @@ from typing import List
 
 from operations.operation import Filter
 
-class Min(Filter):
+class Max(Filter):
     """Only accepts entries with a given minimum number of the specified character class."""
 
-    def op_name() -> str: return "min"
+    def op_name() -> str: return "max"
 
     def _test_length(c : str) -> bool : return True
     def _test_lower(c : str) -> bool : return c.islower()
@@ -25,25 +25,26 @@ class Min(Filter):
         "non_letter" : _test_not_alpha
     }
 
-    def __init__(self, operator: str, min_count : int):
-        if min_count <= 0:
-            raise ValueError(f"min_count ({min_count}) has to be > 0")
+    def __init__(self, operator: str, max_count : int):
+        if max_count < 0:
+            raise ValueError(f"max_count ({max_count}) has to be >= 0")
 
         self.operator = operator
         self.test = self._tests[operator]
-        self.min_count = min_count
-        return
+        self.max_count = max_count
+        
 
     def process(self, entry: str) -> List[str]:
         count = 0
         for c in entry:
             if self.test(c):
                 count += 1
-                if count >= self.min_count:
-                    return [entry]
+                if count > self.max_count:
+                    return []
         
-        return []
+        return [entry]
+
 
     def __str__(self):
-        return f"{Min.op_name()} {self.operator} {self.min_count}"
+        return f"{Max.op_name()} {self.operator} {self.max_count}"
 

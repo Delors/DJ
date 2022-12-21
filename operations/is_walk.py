@@ -174,3 +174,4 @@ class IsWalk(Filter):
 
         return [entry]
         
+IS_WALK = IsWalk()

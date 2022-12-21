@@ -29,6 +29,16 @@ class TestCorrectSpelling(unittest.TestCase):
         suggestions = CS.process("Tset")
         self.assertIn("Test", suggestions)
 
+    def test_handling_of_capitalization(self):       
+        suggestions = CS.process("TeSt")
+        self.assertListEqual(["Test"], suggestions)
+
+        suggestions = CS.process("hallenbad")
+        self.assertListEqual(["Hallenbad"], suggestions)     
+        
+        suggestions = CS.process("HaLlenBad")
+        self.assertListEqual(["Hallenbad"], suggestions)        
+
     def test_arbitrary_chars(self):       
         suggestions = CS.process("MwDkadfuaSSeeeadfas")
         self.assertIsNone(suggestions)
