@@ -8,20 +8,40 @@ import pynuspell
 
 from operations.operation import Operation
 
-class IllegalStateError(RuntimeError):
+class IllegalStateError(RuntimeError): 
+    """ Internal errors aka Bugs. """
+    pass
+
+class ValidationFailed(RuntimeError):
+    """ Errors that are related to user problems. """
     pass
 
 def escape(s : str) -> str:
     return \
         s.replace('\\',"\\\\")\
-         .replace(' ',"\\s")\
+         .replace('\n',"\\n")\
          .replace('\t',"\\t")\
+         .replace('\r',"\\r")\
+         .replace('\"',"\\\"")
 
 def unescape(s : str) -> str:
+    """ The escape character is \ and the following escape 
+        sequences are supported:
+        \\  => \
+        \n  => <newline>
+        \t  => <tab>
+        \r  => <carriage return>
+        \"  => "
+
+        This method is not optimized and should not used to
+        process entries!
+    """
     return \
         s.replace("\\\\",'\\')\
-         .replace("\\s",' ')\
+         .replace("\\n",'\n')\
          .replace("\\t",'\t')\
+         .replace("\\r",'\r')\
+         .replace("\\\"",'"')\
 
 def locate_resource(filename : str) -> str:
     """ Tries to locate the file by searching for it relatively to the current

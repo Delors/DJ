@@ -4,7 +4,7 @@ from typing import List
 from operations.operation import Transformer
 
 
-class RemoveNumbers(Transformer):
+class RemoveNO(Transformer):
     """Removes all numbers from an entry."""
 
     def op_name() -> str: return "remove_numbers"
@@ -27,4 +27,4 @@ class RemoveNumbers(Transformer):
             return None
 
 
-REMOVE_NUMBERS = RemoveNumbers()
+REMOVE_NO = RemoveNO()

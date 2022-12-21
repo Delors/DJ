@@ -4,8 +4,10 @@ from typing import List
 from operations.operation import Extractor
 
 
-class GetSpecialChars(Extractor):
-    """Extracts the used special char (sequences)."""
+class GetSC(Extractor):
+    """ Extracts the used special char (sequences).
+        The set can be configured globally.
+    """
 
     def op_name() -> str: return "get_sc"
 
@@ -27,5 +29,4 @@ class GetSpecialChars(Extractor):
         else:
             return None
 
-
-GET_SPECIAL_CHARS = GetSpecialChars()
+GET_SC = GetSC()

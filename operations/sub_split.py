@@ -3,7 +3,7 @@ from typing import List
 from operations.operation import Transformer
 
 
-class SubSplits(Transformer):
+class SubSplit(Transformer):
     """ Splits up an entry using the given split_char as a separator
         creating all possible sub splits, keeping the order.
         E.g. Abc-def-ghi with "-" as the split char would create:

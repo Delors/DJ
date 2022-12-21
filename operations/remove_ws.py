@@ -3,7 +3,7 @@ from typing import List
 from operations.operation import Transformer
 
 
-class RemoveWhitespace(Transformer):
+class RemoveWS(Transformer):
     """Removes all whitespace."""
 
     def op_name() -> str: return "remove_ws"
@@ -19,4 +19,4 @@ class RemoveWhitespace(Transformer):
             return ["".join(split_entries)]
 
 
-REMOVE_WHITESPACE = RemoveWhitespace()  
+REMOVE_WS = RemoveWS()  

@@ -4,10 +4,10 @@ from typing import List
 from operations.operation import Extractor
 
 
-class GetNumbers(Extractor):
+class GetNO(Extractor):
     """Extracts all numbers."""
 
-    def op_name() -> str: return "get_numbers"
+    def op_name() -> str: return "get_no"
 
     _re_numbers = re.compile("[0-9]+")
 
@@ -22,4 +22,4 @@ class GetNumbers(Extractor):
             return None
 
 
-GET_NUMBERS = GetNumbers()
+GET_NO = GetNO()

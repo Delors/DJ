@@ -3,7 +3,7 @@ from typing import List
 from operations.operation import Transformer
 
 
-class FoldWhitespace(Transformer):
+class FoldWS(Transformer):
     """Folds multiple whitespace (spaces and tabs) to one space."""
 
     def op_name() -> str: return "fold_ws"
@@ -22,4 +22,4 @@ class FoldWhitespace(Transformer):
             return None
 
 
-FOLD_WHITESPACE = FoldWhitespace()
+FOLD_WS = FoldWS()

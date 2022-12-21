@@ -3,7 +3,7 @@ from typing import List
 from operations.operation import Transformer
 
 
-class StripWhitespace(Transformer):
+class StripWS(Transformer):
     """Removes leading and trailing whitespace."""
 
     def op_name() -> str: return "strip_ws"
@@ -19,4 +19,4 @@ class StripWhitespace(Transformer):
             return [stripped_entry]
 
 
-STRIP_WHITESPACE = StripWhitespace()    
+STRIP_WS = StripWS()    

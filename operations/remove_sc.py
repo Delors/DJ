@@ -4,16 +4,19 @@ from typing import List
 from operations.operation import Transformer
 
 
-class RemoveSpecialChars(Transformer):
+class RemoveSC(Transformer):
     """ Removes all special chars; whitespace is not considered as a
         special char. In general it is recommend to remove/fold 
         whitespace and/or strip the entries afterwards.
-    """
 
-    def op_name() -> str: return "remove_sc"
+        The set of characters can be configured globally using:
+        `NON_SPECIAL_CHARACTERS_REGEXP`.
+    """
 
     NON_SPECIAL_CHARACTERS_REGEXP = \
         "[^<>|,;.:_#'+*~@€²³`'^°!\"§$%&/()\[\]{}\\\-]+"
+
+    def op_name() -> str: return "remove_sc"
 
     #re_non_special_char = re.compile("[a-zA-Z0-9\s]+")
     def __init__(self):
@@ -33,4 +36,4 @@ class RemoveSpecialChars(Transformer):
             return None
 
 
-REMOVE_SPECIAL_CHARS = RemoveSpecialChars()
+REMOVE_SC = RemoveSC()

@@ -3,7 +3,7 @@ from typing import List
 from operations.operation import Transformer
 
 
-class StripNumbersAndSpecialChars(Transformer):
+class StripNOAndSC(Transformer):
     """Removes leading and trailing numbers and ascii special chars."""
 
     def op_name() -> str: return "strip_numbers_and_sc"
@@ -23,4 +23,4 @@ class StripNumbersAndSpecialChars(Transformer):
             return [stripped_entry]
 
 
-STRIP_NUMBERS_AND_SPECIAL_CHARS = StripNumbersAndSpecialChars()    
+STRIP_NO_AND_SC = StripNOAndSC()    

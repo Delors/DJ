@@ -19,42 +19,40 @@ from common import IllegalStateError,escape,unescape,get_filename,locate_resourc
 from operations.operation import Operation
 # TRANSFORMERS
 from operations.deleetify import DELEETIFY
-from operations.remove_ws import REMOVE_WHITESPACE
+from operations.remove_ws import REMOVE_WS
 from operations.capitalize import CAPITALIZE
 from operations.lower import LOWER
 from operations.upper import UPPER
-from operations.fold_whitespace import FOLD_WHITESPACE
-from operations.remove_numbers import REMOVE_NUMBERS
-from operations.remove_sc import REMOVE_SPECIAL_CHARS
-from operations.strip_ws import STRIP_WHITESPACE
-from operations.strip_numbers_and_special_chars import STRIP_NUMBERS_AND_SPECIAL_CHARS
+from operations.fold_ws import FOLD_WS
+from operations.remove_no import REMOVE_NO
+from operations.remove_sc import REMOVE_SC
+from operations.strip_ws import STRIP_WS
+from operations.strip_no_and_sc import STRIP_NO_AND_SC
 from operations.mangle_dates import MANGLE_DATES
 from operations.replace import Replace
 from operations.map import Map
 from operations.pos_map import PosMap
 from operations.split import Split
-from operations.sub_splits import SubSplits
+from operations.sub_split import SubSplit
 from operations.discard_endings import DiscardEndings
 from operations.number import Number
 from operations.correct_spelling import CORRECT_SPELLING
 from operations.related import Related
 from operations.reverse import REVERSE
 # EXTRACTORS
-from operations.get_numbers import GET_NUMBERS
-from operations.get_special_chars import GET_SPECIAL_CHARS
+from operations.get_no import GET_NO
+from operations.get_sc import GET_SC
 from operations.deduplicate import DEDUPLICATE
 from operations.detriplicate import DETRIPLICATE
 from operations.deduplicate_reversed import DEDUPLICATE_REVERSED
 from operations.segments import Segments
 # FILTERS
-from operations.min_length import MinLength
 from operations.min import Min
-from operations.max_length import MaxLength
 from operations.is_regular_word import IS_REGULAR_WORD
 from operations.is_popular_word import IS_POPULAR_WORD
 from operations.is_pattern import IS_PATTERN
 from operations.is_walk import IsWalk
-from operations.is_special_chars import IS_SPECIAL_CHARS
+from operations.is_sc import IS_SC
 from operations.sieve import Sieve
 
 
@@ -129,6 +127,32 @@ def apply_ops(entry : str, ops : List[Operation]) -> List[str]:
             return []
 
     return entries
+
+
+class ComplexOperation:
+    """ Representation of a complex operation.
+
+        Instantiation of a complex operation which is made up of 
+        multiple atomic/macro operations. An instance of ComplexOperation 
+        basically just handles applying the atomic operations to 
+        an entry and (potentially) every subsequently created entry.
+    """
+
+    def __init__(self, ops: List[Operation]):
+        if not ops or len(ops) == 0:
+            raise ValueError(f"no operations specified: {ops}")
+
+        self.ops = ops
+        return
+
+    def apply(self, entry):
+        return apply_ops(entry,self.ops)
+
+    def close(self):
+        for op in self.ops: op.close()
+
+    def __str__(self) -> str:
+        return " ".join(map(str,self.ops))
 
 
 class Report(Operation):
@@ -269,7 +293,7 @@ class MacroCall(Operation):
         for op in self.ops: op.close()    
 
     def __str__(self):
-        return f"{Macro.op_name()} {self.name}"
+        return f"{MacroCall.op_name()} {self.name}"
 
 
 class KeepAlwaysModifier(Operation):
@@ -354,32 +378,16 @@ class NegateFilterModifier(Operation):
     def __str__(self):
         return NegateFilterModifier.op_name() + str(self.op)        
 
+class Or(Operation):
 
-class ComplexOperation:
-    """ Representation of a complex operation.
+    def op_name() -> str : return "or"
 
-        Instantiation of a complex operation which is made up of 
-        multiple atomic/macro operations. An instance of ComplexOperation 
-        basically just handles applying the atomic operations to 
-        an entry and (potentially) every subsequently created entry.
-    """
+    def __init__(self, cops : List[ComplexOperation]) -> None:
+        self.cops = cops
 
-    def __init__(self, ops: List[Operation]):
-        if not ops or len(ops) == 0:
-            raise ValueError(f"no operations specified: {ops}")
-
-        self.ops = ops
-        return
-
-    def apply(self, entry):
-        return apply_ops(entry,self.ops)
-
-    def close(self):
-        for op in self.ops: op.close()
-
-    def __str__(self) -> str:
-        return " ".join(map(str,self.ops))
-
+    def __str__(self):
+        cops = ", ".join(map (lambda x: str(x), self.cops))
+        return Or.op_name() +"(" + cops + ")"
 
 ### PARSER SETUP AND CONFIGURATION
 
@@ -538,12 +546,12 @@ operation_parsers = {
     "is_popular_word" : parse(IS_POPULAR_WORD),
     "is_pattern" : parse(IS_PATTERN),
     "is_walk" : parse_only_static_parameters(IsWalk),
-    "is_sc" : parse(IS_SPECIAL_CHARS),
+    "is_sc" : parse(IS_SC),
     "sieve" : parse_quoted_string(Sieve),
 
     # EXTRACTORS
-    "get_numbers" : parse(GET_NUMBERS),
-    "get_sc" : parse(GET_SPECIAL_CHARS),
+    "get_numbers" : parse(GET_NO),
+    "get_sc" : parse(GET_SC),
     "deduplicate" : parse(DEDUPLICATE),
     "deduplicate_reversed" : parse(DEDUPLICATE_REVERSED),
     "detriplicate" : parse(DETRIPLICATE),
@@ -551,16 +559,16 @@ operation_parsers = {
 
     # TRANSFORMERS
     "reverse" : parse(REVERSE),
-    "fold_ws" : parse(FOLD_WHITESPACE),
+    "fold_ws" : parse(FOLD_WS),
     "lower" : parse(LOWER),
     "upper" : parse(UPPER),
-    "remove_numbers" : parse(REMOVE_NUMBERS),
-    "remove_ws" : parse(REMOVE_WHITESPACE),
-    "remove_sc" : parse(REMOVE_SPECIAL_CHARS),
+    "remove_numbers" : parse(REMOVE_NO),
+    "remove_ws" : parse(REMOVE_WS),
+    "remove_sc" : parse(REMOVE_SC),
     "capitalize" : parse(CAPITALIZE),
     "deleetify" : parse(DELEETIFY),
-    "strip_ws" : parse(STRIP_WHITESPACE),
-    "strip_numbers_and_sc" : parse(STRIP_NUMBERS_AND_SPECIAL_CHARS),
+    "strip_ws" : parse(STRIP_WS),
+    "strip_numbers_and_sc" : parse(STRIP_NO_AND_SC),
     "mangle_dates" : parse(MANGLE_DATES),
     "number" : parse_number,
     "map" : parse_map,

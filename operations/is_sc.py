@@ -3,7 +3,7 @@ from typing import List
 from operations.operation import Filter
 
 
-class IsSpecialChars(Filter):
+class IsSC(Filter):
     """ Identifies entries which only consist of certain special chars.
     """
 
@@ -18,4 +18,4 @@ class IsSpecialChars(Filter):
             return [entry]
 
 
-IS_SPECIAL_CHARS = IsSpecialChars()
+IS_SC = IsSC()
