@@ -1,7 +1,7 @@
 import re
 from typing import List
 
-from operations.operation import Extractor
+from dj_ast import Extractor
 
 
 class GetNO(Extractor):

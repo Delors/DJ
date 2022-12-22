@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from typing import List
 
-from operations.operation import Filter
+from dj_ast import Filter
 
 KEYBOARD_DE = {
     "HORIZONTAL_NO_SHIFT" : {

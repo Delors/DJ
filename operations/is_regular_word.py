@@ -3,7 +3,7 @@ from typing import List
 
 from Levenshtein import distance
 
-from operations.operation import Filter
+from dj_ast import Filter
 from common import dictionaries
 
 class IsRegularWord(Filter):

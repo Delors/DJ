@@ -16,7 +16,7 @@ from typing import List, Set, Tuple, Callable
 
 from common import IllegalStateError,escape,unescape,get_filename,locate_resource,enrich_filename
 
-from operations.operation import Operation
+from dj_ast import Operation
 # TRANSFORMERS
 from operations.deleetify import DELEETIFY
 from operations.remove_ws import REMOVE_WS
@@ -127,32 +127,6 @@ def apply_ops(entry : str, ops : List[Operation]) -> List[str]:
             return []
 
     return entries
-
-
-class ComplexOperation:
-    """ Representation of a complex operation.
-
-        Instantiation of a complex operation which is made up of 
-        multiple atomic/macro operations. An instance of ComplexOperation 
-        basically just handles applying the atomic operations to 
-        an entry and (potentially) every subsequently created entry.
-    """
-
-    def __init__(self, ops: List[Operation]):
-        if not ops or len(ops) == 0:
-            raise ValueError(f"no operations specified: {ops}")
-
-        self.ops = ops
-        return
-
-    def apply(self, entry):
-        return apply_ops(entry,self.ops)
-
-    def close(self):
-        for op in self.ops: op.close()
-
-    def __str__(self) -> str:
-        return " ".join(map(str,self.ops))
 
 
 class Report(Operation):

@@ -1,6 +1,6 @@
 from typing import List
 
-from operations.operation import Transformer
+from dj_ast import Transformer
 from common import escape
 
 
@@ -31,5 +31,5 @@ class Map(Transformer):
     def __str__ (self):
         source_char = escape(self.source_char)
         target_chars = escape(self.raw_target_chars)
-        return f"{Map.op_name()} {source_char} [{target_chars}]"
+        return f'{Map.op_name()} "{source_char}" "{target_chars}"'
 

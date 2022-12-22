@@ -2,7 +2,7 @@ import itertools
 import re
 from typing import List, Set
 
-from operations.operation import Transformer
+from dj_ast import Transformer
 
 class DeLeetify(Transformer):
     """ Deleetifies an entry by replacing the used numbers with their

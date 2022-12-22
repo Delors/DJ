@@ -1,7 +1,7 @@
 import re
 from typing import List
 
-from operations.operation import Transformer
+from dj_ast import Transformer
 
 
 class MangleDates(Transformer):

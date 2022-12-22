@@ -2,7 +2,7 @@ from math import isnan
 from typing import List
 from contextlib import suppress
 
-from operations.operation import Transformer
+from dj_ast import Transformer
 from common import get_nlp_model
 
 

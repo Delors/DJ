@@ -9,12 +9,16 @@ from parsimonious.grammar import Grammar
 from parsimonious import NodeVisitor
 from parsimonious.nodes import Node
 from typing import List
+# from abc import ABC, abstractmethod
+# from importlib import import_module
 
-from common import IllegalStateError, ValidationFailed, unescape
-from operations.operation import Operation
-from DJ import ComplexOperation
-from DJ import REPORT, Write, MacroCall, Use, StoreInSet, StoreFilteredInSet, Or
-from DJ import NegateFilterModifier, KeepAlwaysModifier, KeepOnlyIfFilteredModifier
+from common import IllegalStateError, unescape
+
+from dj_ast import ComplexOperation
+from dj_ast import TDFile, Body, Header, Comment
+from dj_ast import IgnoreEntries, SetDefinition, MacroDefinition, ConfigureOperation
+from dj_ops import REPORT, Write, MacroCall, Use, StoreInSet, StoreFilteredInSet, Or
+from dj_ops import NegateFilterModifier, KeepAlwaysModifier, KeepOnlyIfFilteredModifier
 from operations.capitalize import CAPITALIZE
 from operations.correct_spelling import CORRECT_SPELLING
 from operations.deduplicate_reversed import DEDUPLICATE_REVERSED
@@ -72,7 +76,8 @@ DJ_GRAMMAR = Grammar(
     _meaningless    = ws* nl?
     continuation    = ( ~r"\s*\\[\r\n]\s+"m ) / ws+ # In some cases it is possible to split a definition/sequence over multiple lines using "\" at the end.
     comment         = ~r"#[^\r\n]*"    
-    quoted_string   = ~'"[^"]*"' # TODO support quoted '"'
+    #quoted_string   = ~'"[^"]*"' # does not support escapes
+    quoted_string   = ~r'"(?:(?:(?!(?<!\\)").)*)"' # supports "arbitrary" escapes
     file_name       = quoted_string
     identifier      = ~r"[A-Z_]+"a # Identifiers of sets and macros have to use capital letters to make the easily distinguishable
     op_operator     = ~r"[a-z]+"
@@ -181,7 +186,7 @@ DJ_GRAMMAR = Grammar(
     map             = "map" ws+ quoted_string ws+ quoted_string
     pos_map         = "pos_map" ws+ quoted_string
     split           = "split" ws+ quoted_string
-    sub_split       = "sub_spit" ws+ quoted_string
+    sub_split       = "sub_split" ws+ quoted_string
     number          = "number" ws+ quoted_string   
     discard_endings = "discard_endings" ws+ file_name 
     mangle_dates    = "mangle_dates"    
@@ -198,7 +203,7 @@ DJ_EXAMPLE_FILE = """
 ignore "ignore/de.txt"
 
 config related K 15
-config related KEEP_ALL_RELATEDNESS 0.75
+config related KEEP_ALL_RELATEDNESS 0.777
 
 set NO_PATTERN
 set WALK
@@ -210,6 +215,7 @@ def BASE_TRANSFORMATIONS \
  !is_pattern \
  *replace "replace/SpecialCharToSpace.txt" \
  *split " " \
+ *sub_split "-" \
  *strip_ws \
  *fold_ws \
  +deduplicate \
@@ -224,87 +230,18 @@ store_filtered_in NO_PATTERNS( is_pattern )
 
 store_in NO_WORD(or(is_walk, is_pattern, is_sc ))
 
-store_in RELATED( *split " " \
+store_in RELATED( *split "\\"" \
  *strip_ws \
  *fold_ws \
  related 0.5 )
 
-use NO_PATTERNS map "s" "abc"
+use NO_PATTERNS map "s" "abc\\n\\r\\t"
 """
 
 DJ_SIMPLE_EXAMPLE_FILE="""
 *strip_ws fold_ws report
 """
 
-class ASTNode:
-
-    def validate(self, spec : 'TDFile', parent : 'ASTNode'): 
-        pass
-
-    
-
-class Comment:
-    def __init__(self,comment):
-        self.comment = comment
-    def __str__(self):
-        return self.comment
-
-class SetupOperationNode(ASTNode):
-    pass
-
-class SetDefinition(SetupOperationNode):
-    def __init__(self,name):
-        self.name = name
-    def __str__(self) -> str:
-        return "set "+self.name
-
-class IgnoreEntries(SetupOperationNode):
-    def __init__(self,filename):
-        self.filename = filename
-    def __str__(self) -> str:
-        return "ignore \""+self.filename+"\""
-
-class ConfigureOperations(SetupOperationNode):
-    def __init__(self,modulename,fieldname,fieldvalue):
-        self.modulename = modulename
-        self.fieldname = fieldname
-        self.fieldvalue = fieldvalue
-    def __str__(self):
-        return \
-            "config "+\
-            self.modulename+" "+\
-            self.fieldname+" "+\
-            self.fieldvalue
-
-class MacroDefinition(SetupOperationNode):
-    def __init__(self,name,ops):
-        self.name = name
-        self.ops = ops
-    def __str__(self) -> str:
-        return "def "+self.name+" "+str(self.ops)
-
-class Header(ASTNode):
-    def __init__(self, setup_ops : List[SetupOperationNode]):
-        unwrapped_setup_ops = map(lambda x : x[0],setup_ops)
-        self.setup_ops : List[SetupOperationNode] =\
-           [ so for so in unwrapped_setup_ops if so is not None ]
-    def __str__(self):
-        return "\n".join(str(o) for o in self.setup_ops)
-
-class Body(ASTNode):
-    def __init__(self, ops : List[Operation]):
-        unwrapped_ops = map(lambda x : x[0],ops)
-        self.ops : List[Operation] =\
-            [ o for o in unwrapped_ops if o is not None ]
-    def __str__(self):
-        return "\n".join(str(o) for o in self.ops)        
-
-class TDFile(ASTNode):
-    def __init__(self, header : Header, body : Body):
-        self.header = header
-        self.body = body
-    def __str__(self):
-        return str(self.header)+"\n\n"+str(self.body)
 
 class DJTreeVisitor (NodeVisitor):
     # Note that this is a bottom-up visitor.
@@ -340,7 +277,7 @@ class DJTreeVisitor (NodeVisitor):
 
     def visit_config(self, node, children):        
         (_config,_ws,module_name,_ws,field_name,_ws,value) = children        
-        return ConfigureOperations(module_name,field_name,value)
+        return ConfigureOperation(module_name,field_name,value)
 
 
     def visit_def(self, _node, visited_children):
@@ -477,6 +414,8 @@ def main():
     print("=====================================================================")    
     ast : TDFile = DJTreeVisitor().visit(tree)
     print(ast)
+
+    ast.init(ast,None,verbose = True)
 
 if __name__ == '__main__':
     sys.exit(main())

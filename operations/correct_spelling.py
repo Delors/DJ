@@ -3,7 +3,7 @@ from typing import List
 from Levenshtein import distance as levenshtein_distance
 from jellyfish import damerau_levenshtein_distance
 
-from operations.operation import Transformer
+from dj_ast import Transformer
 from common import dictionaries
 
 

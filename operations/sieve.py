@@ -1,7 +1,7 @@
 from typing import List
 
 from common import locate_resource
-from operations.operation import Filter
+from dj_ast import Filter
 
 class Sieve(Filter):
     """Only accepts entries which consists of the chars found in the specified file."""

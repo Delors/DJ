@@ -1,7 +1,7 @@
 from typing import List
 
-from operations.operation import Transformer
-from common import escape,unescape
+from dj_ast import Transformer
+from common import escape
 
 
 class Split(Transformer):
@@ -27,6 +27,5 @@ class Split(Transformer):
         return segments
 
     def __str__ (self):
-        split_char_def = escape(self.split_char)
-        return f"{Split.op_name()} {split_char_def}"         
+        return f'{Split.op_name()} "{escape(self.split_char)}"'
 

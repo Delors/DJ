@@ -3,16 +3,12 @@ from sys import stderr
 from datetime import datetime
 import importlib
 
-#import hunspell
 import pynuspell
 
-from operations.operation import Operation
-
 class IllegalStateError(RuntimeError): 
-    """ Internal errors aka Bugs. """
     pass
 
-class ValidationFailed(RuntimeError):
+class InitializationFailed(RuntimeError):
     """ Errors that are related to user problems. """
     pass
 
@@ -66,8 +62,22 @@ def locate_resource(filename : str) -> str:
             error = f"neither ./{filename} nor {dj_filename} nor {resources_filename} exists"
             raise FileNotFoundError(error)
     except Exception as e:
-        print(f"can't locate {filename}: {e}", file=stderr)
-        raise
+        raise InitializationFailed(f"can't locate {filename}: {e}")
+
+def read_utf8file(filename: str) -> list[str] :
+    abs_filename = locate_resource(filename)
+    lines = []
+    try: 
+        with open(abs_filename, 'r', encoding='utf-8') as fin:
+            for line in fin:
+                # We want to be able to strip words with spaces
+                # at the beginning or end.
+                stripped_line = line.rstrip("\r\n")
+                if len(stripped_line) > 0:
+                    lines.append(stripped_line)
+    except Exception as e:
+        raise InitializationFailed(f"can't read {filename}: {e}")
+    return lines
 
 def enrich_filename(filename: str) -> str:
     """ Extends the current filename with the current date.

@@ -1,6 +1,7 @@
 from typing import List
 
-from operations.operation import Transformer
+from common import escape
+from dj_ast import Transformer
 
 
 class SubSplit(Transformer):
@@ -49,5 +50,5 @@ class SubSplit(Transformer):
         split_char_def = self.split_char\
             .replace(' ',"\\s")\
             .replace('\t',"\\t")
-        return f"{SubSplits.op_name()} {split_char_def}"           
+        return f'{SubSplit.op_name()} "{escape(split_char_def)}"'           
  

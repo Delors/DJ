@@ -1,6 +1,6 @@
 from typing import List
 
-from operations.operation import Filter
+from dj_ast import Filter
 
 
 class IsSC(Filter):
