@@ -25,12 +25,12 @@ class TestMax(unittest.TestCase):
 
     def test__str__(self):
         self.assertEqual(self.mcnt_2.__str__(),"max length 2")
-        self.assertEqual(self.mlo_2.__str__(),"min lower 2")
-        self.assertEqual(self.mup_2.__str__(),"min upper 2")
-        self.assertEqual(self.mnu_2.__str__(),"min numeric 2")
-        self.assertEqual(self.mle_2.__str__(),"min letter 2")
-        self.assertEqual(self.msy_2.__str__(),"min symbol 2")
-        self.assertEqual(self.mnl_2.__str__(),"min non_letter 2")
+        self.assertEqual(self.mlo_2.__str__(),"max lower 2")
+        self.assertEqual(self.mup_2.__str__(),"max upper 2")
+        self.assertEqual(self.mnu_2.__str__(),"max numeric 2")
+        self.assertEqual(self.mle_2.__str__(),"max letter 2")
+        self.assertEqual(self.msy_2.__str__(),"max symbol 2")
+        self.assertEqual(self.mnl_2.__str__(),"max non_letter 2")
 
 
     def test_too_many_respective_chars(self):

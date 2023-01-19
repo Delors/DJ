@@ -3,7 +3,7 @@ from typing import List
 from contextlib import suppress
 
 from dj_ast import Transformer
-from common import get_nlp_model
+from common import InitializationFailed, get_nlp_model
 
 
 class Related(Transformer):
@@ -25,12 +25,12 @@ class Related(Transformer):
         # The test is required here, because both variables are user
         # configurable.
         if self.KEEP_ALL_RELATEDNESS < MIN_RELATEDNESS:
-            raise ValueError(
+            raise InitializationFailed(
                 f"KEEP_ALL_RELATEDNESS {self.KEEP_ALL_RELATEDNESS} has to be "+
                 f"larger than the MIN_RELATEDNESS {MIN_RELATEDNESS}"
             )
         if MIN_RELATEDNESS <= 0 or MIN_RELATEDNESS >= 1.0:
-            raise ValueError(
+            raise InitializationFailed(
                 f"MIN_RELATEDNESS {MIN_RELATEDNESS} has to be in range (0,1.0)"
             )
 
@@ -39,8 +39,6 @@ class Related(Transformer):
         self._wiki = None
         self.MIN_RELATEDNESS = MIN_RELATEDNESS
 
-        return
-        return True
         
     def process(self, entry: str) -> List[str]:
         if not self._twitter: 

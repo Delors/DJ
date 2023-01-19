@@ -1,5 +1,6 @@
 import unittest
 
+from common import InitializationFailed
 from operations.map import Map
 
 class TestMap(unittest.TestCase):
@@ -12,11 +13,11 @@ class TestMap(unittest.TestCase):
         self.assertTrue(self.map_a_to_1.is_transformer())
 
     def test__str__(self):
-        self.assertEqual(self.map_b_to_1_and_2.__str__(),"map b [12]")
-        self.assertEqual(self.map_a_to_1.__str__(),"map a [1]")
+        self.assertEqual(self.map_b_to_1_and_2.__str__(),'map "b" "12"')
+        self.assertEqual(self.map_a_to_1.__str__(),'map "a" "1"')
 
     def test_constructor(self):       
-        self.assertRaises(ValueError, Map,"a","a")
+        self.assertRaises(InitializationFailed, Map,"a","a")
 
     def test_single_map(self):       
         self.assertEqual(self.map_a_to_1.process("affe"),["1ffe"])

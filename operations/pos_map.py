@@ -1,7 +1,7 @@
 from typing import List
 
 from dj_ast import Transformer
-from common import escape
+from common import InitializationFailed, escape
 
 
 class PosMap(Transformer):
@@ -26,11 +26,11 @@ class PosMap(Transformer):
 
     def __init__(self, target_chars : str):        
         if (len(target_chars) == 0):
-            raise ValueError("pos_map's target chars must not be empty")
+            raise InitializationFailed("pos_map's target chars must not be empty")
 
         self.raw_target_chars = target_chars
         self.target_chars = set(target_chars) 
-        return
+        
 
     def process(self, entry: str) -> List[str]:
         entries = []
@@ -44,5 +44,5 @@ class PosMap(Transformer):
 
     def __str__ (self):
         target_chars = escape(self.raw_target_chars)
-        return f"{PosMap.op_name()} [{target_chars}]"
+        return f'{PosMap.op_name()} "{target_chars}"'
 

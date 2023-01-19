@@ -1,7 +1,7 @@
 from typing import List, Set
 
-from dj_ast import Transformer
-from common import locate_resource
+from dj_ast import Transformer,ASTNode,TDUnit
+from common import read_utf8file,escape
 
 class DiscardEndings(Transformer):
     """
@@ -23,13 +23,11 @@ class DiscardEndings(Transformer):
 
     def __init__(self, endings_filename):
         self.endings_filename = endings_filename
+        self.endings : Set[str] = set()
 
-        endings : Set[str] = set()
-        endings_resource = locate_resource(endings_filename)
-        with open(endings_resource,"r",encoding="utf-8") as fin :
-            for ending in fin:
-                endings.add(ending.rstrip("\r\n"))       
-        self.endings = endings
+    def init(self, td_unit: TDUnit, parent: ASTNode, verbose : bool):
+        super().init(td_unit,parent,verbose)
+        self.endings.union(read_utf8file(self.endings_filename))
 
     def process(self, entry: str) -> List[str]: 
         all_terms = entry.split()
@@ -44,4 +42,4 @@ class DiscardEndings(Transformer):
             return None
         
     def __str__(self):
-        return f'{DiscardEndings.op_name()} "{self.endings_filename}"'
+        return f'{DiscardEndings.op_name()} "{escape(self.endings_filename)}"'

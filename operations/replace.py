@@ -1,8 +1,7 @@
 from typing import List
 
-from dj_ast import Transformer
-from common import locate_resource
-
+from dj_ast import TDUnit, ASTNode, Transformer
+from common import InitializationFailed, read_utf8file, escape
 
 class Replace(Transformer):
     """ Replaces a character by another character.
@@ -13,31 +12,35 @@ class Replace(Transformer):
 
     def op_name() -> str: return "replace"
 
+
     def __init__(self, replacements_filename):
         self.replacements_filename = replacements_filename
-        abs_filename = locate_resource(replacements_filename)
-        
-        replacement_table : dict[str,str] = {}
-        with open(abs_filename,"r", encoding='utf-8') as replace_file :
-            for line in replace_file:
-                sline = line.strip()
-                if len(sline) == 0 or sline.startswith("# "):
-                    continue
-                (raw_key,raw_value) = sline.split()
-                key = raw_key\
-                    .replace("\\s"," ")\
-                    .replace("\#","#")\
-                    .replace("\\\\","\\")
-                value = raw_value\
-                    .replace("\\s"," ")\
-                    .replace("\#","#")\
-                    .replace("\\\\","\\")
-                current_values = replacement_table.get(key)       
-                if current_values:
-                    raise SyntaxError(f"the key ({key}) is already used")                   
-                else:
-                    replacement_table[key] = value        
-        self.replacement_table = replacement_table
+        self.replacement_table : dict[str,str] = {}
+
+
+    def init(self, td_unit: TDUnit, parent: ASTNode, verbose : bool):        
+        super().init(td_unit,parent,verbose)
+        entries = read_utf8file(self.replacements_filename)
+        for line in entries:
+            sline = line.strip()
+            if sline.startswith("# "):
+                continue
+            (raw_key,raw_value) = sline.split()
+            key = raw_key\
+                .replace("\\s"," ")\
+                .replace("\#","#")\
+                .replace("\\\\","\\")
+            value = raw_value\
+                .replace("\\s"," ")\
+                .replace("\#","#")\
+                .replace("\\\\","\\")
+            current_values = self.replacement_table.get(key)       
+            if current_values:
+                msg = f"[{str(self)}] key ({key}) is already used"
+                raise InitializationFailed(msg)                   
+            else:
+                self.replacement_table[key] = value        
+
 
     def process(self, entry: str) -> List[str]: 
         e = entry       
@@ -51,4 +54,4 @@ class Replace(Transformer):
             return [e]
         
     def __str__(self):
-        return f'{Replace.op_name()} "{self.replacements_filename}"'
+        return f'{Replace.op_name()} "{escape(self.replacements_filename)}"'

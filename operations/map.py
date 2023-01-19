@@ -1,7 +1,7 @@
 from typing import List
 
 from dj_ast import Transformer
-from common import escape
+from common import InitializationFailed, escape
 
 
 class Map(Transformer):
@@ -12,12 +12,13 @@ class Map(Transformer):
 
     def __init__(self, source_char : str, target_chars : str):
         if not set(source_char).isdisjoint(set(target_chars)):
-            raise ValueError(f"useless identity mapping {source_char} [{target_chars}]")
+            msg = f'useless identity mapping {source_char} => "{target_chars}"'
+            raise InitializationFailed(msg)
 
         self.source_char = source_char
         self.raw_target_chars = target_chars
         self.target_chars = set(target_chars) 
-        return
+        
 
     def process(self, entry: str) -> List[str]:
         if self.source_char in entry:
@@ -27,6 +28,7 @@ class Map(Transformer):
             return entries
         else:
             return None         
+
 
     def __str__ (self):
         source_char = escape(self.source_char)

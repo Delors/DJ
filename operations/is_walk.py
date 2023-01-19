@@ -141,11 +141,12 @@ class IsWalk(Filter):
     MIN_WALK_LENGTH = 3.0 # with 3.0 "just" two adjacent characters are not enough
 
     def __init__(self) -> None:
-        super().__init__()
         configured_layout = IsWalk.LAYOUT
         self._keyboard_layout = globals()[configured_layout]   
         self._min_walk_length = IsWalk.MIN_WALK_LENGTH
         self._min_sub_walk_length = IsWalk.MIN_SUB_WALK_LENGTH     
+
+    def is_filter(self) -> bool: return True
 
     def process(self, entry: str) -> List[str]:
         if len(entry) < self._min_walk_length:

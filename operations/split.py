@@ -12,7 +12,7 @@ class Split(Transformer):
 
     def __init__(self, split_char : str):
         self.split_char = split_char
-        return
+        
 
     def process(self, entry: str) -> List[str]:
         assert len(entry) > 0
@@ -25,6 +25,7 @@ class Split(Transformer):
                 
         segments = list(filter(lambda e: len(e) > 0, all_segments))
         return segments
+
 
     def __str__ (self):
         return f'{Split.op_name()} "{escape(self.split_char)}"'

@@ -1,6 +1,7 @@
 from typing import List
 
 from dj_ast import Filter
+from common import InitializationFailed
 
 class Max(Filter):
     """Only accepts entries with a given minimum number of the specified character class."""
@@ -27,7 +28,8 @@ class Max(Filter):
 
     def __init__(self, operator: str, max_count : int):
         if max_count < 0:
-            raise ValueError(f"max_count ({max_count}) has to be >= 0")
+            msg = f"max {operator} has to be >= 0 (actual {max_count})"
+            raise InitializationFailed(msg)
 
         self.operator = operator
         self.test = self._tests[operator]

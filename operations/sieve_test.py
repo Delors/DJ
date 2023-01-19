@@ -6,6 +6,7 @@ class TestMin(unittest.TestCase):
 
     def setUp(self):
         self.s = Sieve("sieve/graphene_os_12_password_chars.txt")
+        self.s.init(None,None,False)
 
     def test_is_filter(self):
         self.assertTrue(self.s.is_filter())

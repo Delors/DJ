@@ -1,6 +1,7 @@
 import unittest
 import math
 
+from common import InitializationFailed
 from operations.segments import Segments
 
 class TestSegments(unittest.TestCase):
@@ -17,7 +18,7 @@ class TestSegments(unittest.TestCase):
         self.assertEqual(str(self.SInf),"segments inf")
 
     def test_constructor(self):       
-        self.assertRaises(ValueError, Segments,0)
+        self.assertRaises(InitializationFailed,Segments,0)
 
     def test_segmentation(self):       
         self.assertEqual(self.S3.process("affe"),["aff","ffe","af","ff","fe","a","f","f","e"])

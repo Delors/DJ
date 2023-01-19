@@ -14,7 +14,7 @@ class GetNO(Extractor):
     def process(self, entry: str) -> List[str]:
         entries = [
             i.group(0) 
-            for i in GetNumbers._re_numbers.finditer(entry)
+            for i in GetNO._re_numbers.finditer(entry)
         ]
         if len(entries) >= 1:
             return entries

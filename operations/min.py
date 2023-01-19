@@ -1,9 +1,13 @@
 from typing import List
 
+from common import InitializationFailed
 from dj_ast import Filter
 
+
 class Min(Filter):
-    """Only accepts entries with a given minimum number of the specified character class."""
+    """ Only accepts entries with a given minimum number of characters of
+        the specified character class.
+    """
 
     def op_name() -> str: return "min"
 
@@ -27,12 +31,12 @@ class Min(Filter):
 
     def __init__(self, operator: str, min_count : int):
         if min_count <= 0:
-            raise ValueError(f"min_count ({min_count}) has to be > 0")
+            raise InitializationFailed(f"min {operator} {min_count} has to be > 0")
 
         self.operator = operator
         self.test = self._tests[operator]
         self.min_count = min_count
-        return
+
 
     def process(self, entry: str) -> List[str]:
         count = 0
@@ -41,8 +45,8 @@ class Min(Filter):
                 count += 1
                 if count >= self.min_count:
                     return [entry]
-        
         return []
+
 
     def __str__(self):
         return f"{Min.op_name()} {self.operator} {self.min_count}"

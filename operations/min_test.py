@@ -5,6 +5,7 @@ from operations.min import Min
 class TestMin(unittest.TestCase):
 
     def setUp(self):
+        self.mln_2 = Min("length",2)
         self.mlo_2 = Min("lower",2)
         self.mup_2 = Min("upper",2)
         self.mnu_2 = Min("numeric",2)
@@ -13,6 +14,7 @@ class TestMin(unittest.TestCase):
         self.mnl_2 = Min("non_letter",2)
 
     def test_is_filter(self):
+        self.assertTrue(self.mln_2.is_filter())
         self.assertTrue(self.mlo_2.is_filter())
         self.assertTrue(self.mup_2.is_filter())
         self.assertTrue(self.mnu_2.is_filter())
@@ -22,6 +24,7 @@ class TestMin(unittest.TestCase):
 
 
     def test__str__(self):
+        self.assertEqual(self.mln_2.__str__(),"min length 2")
         self.assertEqual(self.mlo_2.__str__(),"min lower 2")
         self.assertEqual(self.mup_2.__str__(),"min upper 2")
         self.assertEqual(self.mnu_2.__str__(),"min numeric 2")
