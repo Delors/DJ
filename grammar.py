@@ -12,12 +12,12 @@ from typing import List
 # from abc import ABC, abstractmethod
 # from importlib import import_module
 
-from common import IllegalStateError, unescape
+from common import unescape
 
 from dj_ast import ComplexOperation
-from dj_ast import TDFile, Body, Header, Comment
+from dj_ast import TDUnit, Body, Header, Comment
 from dj_ast import IgnoreEntries, SetDefinition, MacroDefinition, ConfigureOperation
-from dj_ops import REPORT, Write, MacroCall, Use, StoreInSet, StoreFilteredInSet, Or
+from dj_ops import REPORT, Write, MacroCall, UseSet, StoreInSet, StoreFilteredInSet, Or
 from dj_ops import NegateFilterModifier, KeepAlwaysModifier, KeepOnlyIfFilteredModifier
 from operations.capitalize import CAPITALIZE
 from operations.correct_spelling import CORRECT_SPELLING
@@ -77,14 +77,14 @@ DJ_GRAMMAR = Grammar(
     continuation    = ( ~r"\s*\\[\r\n]\s+"m ) / ws+ # In some cases it is possible to split a definition/sequence over multiple lines using "\" at the end.
     comment         = ~r"#[^\r\n]*"    
     #quoted_string   = ~'"[^"]*"' # does not support escapes
-    quoted_string   = ~r'"(?:(?:(?!(?<!\\)").)*)"' # supports "arbitrary" escapes
+    quoted_string   = ~r'"(?:(?:(?!(?<!\\)").)*)"' # supports nested escaped "
     file_name       = quoted_string
-    identifier      = ~r"[A-Z_]+"a # Identifiers of sets and macros have to use capital letters to make the easily distinguishable
-    op_operator     = ~r"[a-z]+"
+    identifier      = ~r"[A-Z_]+"a # we require identifiers of sets and macros to use capital letters to make them easily distinguishable
+    op_operator     = ~r"[a-z_]+"
     float_value     = ~r"[0-9]+(\.[0-9]+)?"
     int_value       = ~r"[1-9][0-9]*"
     python_identifier = ~r"[a-zA-Z_][a-zA-Z0-9_]*"
-    python_value    = ~r"[a-zA-Z0-9._]+"
+    python_value    = ~r"[a-zA-Z0-9._+]+"
 
     ignore          = "ignore" ws+ file_name
     set             = "set" ws+ identifier
@@ -196,53 +196,6 @@ DJ_GRAMMAR = Grammar(
     """
 )
 
-DJ_EXAMPLE_FILE = """
-# This is just a demo file that demonstrates technical possibilities;
-# it does not implement useful transformations as such.
-
-ignore "ignore/de.txt"
-
-config related K 15
-config related KEEP_ALL_RELATEDNESS 0.777
-
-set NO_PATTERN
-set WALK
-set RELATED
-set NO_WORD
-
-def BASE_TRANSFORMATIONS \
- *strip_no_and_sc \
- !is_pattern \
- *replace "replace/SpecialCharToSpace.txt" \
- *split " " \
- *sub_split "-" \
- *strip_ws \
- *fold_ws \
- +deduplicate \
- min length 3 \
- *deleetify
-
-+related 0.5 min length 3 
-do BASE_TRANSFORMATIONS 
-
-store_in WALKS(is_walk)
-store_filtered_in NO_PATTERNS( is_pattern )
-
-store_in NO_WORD(or(is_walk, is_pattern, is_sc ))
-
-store_in RELATED( *split "\\"" \
- *strip_ws \
- *fold_ws \
- related 0.5 )
-
-use NO_PATTERNS map "s" "abc\\n\\r\\t"
-"""
-
-DJ_SIMPLE_EXAMPLE_FILE="""
-*strip_ws fold_ws report
-"""
-
-
 class DJTreeVisitor (NodeVisitor):
     # Note that this is a bottom-up visitor.
 
@@ -250,9 +203,15 @@ class DJTreeVisitor (NodeVisitor):
 
     def visit_comment(self,node,_children): return Comment(node.text)
     def visit__meaningless(self,_node,_children): return None
-    def visit_file(self,_node,children): (h, b) = children ; return TDFile(h,b)
-    def visit_header(self,_node,children): return Header(children)
-    def visit_body(self,_node,children): return Body(children)
+    def visit_file(self,_node,children): (h, b) = children ; return TDUnit(h,b)
+    def visit_header(self,_node,children):         
+        # unwrapped_children = map(lambda x : x[0],children)
+        # return Header([ o for o in unwrapped_children if o is not None ])
+        return Header(list(c[0] for c in children if c[0] is not None))
+    def visit_body(self,_node,children): 
+        # unwrapped_children = map(lambda x : x[0],children)
+        # return Body([ o for o in unwrapped_children if o is not None ])
+        return Body(list(c[0] for c in children if c[0] is not None))
 
     def visit_identifier(self, node, _): return node.text
     def visit_op_operator(self, node, _) : return node.text
@@ -305,19 +264,17 @@ class DJTreeVisitor (NodeVisitor):
         if isinstance(raw_child_op_defs,list):
             next_ops = raw_child_op_defs[0][1].ops
             op_defs.extend(next_ops)
-        elif isinstance(raw_child_op_defs,Node):
+        else: # [actually it is:] "elif isinstance(raw_child_op_defs,Node):"
             if len(raw_child_op_defs.children) > 0:
                 (_ws,next) = raw_child_op_defs
                 op_defs.extend(next.ops)           
-        else:
-            raise IllegalStateError(f"unexpected value {type(raw_child_op_defs)}: {raw_child_op_defs}")
         
         return ComplexOperation(op_defs)
 
 
     def visit_macro_call(self,node,visited_children): 
         (_do,_ws,identifier) = visited_children
-        return MacroCall(identifier,...)
+        return MacroCall(identifier)
     def visit_set_store(self,node,visited_children) : 
         ([store_op],_ws,identifier,_para,_ws,op_defs,_ws,_para) = visited_children
         op = store_op.text
@@ -329,7 +286,7 @@ class DJTreeVisitor (NodeVisitor):
             raise ValueError(f"unexpected operation name: {op}")
     def visit_set_use(self,node,visited_children) : 
         (_use,_ws,identifier) = visited_children
-        return Use(identifier)
+        return UseSet(identifier)
     def visit_or(self,node,visited_children): 
         (_or_ws,cop,more_cops,_ws) = visited_children
         # more_cops is a list or tuples where the second tuple 
@@ -384,6 +341,55 @@ class DJTreeVisitor (NodeVisitor):
     def visit_related(self,_n,c): (_,_,r)=c ; return Related(r)    
     def visit_correct_spelling(self,_n,_c): return CORRECT_SPELLING
     
+
+
+DJ_EXAMPLE_FILE = """
+# This is just a demo file that demonstrates technical possibilities;
+# it does not implement useful transformations as such.
+
+ignore "ignore/de.txt"
+
+config related K 15
+config related KEEP_ALL_RELATEDNESS 0.777
+
+set NO_PATTERN
+set WALK
+set RELATED
+set NO_WORD
+
+def BASE_TRANSFORMATIONS \
+ *strip_no_and_sc \
+ !is_pattern \
+ *replace "replace/SpecialCharToSpace.txt" \
+ *split " " \
+ *sub_split "-" \
+ *strip_ws \
+ *fold_ws \
+ +deduplicate \
+ min length 3 \
+ *deleetify
+
++related 0.5 min length 3 
+do BASE_TRANSFORMATIONS 
+
+store_in WALKS(is_walk)
+store_filtered_in NO_PATTERNS( is_pattern )
+
+store_in NO_WORD(or(is_walk, is_pattern, is_sc ))
+
+store_in RELATED( *split "\\"" \
+ *strip_ws \
+ *fold_ws \
+ related 0.5 )
+
+use NO_PATTERNS map "s" "abc\\n\\r\\t"
+"""
+
+DJ_SIMPLE_EXAMPLE_FILE="""
+*strip_ws fold_ws report
+"""
+
+
 def main():
     parser = argparse.ArgumentParser(
         description=
@@ -402,20 +408,22 @@ def main():
         #td_file = DJ_SIMPLE_EXAMPLE_FILE
         td_file = DJ_EXAMPLE_FILE
 
-    print("Source:")
+    print("\nSource:")
     print("=====================================================================")
     tree = DJ_GRAMMAR.parse(td_file)
     
-    print("Syntaxtree:")
+    print("\nSyntaxtree:")
     print("=====================================================================")    
     print(tree)
 
-    print("AST:")
+    print("\nAST:")
     print("=====================================================================")    
-    ast : TDFile = DJTreeVisitor().visit(tree)
-    print(ast)
+    td_unit : TDUnit = DJTreeVisitor().visit(tree)
+    print(td_unit)
 
-    ast.init(ast,None,verbose = True)
+    print("\nInitialization:")
+    print("=====================================================================")        
+    td_unit.init(td_unit,None,verbose = True)
 
 if __name__ == '__main__':
     sys.exit(main())
