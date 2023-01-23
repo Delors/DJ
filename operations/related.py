@@ -2,7 +2,7 @@ from math import isnan
 from typing import List
 from contextlib import suppress
 
-from dj_ast import Transformer
+from dj_ast import Transformer, TDUnit, ASTNode
 from common import InitializationFailed, get_nlp_model
 
 
@@ -22,24 +22,25 @@ class Related(Transformer):
     KEEP_ALL_RELATEDNESS = 0.75
 
     def __init__(self,MIN_RELATEDNESS : float = 0.6):
-        # The test is required here, because both variables are user
-        # configurable.
-        if self.KEEP_ALL_RELATEDNESS < MIN_RELATEDNESS:
-            raise InitializationFailed(
-                f"KEEP_ALL_RELATEDNESS {self.KEEP_ALL_RELATEDNESS} has to be "+
-                f"larger than the MIN_RELATEDNESS {MIN_RELATEDNESS}"
-            )
-        if MIN_RELATEDNESS <= 0 or MIN_RELATEDNESS >= 1.0:
-            raise InitializationFailed(
-                f"MIN_RELATEDNESS {MIN_RELATEDNESS} has to be in range (0,1.0)"
-            )
-
         self._twitter = None
         # self._google = None
         self._wiki = None
         self.MIN_RELATEDNESS = MIN_RELATEDNESS
 
-        
+    def init(self, td_unit: 'TDUnit', parent : 'ASTNode', verbose: bool):    
+        # The test is required here, because both variables are user
+        # configurable.
+        if self.KEEP_ALL_RELATEDNESS < self.MIN_RELATEDNESS:
+            raise InitializationFailed(
+                f"KEEP_ALL_RELATEDNESS {self.KEEP_ALL_RELATEDNESS} has to be "+
+                f"larger than the MIN_RELATEDNESS {self.MIN_RELATEDNESS}"
+            )
+        if self.MIN_RELATEDNESS <= 0 or self.MIN_RELATEDNESS >= 1.0:
+            raise InitializationFailed(
+                f"MIN_RELATEDNESS {self.MIN_RELATEDNESS} has to be in range (0,1.0)"
+            )
+
+
     def process(self, entry: str) -> List[str]:
         if not self._twitter: 
             self._twitter = get_nlp_model("twitter")
