@@ -9,7 +9,7 @@ class IsPopularWord(Filter):
         google news. In case of twitter, the given term is always lowered
         and then tested, because the twitter model only uses lower case
         entries. In case of google the term is taken as is. However,
-        it may be necessary/meaning ful to first correct the spelling.
+        it may be necessary/meaningful to first correct the spelling.
         Otherwise, proper nouns may not be correctly identified. 
 
         This test has very high initialization costs on _first_ usage!
