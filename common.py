@@ -5,8 +5,6 @@ import importlib
 
 import pynuspell
 
-class IllegalStateError(RuntimeError): 
-    pass
 
 class InitializationFailed(RuntimeError):
     """ Errors that are related to user problems. """
@@ -70,7 +68,7 @@ def read_utf8file(filename: str) -> list[str] :
     try: 
         with open(abs_filename, 'r', encoding='utf-8') as fin:
             for line in fin:
-                # We want to be able to strip words with spaces
+                # We want to be able to process words with spaces
                 # at the beginning or end.
                 stripped_line = line.rstrip("\r\n")
                 if len(stripped_line) > 0:
