@@ -11,14 +11,14 @@ class Map(Transformer):
     def op_name() -> str: return "map"
 
     def __init__(self, source_char : str, target_chars : str):
-        if not set(source_char).isdisjoint(set(target_chars)):
-            msg = f'useless identity mapping {source_char} => "{target_chars}"'
-            raise InitializationFailed(msg)
-
         self.source_char = source_char
         self.raw_target_chars = target_chars
         self.target_chars = set(target_chars) 
         
+    def init(self, td_unit: 'TDUnit', parent : 'ASTNode', verbose: bool):         
+        if not set(self.source_char).isdisjoint(self.target_chars):
+            msg = f'useless identity mapping {self.source_char} => "{", ".join(self.target_chars)}"'
+            raise InitializationFailed(msg)
 
     def process(self, entry: str) -> List[str]:
         if self.source_char in entry:
@@ -28,7 +28,6 @@ class Map(Transformer):
             return entries
         else:
             return None         
-
 
     def __str__ (self):
         source_char = escape(self.source_char)
