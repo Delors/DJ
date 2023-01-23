@@ -1,8 +1,8 @@
 import re
 from typing import List
 
-from dj_ast import Transformer
-
+from dj_ast import Transformer,TDUnit,ASTNode
+from common import InitializationFailed
 
 class MangleDates(Transformer):
     """ Tries to identify numbers which are dates and then creates various
@@ -24,12 +24,11 @@ class MangleDates(Transformer):
     _re_english_date = \
         re.compile("[^0-9]*([0-9]{1,2})[/-]?([0-9]{1,2})[/-]?(19|20)?([0-9]{2})")    
 
-    def __init__(self): 
+    def init(self, td_unit: 'TDUnit', parent : 'ASTNode', verbose: bool): 
         if self.END_YEAR_21ST >= self.START_YEAR_20TH: 
-            raise ValueError(
+            raise InitializationFailed(
                 f"19{self.START_YEAR_20TH} has to be < 20{self.END_YEAR_21ST}"
             )
-        pass
 
     def process(self, entry: str) -> List[str]:
         r = MangleDates._re_german_date.match(entry)
