@@ -12,10 +12,7 @@ class GetNO(Extractor):
     _re_numbers = re.compile("[0-9]+")
 
     def process(self, entry: str) -> List[str]:
-        entries = [
-            i.group(0) 
-            for i in GetNO._re_numbers.finditer(entry)
-        ]
+        entries = GetNO._re_numbers.findall(entry)
         if len(entries) >= 1:
             return entries
         else:
