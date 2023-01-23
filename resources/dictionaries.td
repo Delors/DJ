@@ -2,12 +2,15 @@
 # Applies basic transformations to a real world dictionary to
 # generate password like entries.
 
-ignore "Ignore.txt"
+ignore "ignore/de.txt"
+ignore "ignore/en.txt"
+ignore "ignore/es.txt"
+ignore "ignore/fr.txt"
 
 # DEFINITIONS OF MACROS
-def UMLAUT_TO_ASCII replace "UmlautToAscii.txt"
-def REWRITE_UMLAUT replace "RewriteUmlaut.txt"
-def SC_TO_SPACE replace "SpecialCharToSpace.txt"
+def UMLAUT_TO_ASCII replace "replace/UmlautToAscii.txt"
+def REWRITE_UMLAUT replace "replace/RewriteUmlaut.txt"
+def SC_TO_SPACE replace "replace/SpecialCharToSpace.txt"
 # REMARKS
 # - "upper" only makes sense for "non-mobile phone" passwords
 # - "remove_numbers" potentially leads to many non-sense words.
@@ -15,7 +18,7 @@ def SC_TO_SPACE replace "SpecialCharToSpace.txt"
 #             of it may depend on the time when the deleetification
 #             is performed.
 # - "number" may lead to many new entries, use sparingly!
-def BASE_TRANSFORMATIONS +SC_TO_SPACE +strip +deleetify +capitalize +remove_sc +get_numbers +get_sc +lower +UMLAUT_TO_ASCII +REWRITE_UMLAUT +remove_ws +number [aeiou]
+def BASE_TRANSFORMATIONS +do SC_TO_SPACE +strip_ws +deleetify +capitalize +remove_sc +get_no +get_sc +lower +do UMLAUT_TO_ASCII +do REWRITE_UMLAUT +remove_ws +number "aeiou"
 
 # RULES
 # A rule takes an entry and generates new candidates.
@@ -26,11 +29,11 @@ def BASE_TRANSFORMATIONS +SC_TO_SPACE +strip +deleetify +capitalize +remove_sc +
 # " A "*" directly in front of the rule will ensure that the 
 # entry is passed on if and only if it was not transformed. 
 
-BASE_TRANSFORMATIONS report
-split / BASE_TRANSFORMATIONS report
-# split . BASE_TRANSFORMATIONS report
+do BASE_TRANSFORMATIONS report
+split "/" do BASE_TRANSFORMATIONS report
+# split "." do BASE_TRANSFORMATIONS report
 mangle_dates report
-split \s discard_endings "discard_endings/de.txt" BASE_TRANSFORMATIONS report
+split " " discard_endings "discard_endings/de.txt" do BASE_TRANSFORMATIONS report
 
 
 

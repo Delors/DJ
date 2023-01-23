@@ -8,7 +8,7 @@ ignore "Ignore.txt"
 # use PATTERN
 
 def BASE_TRANSFORMATIONS \
- +strip_numbers_and_sc \
+ +strip_no_and_sc \
  !is_pattern \
  !is_walk \
  *replace "replace/SpecialCharToSpace.txt" \
@@ -18,7 +18,7 @@ def BASE_TRANSFORMATIONS \
  *deduplicate \
  *deduplicate_reversed \
  *detriplicate \
- min_length 3 \
+ min length 3 \
  *deleetify \
  +capitalize 
 

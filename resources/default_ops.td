@@ -14,17 +14,19 @@ def P_SC_TO_SPACE +replace "replace/SpecialCharToSpace.txt"
 #             of it may depend on the time when the deleetification
 #             is performed.
 # - "number" may lead to many new entries, use sparingly!
-def BASE_TRANSFORMATIONS 
-\ P_SC_TO_SPACE +map \s [._-] +strip_ws 
-\ +deleetify 
-\ +capitalize 
-\ +remove_sc 
-\ +get_numbers 
-\ +get_sc 
-\ +lower 
-\ P_UMLAUT_TO_ASCII P_REWRITE_UMLAUT 
-\ +remove_ws 
-\ +number [aeiou]
+def BASE_TRANSFORMATIONS \
+ do P_SC_TO_SPACE \
+ +map " " "._-" \
+ +strip_ws \
+ +deleetify \
+ +capitalize \
+ +remove_sc \
+ +get_no \
+ +get_sc \
+ +lower \
+ do P_UMLAUT_TO_ASCII do P_REWRITE_UMLAUT \
+ +remove_ws \
+ +number "aeiou"
 
 # RULES
 # A rule takes an entry and generates new candidates.
@@ -35,19 +37,18 @@ def BASE_TRANSFORMATIONS
 # " A "*" directly in front of the rule will ensure that the 
 # entry is passed on if and only if it was not transformed. 
 
-BASE_TRANSFORMATIONS report
+do BASE_TRANSFORMATIONS report
 
-split / BASE_TRANSFORMATIONS report
+split "/" do BASE_TRANSFORMATIONS report
 
-split . BASE_TRANSFORMATIONS report
+split "." do BASE_TRANSFORMATIONS report
 
 mangle_dates report
 
-split \s 
-\ discard_endings "discard_endings/en.txt" 
-\ discard_endings "discard_endings/en.txt"
-\ BASE_TRANSFORMATIONS report
-
+split " " \
+ discard_endings "discard_endings/en.txt" \
+ discard_endings "discard_endings/en.txt" \
+ do BASE_TRANSFORMATIONS report 
 
 
 
