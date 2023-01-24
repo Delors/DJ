@@ -27,13 +27,13 @@ class Segments(Extractor):
     MIN_LENGTH = 1
     """Only entries which have the specified min length will be segmented."""
 
-    def __init__(self, max_segment_length : int):
+    def __init__(self, max_segment_length: int):
         self.max_segment_length = max_segment_length
 
         if max_segment_length < 1:
             msg = f"[{self}] MAX_SEGMENT_LENGTH is too small ({max_segment_length})"
             raise InitializationFailed(msg)
-        
+
         if self.MIN_LENGTH < 1:
             msg = f"[{self}] MIN_LENGTH has to be equal or larger than 1"
             raise InitializationFailed(msg)
@@ -45,12 +45,11 @@ class Segments(Extractor):
             return None
 
         segments = []
-        for l in range(self.max_segment_length,self.MIN_LENGTH-1,-1):
-            for i in range(0,len(entry)-l+1):
+        for l in range(self.max_segment_length, self.MIN_LENGTH-1, -1):
+            for i in range(0, len(entry)-l+1):
                 segments.append(entry[i:i+l])
-         
+
         return segments
-            
-    def __str__ (self):
-        return f"{Segments.op_name()} {self.max_segment_length}"           
- 
+
+    def __str__(self):
+        return f"{Segments.op_name()} {self.max_segment_length}"

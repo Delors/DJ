@@ -11,16 +11,16 @@ class StripNOAndSC(Transformer):
     STRIP_CHARS = "0123456789<>|,;.:_#'+*~@€²³`'^°!\"§$%&/()\[\]{}\\\-"
 
     def process(self, entry: str) -> List[str]:
-        
+
         stripped_entry = entry.strip(self.STRIP_CHARS)
         if stripped_entry is entry:
             return None
         elif len(stripped_entry) == 0:
             # The entry just consisted of stripped entries
             return []
-        else: # stripped_entry != entry:
+        else:  # stripped_entry != entry:
             # The entry is not empty
             return [stripped_entry]
 
 
-STRIP_NO_AND_SC = StripNOAndSC()    
+STRIP_NO_AND_SC = StripNOAndSC()

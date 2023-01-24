@@ -18,13 +18,13 @@ class RemoveSC(Transformer):
 
     def op_name() -> str: return "remove_sc"
 
-    #re_non_special_char = re.compile("[a-zA-Z0-9\s]+")
+    # re_non_special_char = re.compile("[a-zA-Z0-9\s]+")
     def __init__(self):
         self._re_non_special_char = \
             re.compile(self.NON_SPECIAL_CHARACTERS_REGEXP)
 
     def process(self, entry: str) -> List[str]:
-        re_non_special_char = self._re_non_special_char        
+        re_non_special_char = self._re_non_special_char
         entries = [i.group(0) for i in re_non_special_char.finditer(entry)]
         if len(entries) == 0:
             # the entry just consisted of special chars...

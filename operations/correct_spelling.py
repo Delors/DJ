@@ -17,7 +17,7 @@ class CorrectSpelling(Transformer):
     dictionary the costs can already be very(!) high.
     """
 
-    USE_DAMERAU_LEVENSHTEIN = True 
+    USE_DAMERAU_LEVENSHTEIN = True
 
     FILTER_CORRECTIONS_WITH_SPACE = True
     """
@@ -39,31 +39,31 @@ class CorrectSpelling(Transformer):
         Compared to classical spell-checking we implement a more
         advanced handling regarding the usage of upper letters.
         """
-        case_folded_entry = entry.lower() 
+        case_folded_entry = entry.lower()
         words = []
-        for d in dictionaries.values():            
+        for d in dictionaries.values():
             for s in d.suggest(entry):
                 if self.USE_DAMERAU_LEVENSHTEIN:
-                    edit_distance = damerau_levenshtein_distance(entry,s)
+                    edit_distance = damerau_levenshtein_distance(entry, s)
                 else:
-                    edit_distance = levenshtein_distance(entry,s)
+                    edit_distance = levenshtein_distance(entry, s)
 
                 if edit_distance == 0:
                     # The word was correct...
                     return []
-                elif case_folded_entry == s.lower(): 
-                    # We (always) accept greater edit distances, but if and 
-                    # only if it is due to capitalization issues... 
-                    return [s]                    
+                elif case_folded_entry == s.lower():
+                    # We (always) accept greater edit distances, but if and
+                    # only if it is due to capitalization issues...
+                    return [s]
                 elif edit_distance <= CorrectSpelling.MAX_EDIT_DISTANCE:
                     if self.FILTER_CORRECTIONS_WITH_SPACE and \
-                        s.find(" ") != -1:
+                            s.find(" ") != -1:
                         pass
                     else:
                         words.append(s)
-     
+
         if len(words) == 0:
-            return None    
+            return None
         else:
             return words
 

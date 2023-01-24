@@ -14,8 +14,8 @@ class Number(Transformer):
 
     def op_name() -> str: return "number"
 
-    def __init__(self, chars_to_number : str):
-        self.chars_to_number = set(chars_to_number) 
+    def __init__(self, chars_to_number: str):
+        self.chars_to_number = set(chars_to_number)
         return
 
     def process(self, entry: str) -> List[str]:
@@ -33,7 +33,6 @@ class Number(Transformer):
         else:
             return [new_e]
 
-    def __str__ (self):
+    def __str__(self):
         chars = "".join(self.chars_to_number)
         return f"{Number.op_name()} [{chars}]"
-

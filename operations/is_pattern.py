@@ -18,9 +18,9 @@ class IsPattern(Filter):
         first_char = entry[0]
         if all(first_char == c for c in entry[1:]):
             return [entry]
-        
+
         second_char = entry[1]
-        if first_char == second_char or length %2 != 0 or length == 2:
+        if first_char == second_char or length % 2 != 0 or length == 2:
             # well... given the previous test it is obviously not a pattern
             # that is based on the repetition of two different characters
             return []
@@ -29,6 +29,6 @@ class IsPattern(Filter):
             return [entry]
         else:
             return []
-              
+
 
 IS_PATTERN = IsPattern()

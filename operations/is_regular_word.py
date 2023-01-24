@@ -6,11 +6,12 @@ from Levenshtein import distance
 from dj_ast import Filter
 from common import dictionaries
 
+
 class IsRegularWord(Filter):
     """ Checks if a word is a _real_ word by looking it up in several
         dictionaries; for that the lower case variant of the entry and
         the capitalized variant is tested. 
-        
+
         The set of dictionaries that is used is based 
         on those defined in `common.dictionaries`.
     """

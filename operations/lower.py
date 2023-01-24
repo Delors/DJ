@@ -2,6 +2,7 @@ from typing import List
 
 from dj_ast import Transformer
 
+
 class Lower(Transformer):
     """Converts an entry to all lower case."""
 
@@ -15,4 +16,4 @@ class Lower(Transformer):
             return None
 
 
-LOWER = Lower()  
+LOWER = Lower()

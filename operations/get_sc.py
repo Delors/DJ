@@ -13,7 +13,7 @@ class GetSC(Extractor):
 
     SPECIAL_CHARACTERS_REGEXP = \
         "[<>|,;.:_#'+*~@€²³`'^°!\"§$%&/()\[\]{}\\\-]+"
-    
+
     def __init__(self):
         self._re_special_chars = \
             re.compile(self.SPECIAL_CHARACTERS_REGEXP)
@@ -21,12 +21,13 @@ class GetSC(Extractor):
     def process(self, entry: str) -> List[str]:
         entries = self._re_special_chars.findall(entry)
         # entries = [
-        #     i.group(0) 
+        #     i.group(0)
         #     for i in self._re_special_chars.finditer(entry)
         # ]
         if len(entries) >= 1:
             return entries
         else:
             return None
+
 
 GET_SC = GetSC()

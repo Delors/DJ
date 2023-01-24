@@ -14,6 +14,6 @@ class Upper(Transformer):
             return [upper]
         else:
             return None
-            
 
-UPPER = Upper()   
+
+UPPER = Upper()

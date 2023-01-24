@@ -13,7 +13,7 @@ class IsSC(Filter):
 
     def process(self, entry: str) -> List[str]:
         if any(e for e in entry if e not in self.SPECIAL_CHARS):
-            return []        
+            return []
         else:
             return [entry]
 

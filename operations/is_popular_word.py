@@ -21,25 +21,25 @@ class IsPopularWord(Filter):
         self._twitter_vocab = None
         self._google_vocab = None
         return
-        
-    def process(self, entry: str) -> List[str]:        
-        if not self._twitter_vocab: 
-            self._twitter_vocab = get_nlp_vocab("twitter")
-        if not self._google_vocab: 
-            self._google_vocab = get_nlp_vocab("google")            
 
-        lentry = entry.lower()    
+    def process(self, entry: str) -> List[str]:
+        if not self._twitter_vocab:
+            self._twitter_vocab = get_nlp_vocab("twitter")
+        if not self._google_vocab:
+            self._google_vocab = get_nlp_vocab("google")
+
+        lentry = entry.lower()
 
         # NOTE: the twitter model only contains lower case entries!
         # NOTE: in case of the google model it may make sense to check
-        #       both capitalizations as a given "password" may use 
+        #       both capitalizations as a given "password" may use
         #       small letters, even though it is a proper noun
         if not self._twitter_vocab.get(lentry) and \
-            not self._google_vocab.get(entry):
+                not self._google_vocab.get(entry):
             return []
-        # centry = entry.capitalize() 
+        # centry = entry.capitalize()
         # if centry != entry and not self._google_vocab.get(entry):
-        #     return []    
+        #     return []
         else:
             return [entry]
 

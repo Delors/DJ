@@ -16,7 +16,7 @@ class RemoveNO(Transformer):
 
     def process(self, entry: str) -> List[str]:
         entries = [
-            i.group(0) 
+            i.group(0)
             for i in self._re_no_numbers.finditer(entry)
         ]
         if len(entries) == 0:

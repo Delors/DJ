@@ -3,30 +3,31 @@ from typing import List
 from dj_ast import Filter
 from common import InitializationFailed
 
+
 class Max(Filter):
     """Only accepts entries with a given minimum number of the specified character class."""
 
     def op_name() -> str: return "max"
 
-    def _test_length(c : str) -> bool : return True
-    def _test_lower(c : str) -> bool : return c.islower()
-    def _test_upper(c : str) -> bool : return c.isupper()
-    def _test_numeric(c : str) -> bool : return c.isnumeric()
-    def _test_alpha(c : str) -> bool : return c.isalpha()
-    def _test_not_alpha(c : str) -> bool : return not c.isalpha()
-    def _test_symbol(c : str) -> bool : return not c.isalnum()
+    def _test_length(c: str) -> bool: return True
+    def _test_lower(c: str) -> bool: return c.islower()
+    def _test_upper(c: str) -> bool: return c.isupper()
+    def _test_numeric(c: str) -> bool: return c.isnumeric()
+    def _test_alpha(c: str) -> bool: return c.isalpha()
+    def _test_not_alpha(c: str) -> bool: return not c.isalpha()
+    def _test_symbol(c: str) -> bool: return not c.isalnum()
 
     _tests = {
-        "length" : _test_length,
-        "lower" : _test_lower,
-        "upper" : _test_upper,
-        "numeric" : _test_numeric,
-        "letter" : _test_alpha,
-        "symbol" : _test_symbol,
-        "non_letter" : _test_not_alpha
+        "length": _test_length,
+        "lower": _test_lower,
+        "upper": _test_upper,
+        "numeric": _test_numeric,
+        "letter": _test_alpha,
+        "symbol": _test_symbol,
+        "non_letter": _test_not_alpha
     }
 
-    def __init__(self, operator: str, max_count : int):
+    def __init__(self, operator: str, max_count: int):
         if max_count < 0:
             msg = f"max {operator} has to be >= 0 (actual {max_count})"
             raise InitializationFailed(msg)
@@ -34,7 +35,6 @@ class Max(Filter):
         self.operator = operator
         self.test = self._tests[operator]
         self.max_count = max_count
-        
 
     def process(self, entry: str) -> List[str]:
         count = 0
@@ -43,10 +43,8 @@ class Max(Filter):
                 count += 1
                 if count > self.max_count:
                     return []
-        
-        return [entry]
 
+        return [entry]
 
     def __str__(self):
         return f"{Max.op_name()} {self.operator} {self.max_count}"
-

@@ -15,8 +15,8 @@ class StripWS(Transformer):
         elif len(stripped_entry) == 0:
             # The entry just consisted of WS
             return []
-        else: # stripped_entry != entry and len(entry) > 0
+        else:  # stripped_entry != entry and len(entry) > 0
             return [stripped_entry]
 
 
-STRIP_WS = StripWS()    
+STRIP_WS = StripWS()

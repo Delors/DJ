@@ -13,10 +13,10 @@ class RemoveWS(Transformer):
         if len(split_entries) == 0:
             # The entry consisted only of WS
             return []
-        elif len(split_entries) == 1:  
+        elif len(split_entries) == 1:
             return None
         else:
             return ["".join(split_entries)]
 
 
-REMOVE_WS = RemoveWS()  
+REMOVE_WS = RemoveWS()

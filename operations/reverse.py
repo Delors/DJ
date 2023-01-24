@@ -17,4 +17,5 @@ class Reverse(Transformer):
         else:
             return [new_entry]
 
+
 REVERSE = Reverse()

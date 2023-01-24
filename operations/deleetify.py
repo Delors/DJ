@@ -4,6 +4,7 @@ from typing import List, Set
 
 from dj_ast import Transformer
 
+
 class DeLeetify(Transformer):
     """ Deleetifies an entry by replacing the used numbers with their
         respective characters. E.g., *T3st* is deleetified to _Test_. To avoid
@@ -18,7 +19,6 @@ class DeLeetify(Transformer):
     """
 
     def op_name() -> str: return "deleetify"
-
     """
     mappings = {
             ("0","o"),
@@ -40,11 +40,11 @@ class DeLeetify(Transformer):
     replacements = list(
         itertools.chain.from_iterable(
             itertools.combinations({
-                ("0","o"),
-                ("1","i"),
-                ("3","e"),
-                ("4","a")                
-            },l) for l in range(1,4)
+                ("0", "o"),
+                ("1", "i"),
+                ("3", "e"),
+                ("4", "a")
+            }, l) for l in range(1, 4)
         )
     )
 
@@ -57,38 +57,37 @@ class DeLeetify(Transformer):
     _re_has_leetspeak = \
         re.compile(".*[a-zA-Z]")
 
-
     def process(self, entry: str) -> List[str]:
         # (See Wikipedia for more details!) We currently only consider
         # the basic visual transliterations related to numbers and
         # we assume that a user only uses one specific transliteration
         # if multiple alternatives exists. I.e., a word such as _Hallo_
-        # will either be rewritten as: _4allo_ or _H4llo_ or _H411o_, but 
+        # will either be rewritten as: _4allo_ or _H4llo_ or _H411o_, but
         # will never be rewritten to _44llo_. In the last case, the mapping is
         # no longer bijective. Additionally, we assume that a user uses
-        # at most three transliterations and only transliterates vowels. 
+        # at most three transliterations and only transliterates vowels.
         # The last two decisions are made based on "practical" observations
         # and to keep the computational overhead reasonable.
 
         # The following tests are just an optimization:
-        if  not DeLeetify._re_has_at_least_one_seq_with_at_most_three_numbers.match(entry) or\
-            not DeLeetify._re_has_leetspeak.match(entry):
+        if not DeLeetify._re_has_at_least_one_seq_with_at_most_three_numbers.match(entry) or\
+                not DeLeetify._re_has_leetspeak.match(entry):
             return None
 
         # TODO [IMPROVEMENT] First scan for all numbers in the entry and then perform the relevant transformations instead of testing all combinations of transformations.
 
-        deleetified_entries : Set[str] = set()
-        for rs in DeLeetify.replacements:            
+        deleetified_entries: Set[str] = set()
+        for rs in DeLeetify.replacements:
             deleetified_entry = entry
-            for (n,c) in rs:
-                deleetified_entry = deleetified_entry.replace(n,c)
+            for (n, c) in rs:
+                deleetified_entry = deleetified_entry.replace(n, c)
             if entry != deleetified_entry:
                 deleetified_entries.add(deleetified_entry)
-        
+
         if len(deleetified_entries) == 0:
             return None
         else:
             return list(deleetified_entries)
 
 
-DELEETIFY = DeLeetify() 
+DELEETIFY = DeLeetify()
