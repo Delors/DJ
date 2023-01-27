@@ -51,12 +51,12 @@ pip3 install .
 ```
 
 ### 3. Prepare for offline Usage
-In general, DJ can be used offline. However, some operations (in particular `related`) require data that will be loaded on demand and will then be stored in the user's home folder. If DJ is to be used on an offline computer this data then needs to be copied to the offline machine. 
+In general, DJ can be used offline. However, some operations (in particular `related`) require data that will be loaded on demand and will then be stored in the user's home folder. If DJ is to be used on an offline computer this data/the folder then needs to be copied to the offline machine. 
 
 To force DJ to download the necessary data just start DJ with the `related` operation and type a single word:
 
 ```bash
-$ ./DJ.py is_popular_word
+$ ./dj.py is_popular_word
 Wiesbaden
 ``` 
 
@@ -67,17 +67,19 @@ Reads in a (case) specific dictionary and generates an output dictionary by proc
 ### Basic Usage
 
 ```sh
-python3 DJ.py <operations>
+python3 dj.py <operations>
 ```
 
 In this case a dictionary will be read from stdin and then the specified operations will be performed for each entry. 
 
-For example, in case of `python3 DJ.py lower` every entry of the given dictionary will be converted to lower case and will then be output. Entries which are already in lower case will be ignored.
+For example, in case of `python3 DJ.py lower report` every entry of the given dictionary will be converted to lower case and will then be output. Entries which are already in lower case will be ignored. 
+
+_Do not forget to specify `report` or `write "<FILE>"`  at the end; otherwise you'll have no output!_
 
 ### Standard Usage
 
 ```sh
-python3 DJ.py [-o <Operations File>] [-d <Dictionary.utf8.txt>]
+python3 dj.py [-o <Operations File>] [-d <Dictionary.utf8.txt>]
 ```
 
 Reads from standard-in or the specified file (`-d`) a dictionary and performs the operations specified in the given operations file. A default file: `default_ops.td` exists, which - however - primarily serves demonstration purposes.
@@ -93,23 +95,21 @@ operation ::= <atomic operation>[WS<atomic operation>]
 
 ### Basic example
 
-An operations file in its simplest case just contains a single operation, e.g.:
+An operations file in its simplest case just contains a basic operation and an output operation (`report` or ` write`), e.g.:
 
 ```sh
 # Example 1
-remove_ws
-```
-
-In this case the white space of each entry will be removed and the transformed entry/entries will be passed on to the next operation. Entries which have no white space will not be passed on. If entries which have no white space should be passed on to the next operation, two operation modifiers exist:
- 
- 1. the '+' operator (e.g. '+remove_ws') which will always pass on the original entry to the next operation.
- 2. the '*' operator (e.g. '*remove_ws') which will pass on the original entry iff a transformation/an extraction didn't apply; i.e., the operation made no changes/didn't find anything relevant. However, if an effective transformation is performed, the original entry is no longer passed on to the next operation.
-
-To print out the current state of an entry, the `report` operation is used. However, a report operation is automatically added at the end of an operations definition. Therefore, the example from above is equivalent to:
-
-```sh
 remove_ws report
 ```
+
+In this case the white space of each entry will be removed and the transformed entry/entries will be passed on to the next operation (`report`). Entries which have no white space will not be passed on. If entries which have no white space should be passed on to the next operation, two operation modifiers exist:
+ 
+ 1. the '+' operator (e.g. '+remove_ws') which will always pass on the original entry to the next operation.
+ 2. the '*' operator (e.g. '*remove_ws') which will pass on the original entry iff a transformation/an extraction didn't apply; i.e., the operation made no changes/didn't find anything relevant. However, if an effective transformation is performed, the original entry is no longer passed on to the next operation. Hence, in case of ` *remove_ws` the entry `Test` will be passed on as is. The entry `Test Test` will
+ be transformed to `TestTest` and then passed to the next operation. The original
+ `Test Test` will be dropped.
+
+To print out the current state of an entry, the `report` operation is used. 
 
 ### Chaining operations example
 
@@ -132,16 +132,16 @@ In this case you have to chain multiple operations to get the desired output:
 
 ```sh
 # Example 2
-+split \s +remove_ws *map \s [-_] +lower report
++split " " +remove_ws *map " " "-_" +lower report
 ```
 
-The first operation (`+split \s`) will split up entries using a whitespace as the split character (`\s`). Additionally the original entry is always passed on (`+`). For example, in this case the two new entries `Audi` and `RS` are generated. The second operation will remove the whitespace from the original entry and simple keep the others. After that, we will map each whitespace to either "-" or "_" (`*map \s "-_"`); the `*` operator is used to ensure that entries with a space will no longer be passed on. Effectively, the original "Audi RS" is filtered. The `+lower` operation will then additionally create lower case representations of all current (intermediate) results. At last, we simply print out all results.
+The first operation (`+split " "`) will split up entries using a whitespace as the split character (`" "`). Additionally the original entry is always passed on (`+`). For example, in this case the two new entries `Audi` and `RS` are generated. The second operation will remove the whitespace from the original entry and simple keep the others. After that, we will map each whitespace to either "-" or "_" (`*map " " "-_"`); the `*` operator is used to ensure that entries with a space will no longer be passed on. Effectively, the original "Audi RS" is filtered. The `+lower` operation will then additionally create lower case representations of all current (intermediate) results. At last, we simply print out all results.
 
 As said, the order of operation definitions is relevant and if the order would have been:
 
 ```sh
 # Example 3
-*map \s [-_] +split \s +remove_ws +lower report
+*map " " "-_" +split " " +remove_ws +lower report
 ```
 the output of the transformation would "just" be:
 
@@ -152,21 +152,21 @@ audi_rs
 Audi_RS
 ``` 
 
-I.e., the second `+split \s` operation is effectively useless.
+I.e., the second `+split " "` operation is effectively useless because all spaces were replaced beforehand.
 
 ### Formatting long operation definitions
 
-To foster readability of long operation definitions it is possible to split up an operations definition over multiple lines by starting the next lines using "\ " at the beginning of a line. This is then treated as a continuation of the previous line.  Hence, the above rule (Example 2) can also be written as:
+To foster readability of long operation definitions it is possible to split up an operations definition over multiple lines by starting the next lines using "\ ". This is then treated as a continuation of the previous line.  Hence, the above rule (Example 2) can also be written as:
 
 ``` 
-+split \s 
-\ +remove_ws 
-\ *map \s [-_]
-\ +lower report
++split " " \
+ +remove_ws \
+ *map " " "-_" \
+ +lower report
 ```
 
 ## Atomic Operations
-Each atomic operation (e.g., `lower`, `min_length`, `related`, `get_numbers`) performs one well-defined transformation, extraction, filtering operation and most operations provide some level of configurability. 
+Each atomic operation (e.g., `lower`, `min length`, `related`, `get_no`) performs one well-defined transformation, extraction, filtering operation and most operations provide some level of configurability. 
 
 ### Built-in Operations
 Additionally, DJ has some built-in directives for special purposes:
@@ -197,7 +197,7 @@ In [3]: R.process("barca")
 Out[3]: ['madrid', 'arsenal', 'chelsea', 'milan', 'barcelona', 'bayern', 'barça']
 ```
 
-For example, in the above example, it may make sense to _play around_ with the parameters of the related operation as shown in the next example:
+For example, in the above example, it may make sense to _play around_ with the parameters of the `related` operation as shown in the next example:
 
 ```python
 import importlib
