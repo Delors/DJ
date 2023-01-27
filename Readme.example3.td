@@ -1,1 +1,1 @@
-*map \s [-_] +split \s +remove_ws +lower report
+*map " " "-_" +split " " +remove_ws +lower report
