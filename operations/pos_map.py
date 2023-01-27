@@ -25,12 +25,14 @@ class PosMap(Transformer):
     def op_name() -> str: return "pos_map"
 
     def __init__(self, target_chars: str):
-        if (len(target_chars) == 0):
-            raise InitializationFailed(
-                "pos_map's target chars must not be empty")
-
         self.raw_target_chars = target_chars
         self.target_chars = set(target_chars)
+
+    def init(self, td_unit: 'TDUnit', parent: 'ASTNode', verbose: bool):
+        super().init(td_unit, parent, verbose)
+        if (len(self.target_chars) == 0):
+            raise InitializationFailed(
+                "pos_map's target chars must not be empty")
 
     def process(self, entry: str) -> List[str]:
         entries = []

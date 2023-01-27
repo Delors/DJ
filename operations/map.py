@@ -16,6 +16,7 @@ class Map(Transformer):
         self.target_chars = set(target_chars)
 
     def init(self, td_unit: TDUnit, parent: ASTNode, verbose: bool):
+        super().init(td_unit,parent,verbose)
         if not set(self.source_char).isdisjoint(self.target_chars):
             msg = f'useless identity mapping {self.source_char} => "{", ".join(self.target_chars)}"'
             raise InitializationFailed(msg)
