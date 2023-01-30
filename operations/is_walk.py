@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from typing import List
 
-from dj_ast import Filter
+from dj_ast import ASTNode, TDUnit, Filter
 
 KEYBOARD_DE = {
     "HORIZONTAL_NO_SHIFT": {
@@ -142,9 +142,9 @@ class IsWalk(Filter):
     MIN_SUB_WALK_LENGTH = 3.0
     MIN_WALK_LENGTH = 3.0  # with 3.0 "just" two adjacent characters are not enough
 
-    def __init__(self) -> None:
-        configured_layout = IsWalk.LAYOUT
-        self._keyboard_layout = globals()[configured_layout]
+    def init(self, td_unit: TDUnit, parent: ASTNode, verbose: bool):
+        super().init(td_unit, parent, verbose)
+        self._keyboard_layout = globals()[IsWalk.LAYOUT]
         self._min_walk_length = IsWalk.MIN_WALK_LENGTH
         self._min_sub_walk_length = IsWalk.MIN_SUB_WALK_LENGTH
 
@@ -176,6 +176,3 @@ class IsWalk(Filter):
             last_e = e
 
         return [entry]
-
-
-IS_WALK = IsWalk()

@@ -6,15 +6,18 @@ import operations.is_walk as is_kw
 class TestIsWalk(unittest.TestCase):
 
     def setUp(self):
+        self.KW = is_kw.IsWalk()
         is_kw.IsWalk.LAYOUT = "KEYBOARD_DE"
         is_kw.IsWalk.MIN_SUB_WALK_LENGTH = 3
         is_kw.IsWalk.MIN_WALK_LENGTH = 3
-        self.KW = is_kw.IsWalk()
+        self.KW.init(None,None,False)
 
+        self.PW = is_kw.IsWalk()
         is_kw.IsWalk.LAYOUT = "PIN_PAD"
         is_kw.IsWalk.MIN_SUB_WALK_LENGTH = float('inf')
         is_kw.IsWalk.MIN_WALK_LENGTH = 3
-        self.PW = is_kw.IsWalk()
+        self.PW.init(None,None,False)
+        
 
     def test_is_filter(self):
         self.assertTrue(self.KW.is_filter())
