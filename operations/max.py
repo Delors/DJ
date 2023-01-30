@@ -1,6 +1,6 @@
 from typing import List
 
-from dj_ast import Filter
+from dj_ast import ASTNode, TDUnit, Filter
 from common import InitializationFailed
 
 
@@ -32,7 +32,7 @@ class Max(Filter):
         self.test = self._tests[operator]
         self.max_count = max_count
 
-    def init(self, td_unit: 'TDUnit', parent: 'ASTNode', verbose: bool):
+    def init(self, td_unit: TDUnit, parent: ASTNode, verbose: bool):
         super().init(td_unit, parent, verbose)
         max_count = self.max_count
         if max_count < 0:

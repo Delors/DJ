@@ -1,7 +1,7 @@
 from typing import List
 
 from common import InitializationFailed
-from dj_ast import Filter
+from dj_ast import ASTNode, TDUnit, Filter
 
 
 class Min(Filter):
@@ -34,7 +34,7 @@ class Min(Filter):
         self.test = self._tests[operator]
         self.min_count = min_count
 
-    def init(self, td_unit: 'TDUnit', parent: 'ASTNode', verbose: bool):
+    def init(self, td_unit: TDUnit, parent: ASTNode, verbose: bool):
         super().init(td_unit, parent, verbose)
         if self.min_count <= 0:
             raise InitializationFailed(
