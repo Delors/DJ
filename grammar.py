@@ -21,6 +21,7 @@ from dj_ops import REPORT, Write, MacroCall, UseSet, StoreInSet, StoreFilteredIn
 from dj_ops import NegateFilterModifier, KeepAlwaysModifier, KeepOnlyIfFilteredModifier
 from operations.capitalize import CAPITALIZE
 from operations.correct_spelling import CORRECT_SPELLING
+from operations.cuts import Cuts
 from operations.deduplicate_reversed import DEDUPLICATE_REVERSED
 from operations.deduplicate import DEDUPLICATE
 from operations.deleetify import DELEETIFY
@@ -114,6 +115,7 @@ DJ_GRAMMAR = Grammar(
                       sieve /
                       get_no /
                       get_sc /
+                      cut /
                       deduplicate_reversed /
                       deduplicate /                      
                       detriplicate /
@@ -167,6 +169,7 @@ DJ_GRAMMAR = Grammar(
     # 2. EXTRACTORS
     get_no          = "get_no"
     get_sc          = "get_sc"
+    cut             = "cut" ws+ ("l" / "r") ws+ int_value ws+ int_value
     deduplicate_reversed = "deduplicate_reversed"
     deduplicate     = "deduplicate"    
     detriplicate    = "detriplicate"
@@ -315,6 +318,10 @@ class DJTreeVisitor (NodeVisitor):
     def visit_sieve(self,_n,c): (_,_,f)=c ; return Sieve(f)
     def visit_get_no(self,_n,_c): return GET_NO
     def visit_get_sc(self,_n,_c): return GET_SC
+    def visit_cut(self,_n,c): 
+        # "cut" ws "l|r" ws <min> ws <max>
+        (_,_,[op],_,min,_,max) = c ; 
+        return Cuts(op.text,min,max)
     def visit_deduplicate_reversed(self,_n,_c): return DEDUPLICATE_REVERSED
     def visit_deduplicate(self,_n,_c): return DEDUPLICATE
     def visit_detriplicate(self,_n,_c): return DETRIPLICATE
