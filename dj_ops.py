@@ -1,12 +1,10 @@
 from typing import List
 from sys import stderr
 
-from common import enrich_filename
+from common import escape, enrich_filename, InitializationFailed
 
-from dj_ast import Operation
-from dj_ast import ComplexOperation
-from dj_ast import TDFile
-from dj_ast import ASTNode
+from dj_ast import TDUnit, ASTNode, Body
+from dj_ast import Operation, ComplexOperation
 
 
 class Report(Operation):
@@ -41,12 +39,31 @@ class Report(Operation):
     will not be output.
     """
 
+    def __init__(self) -> None:
+        super().__init__()
+
+        self.reported_entries : Set[str] = set()    
+        """ The set of reported, i.e., printed, entries per entry. 
+            This list is cleared by the `next_entry` method.
+        """
+
+
     def op_name() -> str: return "report"
 
     def is_reporter(self) -> bool: return True   
 
+    def next_entry(self):
+        self.reported_entries.clear()
+        return super().next_entry()
+
+    def do_print(self, entry: str):
+        print(entry)
+
     def process(self, entry: str) -> List[str]:
-        report(entry)
+        if entry not in self.reported_entries:
+            self.reported_entries.add(entry)
+            self.do_print(entry)
+            
         return [entry]
 
 
@@ -60,13 +77,16 @@ class Write(Report):
     def __init__(self,filename) -> None:
         super().__init__()
         self.filename = filename
-        self.file = open(enrich_filename(filename),"w",encoding="utf-8")
+        self.file = None
+        
+    def init(self, td_unit: 'TDUnit', parent : 'ASTNode', verbose: bool):         
+        super().init(td_unit,parent,verbose)
+        self.file = open(enrich_filename(self.filename),"w",encoding="utf-8")
 
     def is_reporter(self) -> bool: return True   
 
-    def process(self, entry: str) -> List[str]:
+    def do_print(self, entry: str):
         print(entry,file=self.file)
-        return [entry]
 
     def close(self):
         try:
@@ -76,54 +96,70 @@ class Write(Report):
             pass
                
     def __str__(self):
-        return f"{Write.op_name()} \"{self.filename}\""
+        return f"{Write.op_name()} \"{escape(self.filename)}\""
 
 
 
-class Use(Operation):
+class UseSet(Operation):
 
     def op_name() -> str: return "use"
 
     def __init__(self,setname) -> None:
-        super().__init__()
         self.setname = setname
 
+    def init(self, td_unit: 'TDUnit', parent : 'ASTNode', verbose: bool): 
+        if not isinstance(parent,ComplexOperation) or \
+            not parent.ops[0] is self: # TODO check that the complex operation is not a wrapped operation
+            msg = f"a set use has to be a top level and the first operation."
+            raise InitializationFailed(msg)
+
     def process(self, entry: str) -> List[str]:
-        return sets[self.setname]
+        return self.td_unit.sets[self.setname]
                
     def __str__(self):
-        return f"{Use.op_name()} {self.setname}" 
+        return f"{UseSet.op_name()} {self.setname}" 
+
 
 class StoreInSet(Operation):
 
     def op_name() -> str: return "store_in"
 
-    def __init__(self,setname,ops : ComplexOperation) -> None:
-        super().__init__()
+    def __init__(self,setname,cop : ComplexOperation) -> None:
         self.setname = setname
-        self.ops = ops
+        self.cop = cop
+
+    def init(self, td_unit : 'TDUnit', parent : 'ASTNode', verbose: bool):         
+        super().init(td_unit,parent,verbose)
+        self.cop.init(td_unit,parent,verbose)
 
     def process(self, entry: str) -> List[str]:
-        return entry
+        raise NotImplementedError()
+
+    def close(self): self.cop.close()
                
     def __str__(self):
-        return f"{StoreInSet.op_name()} {self.setname}({self.ops})" 
+        return f"{StoreInSet.op_name()} {self.setname}({self.cop})" 
 
 
 class StoreFilteredInSet(Operation):
 
     def op_name() -> str: return "store_filtered_in"
 
-    def __init__(self,setname,ops : ComplexOperation) -> None:
-        super().__init__()
+    def __init__(self,setname,cop : ComplexOperation) -> None:
         self.setname = setname
-        self.ops = ops
+        self.cop = cop
+
+    def init(self, td_unit : 'TDUnit', parent : 'ASTNode', verbose: bool):         
+        super().init(td_unit,parent,verbose)
+        self.cop.init(td_unit,parent,verbose)
 
     def process(self, entry: str) -> List[str]:
-        return entry
+        raise NotImplementedError()
+
+    def close(self): self.cop.close()            
                
     def __str__(self):
-        return f"{StoreFilteredInSet.op_name()} {self.setname}({self.ops})" 
+        return f"{StoreFilteredInSet.op_name()} {self.setname}({self.cop})" 
 
 
 
@@ -132,22 +168,42 @@ class MacroCall(Operation):
 
     def op_name() -> str: return "do"
 
-    def __init__(self, name :str, ops : List[Operation]): # TODO set ops in init step
-        self.name = name
-        self.ops = ops
-        return
+    def __init__(self, macro_name :str): 
+        self.macro_name = macro_name
+        self.cop : ComplexOperation = None
+
+    def init(self, td_unit : 'TDUnit', parent : 'ASTNode', verbose: bool):         
+        super().init(td_unit,parent,verbose)
+        self.cop = td_unit.macros[self.macro_name]
+
+    def next_entry(self):
+        return self.cop.next_entry()
 
     def is_macro(self) -> bool: 
         return True
 
-    def process(self, entry: str) -> List[str]:
-        return apply_ops(entry,self.ops)
+    def is_transformer(self) -> bool: 
+        return self.cop.is_transformer()
 
-    def close(self):
-        for op in self.ops: op.close()    
+    def is_extractor(self) -> bool: 
+        return self.cop.is_extractor()
+
+    def is_transformer_or_extractor(self) -> bool:
+        return self.cop.is_transformer_or_extractor()
+
+    def is_filter(self) -> bool:
+        return self.cop.is_filter()
+
+    def is_reporter(self) -> bool:
+        return self.cop.is_reporter()
+
+    def process_entries(self, entries: List[str]) -> List[str]:
+        return self.cop.process_entries(entries)
+
+    def close(self): self.cop.close()
 
     def __str__(self):
-        return f"{MacroCall.op_name()} {self.name}"
+        return f"{MacroCall.op_name()} {self.macro_name}"
 
 
 class KeepAlwaysModifier(Operation):
@@ -160,12 +216,14 @@ class KeepAlwaysModifier(Operation):
     def op_name() -> str: return "+"
 
     def __init__(self, op : Operation):
-        self.op = op
+        self.op = op        
 
-        if not op.is_transformer() and not op.is_extractor():
-            raise ValueError(f"unsupported base operation: {op}")
-
-        return
+    def init(self, td_unit : 'TDUnit', parent : 'ASTNode', verbose: bool): 
+        super().init(td_unit,parent,verbose)
+        op = self.op        
+        op.init(td_unit,parent,verbose)
+        if not op.is_transformer_or_extractor():
+            raise InitializationFailed(f"[{self}] no transformer or extractor: {op}")
 
     def process(self, entry: str) -> List[str]:
         entries = self.op.process(entry)
@@ -173,6 +231,9 @@ class KeepAlwaysModifier(Operation):
             entries = []
         entries.append(entry)
         return entries
+
+    def close(self):
+        self.op.close()    
         
     def __str__(self):
         return KeepAlwaysModifier.op_name() + str(self.op)
@@ -190,11 +251,13 @@ class KeepOnlyIfFilteredModifier(Operation):
 
     def __init__(self, op : Operation):
         self.op = op
-
+        
+    def init(self, td_unit : 'TDUnit', parent : 'ASTNode', verbose: bool):         
+        super().init(td_unit,parent,verbose)
+        op = self.op
         if not (op.is_transformer() or op.is_extractor()):
-            raise ValueError(f"unsupported base operation: {op}")
-
-        return
+            raise InitializationFailed(f"[{self} no transformer or extractor: {op}")
+        op.init(td_unit,parent,verbose)
 
     def process(self, entry: str) -> List[str]:
         entries = self.op.process(entry)
@@ -202,6 +265,9 @@ class KeepOnlyIfFilteredModifier(Operation):
             entries = [entry]
         return entries
         
+    def close(self):
+        self.op.close()    
+
     def __str__(self):
         return KeepOnlyIfFilteredModifier.op_name() + str(self.op)        
 
@@ -216,11 +282,13 @@ class NegateFilterModifier(Operation):
 
     def __init__(self, op : Operation):
         self.op = op
-
+        
+    def init(self, td_unit : 'TDUnit', parent : 'ASTNode', verbose: bool):         
+        super().init(td_unit,parent,verbose)
+        op = self.op
         if not (op.is_filter()):
-            raise ValueError(f"unsupported base operation: {op}")
-
-        return
+            raise InitializationFailed(f"[{self}] no filter: {op}")            
+        op.init(td_unit,parent,verbose)
 
     def process(self, entry: str) -> List[str]:
         entries = self.op.process(entry)
@@ -229,6 +297,9 @@ class NegateFilterModifier(Operation):
         else:
             return []
         
+    def close(self):
+        self.op.close()    
+
     def __str__(self):
         return NegateFilterModifier.op_name() + str(self.op)        
 
@@ -238,6 +309,17 @@ class Or(Operation):
 
     def __init__(self, cops : List[ComplexOperation]) -> None:
         self.cops = cops
+
+    def init(self, td_unit : 'TDUnit', parent : 'ASTNode', verbose: bool):         
+        super().init(td_unit,parent,verbose)
+        for cop in self.cops: 
+            if not cop.is_filter():
+                msg = f"[{self}] no filter: {cop}"
+                raise InitializationFailed(msg)
+        for cop in self.cops: cop.init(td_unit,parent,verbose)
+
+    def close(self): 
+        for cop in self.cops: cop.close()    
 
     def __str__(self):
         cops = ", ".join(map (lambda x: str(x), self.cops))
