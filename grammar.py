@@ -82,7 +82,7 @@ DJ_GRAMMAR = Grammar(
     identifier      = ~r"[A-Z_]+"a # we require identifiers of sets and macros to use capital letters to make them easily distinguishable
     op_operator     = ~r"[a-z_]+"
     float_value     = ~r"[0-9]+(\.[0-9]+)?"
-    int_value       = ~r"[1-9][0-9]*"
+    int_value       = ~r"[0-9][0-9]*"
     python_identifier = ~r"[a-zA-Z_][a-zA-Z0-9_]*"
     python_value    = ~r"[a-zA-Z0-9._+]+"
 
