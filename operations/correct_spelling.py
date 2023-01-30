@@ -30,9 +30,6 @@ class CorrectSpelling(Transformer):
 
     def op_name() -> str: return "correct_spelling"
 
-    def __init__(self):
-        return
-
     def process(self, entry: str) -> List[str]:
         """
         Processes a given entry and tries to fix spelling mistakes.

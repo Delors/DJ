@@ -18,9 +18,6 @@ class IsRegularWord(Filter):
 
     def op_name() -> str: return "is_regular_word"
 
-    def __init__(self):
-        return
-
     def process(self, entry: str) -> List[str]:
         lentry = entry.lower()
         centry = entry.capitalize()
