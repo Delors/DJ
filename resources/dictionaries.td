@@ -1,16 +1,56 @@
-# GENERAL FILTER
 # Applies basic transformations to a real world dictionary to
-# generate password like entries.
+# generate base words for passwords.
+
+# We want to handle, e.g., the following situations:
+
+# Input: 
+#   Frankfurt an der Oder
+# Output:  
+#   FrankfurtanderOder
+#   FrankfurtAnDerOder
+#   Frankfurt
+#   Oder
+#   
+# Input: 
+#   Vladimir PAVEL
+# Output: 
+#   VladimirPavel
+#   Vladimir        
+#   Pavel
+#
+# Input:
+#   Militär
+# Output:
+#   Militär
+#   Militaer
+#   Militar
+#
+# Input:
+#   Achkhoj-Martanovskij Rajon
+# Output:
+#   Achkhoj-Martanovskij
+#   AchkhojMartanovskij
+#   Achkhoj
+#   Martanovskij
+
+
+# GENERAL FILTER
 
 ignore "ignore/de.txt"
 ignore "ignore/en.txt"
 ignore "ignore/es.txt"
 ignore "ignore/fr.txt"
+ignore "ignore/al.txt"
 
 # DEFINITIONS OF MACROS
 def UMLAUT_TO_ASCII replace "replace/UmlautToAscii.txt"
 def REWRITE_UMLAUT replace "replace/RewriteUmlaut.txt"
 def SC_TO_SPACE replace "replace/SpecialCharToSpace.txt"
+
+
+
+
+
 # REMARKS
 # - "upper" only makes sense for "non-mobile phone" passwords
 # - "remove_numbers" potentially leads to many non-sense words.
