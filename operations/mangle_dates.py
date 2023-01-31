@@ -27,6 +27,7 @@ class MangleDates(Transformer):
             "[^0-9]*([0-9]{1,2})[/-]?([0-9]{1,2})[/-]?(19|20)?([0-9]{2})")
 
     def init(self, td_unit: TDUnit, parent: ASTNode, verbose: bool):
+        super().init(td_unit,parent,verbose)
         if self.END_YEAR_21ST >= self.START_YEAR_20TH:
             raise InitializationFailed(
                 f"19{self.START_YEAR_20TH} has to be < 20{self.END_YEAR_21ST}"
