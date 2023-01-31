@@ -271,7 +271,7 @@ class SetDefinition(ASTNode):
 
     def init(self, td_unit: 'TDUnit', parent: ASTNode, verbose: bool):
         super().init(td_unit, parent, verbose)
-        td_unit.entry_sets[self.name] = []
+        td_unit.entry_sets[self.name] = set()
 
 
 class IgnoreEntries(ASTNode):
