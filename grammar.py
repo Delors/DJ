@@ -148,7 +148,8 @@ DJ_GRAMMAR = Grammar(
     # ======================================
     macro_call      = "do" ws+ identifier
     # Handling of (intermediate) sets
-    set_store       = ( "store_in" / "store_filtered_in" ) ws+ identifier "(" continuation? op_defs continuation? ")"        
+    # set_store       = ( "store_in" / "store_filtered_in" ) ws+ identifier "(" continuation? op_defs continuation? ")"        
+    set_store       = "{" continuation? op_defs continuation? ( "}!>" / "}>" ) ws* identifier
     set_use         = "use" ws+ identifier # a set use always has to be the first op in an op_defs
     # Meta operators that can only be combined with filters
     #or              = "or(" ws* op_defs (ws* "," ws* op_defs)+ ws* ")"
@@ -281,15 +282,23 @@ class DJTreeVisitor (NodeVisitor):
     def visit_macro_call(self,node,visited_children): 
         (_do,_ws,identifier) = visited_children
         return MacroCall(identifier)
+
+    #def visit_set_store(self,node,visited_children) : 
+    #    ([store_op],_ws,identifier,_para,_ws,op_defs,_ws,_para) = visited_children
+    #    op = store_op.text
+    #    if  op == "store_in":
+    #        return StoreInSet(identifier,op_defs)        
+    #    elif op == "store_filtered_in":
+    #        return StoreFilteredInSet(identifier,op_defs)        
+    #    else:
+    #        raise ValueError(f"unexpected operation name: {op}")
     def visit_set_store(self,node,visited_children) : 
-        ([store_op],_ws,identifier,_para,_ws,op_defs,_ws,_para) = visited_children
+        (_para,_ws,op_defs,_ws,[store_op],_ws,identifier) = visited_children
         op = store_op.text
-        if  op == "store_in":
+        if  op == "}>":
             return StoreInSet(identifier,op_defs)        
-        elif op == "store_filtered_in":
+        else: # op == "}!>":
             return StoreFilteredInSet(identifier,op_defs)        
-        else:
-            raise ValueError(f"unexpected operation name: {op}")
     def visit_set_use(self,node,visited_children) : 
         (_use,_ws,identifier) = visited_children
         return UseSet(identifier)
