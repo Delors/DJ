@@ -233,20 +233,22 @@ class ComplexOperation(ASTNode):
 
     def process_entries(self, entries):
         td_unit: TDUnit = self.td_unit
-        new_entries = entries
+        previous_entries = None
+        current_entries = entries
         for op in self.ops:
-            if new_entries is None:
+            if current_entries is None or len(current_entries) == 0:
                 break
             try:
-                new_entries = op.process_entries(new_entries)
+                previous_entries = current_entries
+                current_entries = op.process_entries(current_entries)
                 if td_unit.trace_ops:
-                    print(f"[trace] {str(op)} ( {new_entries} ) => {new_entries}", file=stderr)
+                    print(f"[trace] {str(op)} ( {previous_entries} ) => {current_entries}", file=stderr)
             except Exception as e:
-                print(traceback.format_exc())
+                print(traceback.format_exc(),file=stderr)
                 print(f"[error] {op}({entries}) failed: {str(e)}", file=stderr)
                 exit(-2)
 
-        return new_entries
+        return current_entries
 
     def apply(self, entry):
         return apply_ops(entry, self.ops)
