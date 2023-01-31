@@ -28,6 +28,7 @@ class Related(Transformer):
         self.MIN_RELATEDNESS = MIN_RELATEDNESS
 
     def init(self, td_unit: 'TDUnit', parent: 'ASTNode', verbose: bool):
+        super().init(td_unit, parent, verbose)
         # The test is required here, because both variables are user
         # configurable.
         if self.KEEP_ALL_RELATEDNESS < self.MIN_RELATEDNESS:
