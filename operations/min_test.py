@@ -33,6 +33,7 @@ class TestMin(unittest.TestCase):
         self.assertEqual(self.mnl_2.__str__(), "min non_letter 2")
 
     def test_no_respective_chars(self):
+        self.assertListEqual(self.mlo_2.process("ABC  "), [])
         self.assertListEqual(self.mlo_2.process("ABC"), [])
         self.assertListEqual(self.mup_2.process("abc"), [])
         self.assertListEqual(self.mnu_2.process("ABC"), [])
@@ -50,11 +51,12 @@ class TestMin(unittest.TestCase):
         self.assertListEqual(self.mnl_2.process("$BC"), [])
 
     def test_enough_respective_chars(self):
-        self.assertListEqual(self.mlo_2.process("abC"), ["abC"])
+        self.assertListEqual(self.mlo_2.process("abC"), ["abC"])                
         self.assertListEqual(self.mup_2.process("ABc"), ["ABc"])
         self.assertListEqual(self.mnu_2.process("1a2"), ["1a2"])
         self.assertListEqual(self.mle_2.process("a2_B"), ["a2_B"])
         self.assertListEqual(self.msy_2.process("$_BC"), ["$_BC"])
+        self.assertListEqual(self.msy_2.process("ABC  "), ["ABC  "])
         self.assertListEqual(self.mnl_2.process("BC22"), ["BC22"])
         self.assertListEqual(self.mnl_2.process("BC#'"), ["BC#'"])
         self.assertListEqual(self.mnl_2.process("BC#2"), ["BC#2"])
