@@ -109,17 +109,22 @@ class UseSet(Operation):
 
     def op_name() -> str: return "use"
 
-    def __init__(self,setname) -> None:
+    def __init__(self, setname) -> None:
         self.setname = setname
 
-    def init(self, td_unit: 'TDUnit', parent : 'ASTNode', verbose: bool): 
-        if not isinstance(parent,ComplexOperation) or \
-            not parent.ops[0] is self: # TODO check that the complex operation is not a wrapped operation
+    def init(self, td_unit: 'TDUnit', parent: 'ASTNode', verbose: bool):
+        super().init(td_unit, parent, verbose)
+        if not isinstance(parent, ComplexOperation) or \
+                not parent.ops[0] is self:  # TODO check that the complex operation is not a wrapped operation
             msg = f"a set use has to be a top level and the first operation."
             raise InitializationFailed(msg)
 
-    def process(self, entry: str) -> List[str]:
-        return self.td_unit.sets[self.setname]
+    def process_entries(self, entries: List[str]) -> List[str]:
+        entries = self.td_unit.entry_sets[self.setname]
+        if entries is None:
+            return None
+        else:
+            return list(entries)
                
     def __str__(self):
         return f"{UseSet.op_name()} {self.setname}" 
@@ -129,43 +134,58 @@ class StoreInSet(Operation):
 
     def op_name() -> str: return "store_in"
 
-    def __init__(self,setname,cop : ComplexOperation) -> None:
+    def __init__(self, setname, cop: ComplexOperation) -> None:
         self.setname = setname
         self.cop = cop
 
-    def init(self, td_unit : 'TDUnit', parent : 'ASTNode', verbose: bool):         
-        super().init(td_unit,parent,verbose)
-        self.cop.init(td_unit,parent,verbose)
+    def init(self, td_unit: 'TDUnit', parent: 'ASTNode', verbose: bool):
+        super().init(td_unit, parent, verbose)
+        self.cop.init(td_unit, parent, verbose)
 
-    def process(self, entry: str) -> List[str]:
-        raise NotImplementedError()
+    def process_entries(self, entries: List[str]) -> List[str]:
+        new_entries = self.cop.process_entries(entries)
+        if self.td_unit.trace_ops:
+            print(
+                f"[trace] storing in {self.setname}: {new_entries}", file=stderr)
+        if new_entries is not None:
+            self.td_unit.entry_sets[self.setname].update(new_entries)
+        return new_entries
 
     def close(self): self.cop.close()
                
     def __str__(self):
-        return f"{StoreInSet.op_name()} {self.setname}({self.cop})" 
+        # return f"{StoreInSet.op_name()} {self.setname}({self.cop})"
+        return f"{{ {self.cop} }}> {self.setname}"
 
 
 class StoreFilteredInSet(Operation):
 
     def op_name() -> str: return "store_filtered_in"
 
-    def __init__(self,setname,cop : ComplexOperation) -> None:
+    def __init__(self, setname, cop: ComplexOperation) -> None:
         self.setname = setname
         self.cop = cop
 
-    def init(self, td_unit : 'TDUnit', parent : 'ASTNode', verbose: bool):         
-        super().init(td_unit,parent,verbose)
-        self.cop.init(td_unit,parent,verbose)
+    def init(self, td_unit: 'TDUnit', parent: 'ASTNode', verbose: bool):
+        super().init(td_unit, parent, verbose)
+        self.cop.init(td_unit, parent, verbose)
 
-    def process(self, entry: str) -> List[str]:
-        raise NotImplementedError()
+    def process_entries(self, entries: List[str]) -> List[str]:
+        new_entries = self.cop.process_entries(entries)
+        filtered_entries = set(entries)
+        if new_entries is not None:
+            filtered_entries.difference_update(new_entries)
+            self.td_unit.entry_sets[self.setname].update(filtered_entries)
+        if self.td_unit.trace_ops:
+            print(
+                f"[trace] storing in {self.setname}: {filtered_entries}", file=stderr)
+        return new_entries
 
     def close(self): self.cop.close()            
                
     def __str__(self):
-        return f"{StoreFilteredInSet.op_name()} {self.setname}({self.cop})" 
-
+        # return f"{StoreFilteredInSet.op_name()} {self.setname}({self.cop})"
+        return f"{{ {self.cop} }}!> {self.setname}"
 
 
 class MacroCall(Operation):
