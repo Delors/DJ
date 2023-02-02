@@ -6,6 +6,11 @@ from common import escape, enrich_filename, InitializationFailed
 from dj_ast import TDUnit, ASTNode, Body
 from dj_ast import Operation, ComplexOperation
 
+class Nop(Operation):
+
+    def op_name() -> str: return "_"
+
+NOP = Nop()
 
 class Report(Operation):
     """The "report" operation prints out the entry. 

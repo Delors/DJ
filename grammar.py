@@ -17,7 +17,7 @@ from common import unescape
 from dj_ast import ComplexOperation
 from dj_ast import TDUnit, Body, Header, Comment
 from dj_ast import IgnoreEntries, SetDefinition, MacroDefinition, ConfigureOperation
-from dj_ops import REPORT, Write, MacroCall, UseSet, StoreInSet, StoreFilteredInSet, Or
+from dj_ops import NOP, REPORT, Write, MacroCall, UseSet, StoreInSet, StoreFilteredInSet, Or
 from dj_ops import NegateFilterModifier, KeepAlwaysModifier, KeepOnlyIfFilteredModifier
 from operations.capitalize import CAPITALIZE
 from operations.correct_spelling import CORRECT_SPELLING
@@ -36,6 +36,7 @@ from operations.is_regular_word import IS_REGULAR_WORD
 from operations.is_sc import IS_SC
 from operations.is_walk import IsWalk
 from operations.lower import LOWER
+from operations.rotate import ROTATE
 from operations.mangle_dates import MANGLE_DATES
 from operations.map import Map
 from operations.max import Max
@@ -62,7 +63,7 @@ from operations.title import TITLE
 """
 Grammar of TD files. 
 
-Please note, PEGs do greedy matching and that, e.g., "deduplicate_reversed" 
+Please note, PEGs do greedy matching and therefore, e.g., "deduplicate_reversed" 
 has to be defined in a PEG's or-group before "deduplicate". Otherwise,
 "dedpulicate" would match the first part of "deduplicate_reversed"
 and "_reversed" would then remain unmatched.
@@ -104,6 +105,7 @@ DJ_GRAMMAR = Grammar(
                       set_store /
                       set_use /
                       or /
+                      nop /
                       report /
                       write /
                       min /
@@ -124,6 +126,7 @@ DJ_GRAMMAR = Grammar(
                       strip_ws /
                       fold_ws /
                       remove_ws /
+                      rotate /
                       lower /
                       upper /
                       title /
@@ -148,13 +151,13 @@ DJ_GRAMMAR = Grammar(
     # ======================================
     macro_call      = "do" ws+ identifier
     # Handling of (intermediate) sets
-    # set_store       = ( "store_in" / "store_filtered_in" ) ws+ identifier "(" continuation? op_defs continuation? ")"        
     set_store       = "{" continuation? op_defs continuation? ( "}!>" / "}>" ) ws* identifier
     set_use         = "use" ws+ identifier # a set use always has to be the first op in an op_defs
     # Meta operators that can only be combined with filters
     #or              = "or(" ws* op_defs (ws* "," ws* op_defs)+ ws* ")"
     or              = ~r"or\(\s*" op_defs ( ~r"\s*,\s*" op_defs )+ ~r"\s*\)"
     # Reporting operators
+    nop             = "_"
     report          = "report"
     write           = "write" ws+ file_name
 
@@ -181,6 +184,7 @@ DJ_GRAMMAR = Grammar(
     strip_ws        = "strip_ws"
     fold_ws         = "fold_ws"
     remove_ws       = "remove_ws"
+    rotate          = "rotate"
     lower           = "lower"
     upper           = "upper"
     title           = "title"
@@ -282,16 +286,6 @@ class DJTreeVisitor (NodeVisitor):
     def visit_macro_call(self,node,visited_children): 
         (_do,_ws,identifier) = visited_children
         return MacroCall(identifier)
-
-    #def visit_set_store(self,node,visited_children) : 
-    #    ([store_op],_ws,identifier,_para,_ws,op_defs,_ws,_para) = visited_children
-    #    op = store_op.text
-    #    if  op == "store_in":
-    #        return StoreInSet(identifier,op_defs)        
-    #    elif op == "store_filtered_in":
-    #        return StoreFilteredInSet(identifier,op_defs)        
-    #    else:
-    #        raise ValueError(f"unexpected operation name: {op}")
     def visit_set_store(self,node,visited_children) : 
         (_para,_ws,op_defs,_ws,[store_op],_ws,identifier) = visited_children
         op = store_op.text
@@ -311,6 +305,7 @@ class DJTreeVisitor (NodeVisitor):
         all_cops.extend(cops)
         return Or(all_cops)
 
+    def visit_nop(self,node,_children): return NOP
     def visit_report(self,node,_children): return REPORT    
     def visit_write(self,node,children):
         (_write,_ws,filename) = children
@@ -341,6 +336,7 @@ class DJTreeVisitor (NodeVisitor):
     def visit_strip_ws(self,_n,_c): return STRIP_WS
     def visit_fold_ws(self,_n,_c): return FOLD_WS
     def visit_remove_ws(self,_n,_c): return REMOVE_WS
+    def visit_rotate(self,_n,_c): return ROTATE
     def visit_lower(self,_n,_c): return LOWER
     def visit_upper(self,_n,_c): return UPPER
     def visit_title(self,_n,_c): return TITLE
