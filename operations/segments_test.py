@@ -8,8 +8,8 @@ from operations.segments import Segments
 class TestSegments(unittest.TestCase):
 
     def setUp(self):
-        self.S3 = Segments(3)
-        self.SInf = Segments(math.inf)
+        self.S3 = Segments(1,3)
+        self.SInf = Segments(1,math.inf)
 
     def test_is_extractor(self):
         self.assertTrue(self.S3.is_extractor())
