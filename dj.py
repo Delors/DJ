@@ -19,59 +19,6 @@ from grammar import DJ_GRAMMAR, DJTreeVisitor
 from dj_ast import Operation, TDUnit
 from dj_ops import ComplexOperation
 
-
-# ignored_entries = set()
-# """ The global list of all entries which will always be ignored.
-#     Compared to an operation which only processes an entry at
-#     a specific point in time, an entry will - after each step -
-#     always be checked against entries in the ignored_entries set.
-# """
-
-# sets : Tuple[str,List[str]] = {}
-# """ The sets which are created while processing the entries. The
-#    sets are cleared whenever a new dictionary entry is analyzed.
-# """
-
-# def _clear_sets():
-#    for k in sets.keys(): sets[k] = []
-
-
-# def apply_ops(entry : str, ops : List[Operation]) -> List[str]:
-#    """ Applies all operations to the given entry. As a result multiple new
-#        entries may be generated. None is returned if and only if the
-#        application of an operation to all (intermediate) entries resulted in
-#        `None`. (cf. Operation.processEntries)
-#    """
-#        self.td_unit.
-#        try:
-#            new_entries = op.process_entries(entries)
-#        except Exception as e:
-#            print(traceback.format_exc())
-#            print(f"[error] {op}({entries}) failed: {str(e)}",file=stderr)
-#            return
-#
-#        if _trace_ops:
-#            print(f"[trace] result:   {new_entries}",file=stderr)
-#
-#        if new_entries is None:
-#            return None
-#
-#        entries = []
-#        for new_entry in new_entries:
-#            if len(new_entry) == 0:
-#                continue
-#            if new_entry in ignored_entries:
-#                if _trace_ops:
-#                    print(f"[trace] ignoring: {new_entry}")
-#            else:
-#                entries.append(new_entry)
-#
-#        if len(entries) == 0:
-#            return []
-#
-#    return entries
-
-
 def transform_entries(td_unit: TDUnit, dictionary_filename: str):
     """Transforms the entries of a given dictionary."""
     d_in = None
@@ -173,7 +120,7 @@ def main() -> int:
     # 3. cleanup operations (in particular closing of file output streams)
     if verbose:
         print(
-            "[debug] ==================== C L E A N   U P ===================", file=stderr)
+            "[debug] =================== C L E A N   U P ====================", file=stderr)
     td_unit.close()
 
     return 0
