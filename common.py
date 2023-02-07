@@ -166,15 +166,16 @@ _nlp_models = {
     "wiki"    : 'glove-wiki-gigaword-300'
 }
 
-def get_nlp_model(model : str):
+def get_nlp_model(model: str, verbose : bool):
     global _nlp_models
     nlp_model = _nlp_models[model]
     if isinstance(nlp_model,str):
         gensim_module = importlib.import_module("gensim.downloader")
-        gensim_load = getattr(gensim_module,"load")
+        if verbose:
         print(f"[info] loading {model} (this will take time)", file=stderr)
         nlp_model = gensim_load(nlp_model)
         _nlp_models[model] = nlp_model
+        if verbose: 
         print(f"[info] loaded {model}({nlp_model})", file=stderr)
     return nlp_model
 
@@ -183,17 +184,19 @@ _nlp_vocabs = {
     # EMPTY! - lazily initialized by calling "get_nlp_vocab"
 }
 
-def get_nlp_vocab(model: str) :
+def get_nlp_vocab(model: str, verbose: bool):
     # Returns an nlp model's underlying dictionary. This can, e.g., 
     # be used to check if a word exists in the model.
     global _nlp_vocabs
     nlp_vocab = _nlp_vocabs.get(model)
     if not nlp_vocab:
+        if verbose:
         print(
             f"[info] initializing {model} vocabulary (this will take time)",
             file=stderr
         )
-        nlp_vocab = get_nlp_model(model).key_to_index
+        nlp_vocab = get_nlp_model(model,verbose).key_to_index
         _nlp_vocabs[model] = nlp_vocab
+        if verbose:
         print(f"[info] initialized {model} vocabulary", file=stderr)
     return nlp_vocab
