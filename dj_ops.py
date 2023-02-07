@@ -10,6 +10,9 @@ class Nop(Operation):
 
     def op_name() -> str: return "_"
 
+    def process_entries(self, entries: List[str]) -> List[str]:
+        return entries
+
 NOP = Nop()
 
 class Report(Operation):
