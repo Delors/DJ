@@ -113,18 +113,18 @@ class Operation(ASTNode):
         """
         td_unit = self.td_unit
         all_none = True
-        all_new_entries = []
+        all_new_entries = set()
         for entry in entries:
             new_entries = self.process(entry)
             if new_entries is not None:
                 all_none = False
                 for new_entry in new_entries:
                     if not new_entry in td_unit.ignored_entries and len(new_entry) > 0:
-                        all_new_entries.append(new_entry)
+                        all_new_entries.add(new_entry)
         if all_none:
             return None
         else:
-            return all_new_entries
+            return list(all_new_entries)
 
     def process(self, entry: str) -> List[str]:
         """
