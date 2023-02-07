@@ -17,11 +17,12 @@ from common import unescape
 from dj_ast import ComplexOperation
 from dj_ast import TDUnit, Body, Header, Comment
 from dj_ast import IgnoreEntries, SetDefinition, MacroDefinition, ConfigureOperation
-from dj_ops import NOP, REPORT, Write, MacroCall, UseSet, StoreInSet, StoreFilteredInSet, Or
+from dj_ops import NOP, REPORT, Write, MacroCall, Or
+from dj_ops import UseSet, StoreInSet, StoreFilteredInSet, StoreNotApplicableInSet
 from dj_ops import NegateFilterModifier, KeepAlwaysModifier, KeepOnlyIfFilteredModifier
 from operations.capitalize import CAPITALIZE
 from operations.correct_spelling import CORRECT_SPELLING
-from operations.cuts import Cuts
+from operations.cut import Cut
 from operations.deduplicate_reversed import DEDUPLICATE_REVERSED
 from operations.deduplicate import DEDUPLICATE
 from operations.deleetify import DELEETIFY
@@ -30,13 +31,14 @@ from operations.discard_endings import DiscardEndings
 from operations.fold_ws import FOLD_WS
 from operations.get_no import GET_NO
 from operations.get_sc import GET_SC
+from operations.is_part_of import IsPartOf
 from operations.is_pattern import IS_PATTERN
 from operations.is_popular_word import IS_POPULAR_WORD
 from operations.is_regular_word import IS_REGULAR_WORD
 from operations.is_sc import IS_SC
 from operations.is_walk import IsWalk
 from operations.lower import LOWER
-from operations.rotate import ROTATE
+from operations.rotate import Rotate
 from operations.mangle_dates import MANGLE_DATES
 from operations.map import Map
 from operations.max import Max
@@ -58,6 +60,9 @@ from operations.strip_ws import STRIP_WS
 from operations.sub_split import SubSplit
 from operations.upper import UPPER
 from operations.title import TITLE
+from operations.as_append_hc_rule import AS_APPEND_HC_RULE
+from operations.as_prepend_hc_rule import AS_PREPEND_HC_RULE
+from operations.m import M
 
 
 """
@@ -113,9 +118,11 @@ DJ_GRAMMAR = Grammar(
                       is_sc /
                       is_pattern /
                       is_walk /
+                      is_part_of /
                       is_regular_word /
                       is_popular_word /
                       sieve /
+                      m /
                       get_no /
                       get_sc /
                       cut /
@@ -145,17 +152,19 @@ DJ_GRAMMAR = Grammar(
                       mangle_dates /                      
                       deleetify /
                       related /
-                      correct_spelling 
+                      correct_spelling /
+                      as_preprend_hc_rule /
+                      as_append_hc_rule
 
     # Core operators                  
     # ======================================
     macro_call      = "do" ws+ identifier
     # Handling of (intermediate) sets
-    set_store       = "{" continuation? op_defs continuation? ( "}!>" / "}>" ) ws* identifier
+    set_store       = "{" continuation? op_defs continuation? ( "}>" / "}!>" / "}/>") ws* identifier
     set_use         = "use" ws+ identifier # a set use always has to be the first op in an op_defs
     # Meta operators that can only be combined with filters
     #or              = "or(" ws* op_defs (ws* "," ws* op_defs)+ ws* ")"
-    or              = ~r"or\(\s*" op_defs ( ~r"\s*,\s*" op_defs )+ ~r"\s*\)"
+    or              = ~r"or\(\s*" op_defs ( ~r"\s*,\s*" op_defs )+ ~r"\s*\)"s
     # Reporting operators
     nop             = "_"
     report          = "report"
@@ -169,22 +178,24 @@ DJ_GRAMMAR = Grammar(
     is_sc           = "is_sc"    
     is_pattern      = "is_pattern"
     is_walk         = "is_walk"
+    is_part_of     = "is_part_of" ws+ quoted_string
     is_regular_word = "is_regular_word"
     is_popular_word = "is_popular_word"
     sieve           = "sieve" ws+ file_name
     # 2. EXTRACTORS
+    m               = "m" ws+ quoted_string
     get_no          = "get_no"
     get_sc          = "get_sc"
     cut             = "cut" ws+ ("l" / "r") ws+ int_value ws+ int_value
     deduplicate_reversed = "deduplicate_reversed"
     deduplicate     = "deduplicate"    
     detriplicate    = "detriplicate"
-    segments        = "segments" ws+ int_value   
+    segments        = "segments" ws+ int_value ws+ int_value   
     # 3. TRANSFORMERS
     strip_ws        = "strip_ws"
     fold_ws         = "fold_ws"
     remove_ws       = "remove_ws"
-    rotate          = "rotate"
+    rotate          = "rotate" ws+ int_value
     lower           = "lower"
     upper           = "upper"
     title           = "title"
@@ -204,6 +215,8 @@ DJ_GRAMMAR = Grammar(
     deleetify       = "deleetify"    
     related         = "related" ws+ float_value    
     correct_spelling = "correct_spelling"
+    as_preprend_hc_rule = "as_preprend_hc_rule"
+    as_append_hc_rule = "as_append_hc_rule"
     """
 )
 
@@ -291,14 +304,16 @@ class DJTreeVisitor (NodeVisitor):
         op = store_op.text
         if  op == "}>":
             return StoreInSet(identifier,op_defs)        
-        else: # op == "}!>":
+        elif op == "}!>":
             return StoreFilteredInSet(identifier,op_defs)        
+        else: # op == "}/>":
+            return StoreNotApplicableInSet(identifier,op_defs)
     def visit_set_use(self,node,visited_children) : 
         (_use,_ws,identifier) = visited_children
         return UseSet(identifier)
     def visit_or(self,node,visited_children): 
         (_or_ws,cop,more_cops,_ws) = visited_children
-        # more_cops is a list or tuples where the second tuple 
+        # more_cops is a list of tuples where the second tuple 
         # value is the complex operation
         cops = map(lambda x: x[1], more_cops) # strip "ws" nodes
         all_cops = [cop]
@@ -318,25 +333,27 @@ class DJTreeVisitor (NodeVisitor):
     def visit_min(self,_n,c): (_,_,op,_,v)=c ; return Min(op,v)
     def visit_max(self,_n,c): (_,_,op,_,v)=c ; return Max(op,v)
     def visit_is_sc(self,_n,_c): return IS_SC
+    def visit_is_part_of(self,_n,c): (_,_,seq) = c ; return IsPartOf(seq)
     def visit_is_pattern(self,_n,_c): return IS_PATTERN
     def visit_is_walk(self,_n,_c): return IsWalk() # IsWalk is configurable
     def visit_is_regular_word(self,_n,_c): return IS_REGULAR_WORD
     def visit_is_popular_word(self,_n,_c): return IS_POPULAR_WORD
     def visit_sieve(self,_n,c): (_,_,f)=c ; return Sieve(f)
+    def visit_m(self,_n,c): (_,_,r)=c ; return M(r)
     def visit_get_no(self,_n,_c): return GET_NO
     def visit_get_sc(self,_n,_c): return GET_SC
     def visit_cut(self,_n,c): 
         # "cut" ws "l|r" ws <min> ws <max>
         (_,_,[op],_,min,_,max) = c ; 
-        return Cuts(op.text,min,max)
+        return Cut(op.text,min,max)
     def visit_deduplicate_reversed(self,_n,_c): return DEDUPLICATE_REVERSED
     def visit_deduplicate(self,_n,_c): return DEDUPLICATE
     def visit_detriplicate(self,_n,_c): return DETRIPLICATE
-    def visit_segments(self,_n,c): (_,_,l)=c ; return Segments(l)
+    def visit_segments(self,_n,c): (_,_,min,_,max)=c ; return Segments(min,max)
     def visit_strip_ws(self,_n,_c): return STRIP_WS
     def visit_fold_ws(self,_n,_c): return FOLD_WS
     def visit_remove_ws(self,_n,_c): return REMOVE_WS
-    def visit_rotate(self,_n,_c): return ROTATE
+    def visit_rotate(self,_n,c): (_,_,by) = c ;return Rotate(by)
     def visit_lower(self,_n,_c): return LOWER
     def visit_upper(self,_n,_c): return UPPER
     def visit_title(self,_n,_c): return TITLE
@@ -356,7 +373,8 @@ class DJTreeVisitor (NodeVisitor):
     def visit_deleetify(self,_n,_c): return DELEETIFY
     def visit_related(self,_n,c): (_,_,r)=c ; return Related(r)    
     def visit_correct_spelling(self,_n,_c): return CORRECT_SPELLING
-    
+    def visit_as_preprend_hc_rule(self,_n,_c): return AS_PREPEND_HC_RULE
+    def visit_as_append_hc_rule(self,_n,_c): return AS_APPEND_HC_RULE
 
 
 DJ_EXAMPLE_FILE = """
