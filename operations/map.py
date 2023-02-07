@@ -5,7 +5,7 @@ from common import InitializationFailed, escape
 
 
 class Map(Transformer):
-    """ Maps a given character to several alternatives.
+    """ Maps a given character to one to several alternatives.
     """
 
     def op_name() -> str: return "map"
@@ -17,6 +17,10 @@ class Map(Transformer):
 
     def init(self, td_unit: TDUnit, parent: ASTNode, verbose: bool):
         super().init(td_unit,parent,verbose)
+        if len(self.source_char) != 1:
+            raise InitializationFailed("invalid length for source char")
+        if len(self.target_char) == 0:
+            raise InitializationFailed("invalid length for target chars")
         if not set(self.source_char).isdisjoint(self.target_chars):
             msg = f'useless identity mapping {self.source_char} => "{", ".join(self.target_chars)}"'
             raise InitializationFailed(msg)
