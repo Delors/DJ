@@ -258,9 +258,6 @@ class ComplexOperation(ASTNode):
 
         return current_entries
 
-    def apply(self, entry):
-        return apply_ops(entry, self.ops)
-
     def close(self):
         for op in self.ops:
             op.close()
