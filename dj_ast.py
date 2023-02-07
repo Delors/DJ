@@ -409,21 +409,31 @@ class Body(ASTNode):
 
         # information all operations that a new entry will be processed
         for cop in self.cops:
+            if not isinstance(cop, Comment):
             cop.next_entry()
 
         # apply all operations in the specified order on the entry
         for cop in self.cops:
+            if not isinstance(cop, Comment):
             if self.td_unit.trace_ops:
                 escaped_entry = entry.replace(
                     "\\", "\\\\").replace("\"", "\\\"")
+                    s_cop = str(cop)
+                    if s_cop.startswith("use"):
                 print(
-                    f'[trace] applying: "{cop}"({escaped_entry})',
+                            f'[trace] applying: {s_cop}',
+                            file=stderr
+                        )
+                    else:
+                        print(
+                            f'[trace] applying: {s_cop}( {escaped_entry} )',
                     file=stderr
                 )
             cop.process_entries([entry])
 
     def close(self):
         for cop in self.cops:
+            if not isinstance(cop, Comment):
             cop.close()
 
 
