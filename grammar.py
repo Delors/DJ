@@ -140,7 +140,7 @@ DJ_GRAMMAR = Grammar(
                       capitalize /
                       remove_no /
                       remove_sc /
-                      strip_no_and_sc /                      
+                      strip_no_and_sc /
                       reverse /
                       replace /
                       map /
@@ -305,7 +305,7 @@ class DJTreeVisitor (NodeVisitor):
         if  op == "}>":
             return StoreInSet(identifier,op_defs)        
         elif op == "}!>":
-            return StoreFilteredInSet(identifier,op_defs)        
+            return StoreFilteredInSet(identifier,op_defs)     
         else: # op == "}/>":
             return StoreNotApplicableInSet(identifier,op_defs)
     def visit_set_use(self,node,visited_children) : 
@@ -406,17 +406,17 @@ def BASE_TRANSFORMATIONS \
 +related 0.5 min length 3 
 do BASE_TRANSFORMATIONS 
 
-store_in WALKS(is_walk)
-store_filtered_in NO_PATTERNS( is_pattern )
+{ is_walk }> WALK
+{ is_pattern }!> NO_PATTERN 
 
-store_in NO_WORD(or(is_walk, is_pattern, is_sc ))
+{ or(is_walk, is_pattern, is_sc) }> NO_WORD
 
-store_in RELATED( *split "\\"" \
+{ *split "\\"" \
  *strip_ws \
  *fold_ws \
- related 0.5 )
+ related 0.5 }> RELATED
 
-use NO_PATTERNS map "s" "abc\\n\\r\\t"
+use NO_PATTERNS map "s" "abc\\n\\r\\t" report
 """
 
 DJ_SIMPLE_EXAMPLE_FILE="""
