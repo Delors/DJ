@@ -40,25 +40,24 @@ class Report(Operation):
         Diesisteintest      [after removing ws and capitalization]
 
     notably:
-    
+
         Testtest
         DiesisteinTest
-    
+
     will not be output.
     """
 
     def __init__(self) -> None:
         super().__init__()
 
-        self.reported_entries : Set[str] = set()    
+        self.reported_entries: Set[str] = set()
         """ The set of reported, i.e., printed, entries per entry. 
             This list is cleared by the `next_entry` method.
         """
 
-
     def op_name() -> str: return "report"
 
-    def is_reporter(self) -> bool: return True   
+    def is_reporter(self) -> bool: return True
 
     def next_entry(self):
         self.reported_entries.clear()
@@ -71,11 +70,11 @@ class Report(Operation):
         if entry not in self.reported_entries:
             self.reported_entries.add(entry)
             self.do_print(entry)
-            
+
         return [entry]
 
 
-REPORT = Report()        
+REPORT = Report()
 
 
 class Write(Report):
@@ -86,13 +85,13 @@ class Write(Report):
         super().__init__()
         self.filename = filename
         self.file = None
-        
+
     def init(self, td_unit: 'TDUnit', parent: 'ASTNode', verbose: bool):
         super().init(td_unit, parent, verbose)
         # let's append ... this enables multiple writes to the same file
         self.file = open(enrich_filename(self.filename), "a", encoding="utf-8")
 
-    def is_reporter(self) -> bool: return True   
+    def is_reporter(self) -> bool: return True
 
     def do_print(self, entry: str):
         print(entry, file=self.file)
@@ -103,10 +102,9 @@ class Write(Report):
         except Exception as e:
             print(f"failed closing {self.filename}", file=stderr)
             pass
-               
+
     def __str__(self):
         return f"{Write.op_name()} \"{escape(self.filename)}\""
-
 
 
 class UseSet(Operation):
@@ -129,9 +127,9 @@ class UseSet(Operation):
             return None
         else:
             return list(entries)
-               
+
     def __str__(self):
-        return f"{UseSet.op_name()} {self.setname}" 
+        return f"{UseSet.op_name()} {self.setname}"
 
 
 class StoreInSet(Operation):
@@ -156,7 +154,7 @@ class StoreInSet(Operation):
         return new_entries
 
     def close(self): self.cop.close()
-               
+
     def __str__(self):
         # return f"{StoreInSet.op_name()} {self.setname}({self.cop})"
         return f"{{ {self.cop} }}> {self.setname}"
@@ -185,36 +183,69 @@ class StoreFilteredInSet(Operation):
                 f"[trace] storing in {self.setname}: {filtered_entries}", file=stderr)
         return new_entries
 
-    def close(self): self.cop.close()            
-               
+    def close(self): self.cop.close()
+
     def __str__(self):
         # return f"{StoreFilteredInSet.op_name()} {self.setname}({self.cop})"
         return f"{{ {self.cop} }}!> {self.setname}"
 
+
+class StoreNotApplicableInSet(Operation):
+
+    def op_name() -> str: return "store_not_applicable_in"
+
+    def __init__(self, setname, cop: ComplexOperation) -> None:
+        self.setname = setname
+        self.cop = cop
+
+    def init(self, td_unit: 'TDUnit', parent: 'ASTNode', verbose: bool):
+        super().init(td_unit, parent, verbose)
+        self.cop.init(td_unit, parent, verbose)
+
+    def process_entries(self, entries: List[str]) -> List[str]:
+        not_applicable = []
+        new_entries = []
+        for e in entries:
+            r = self.cop.process_entries([e])
+            if r is None:
+                not_applicable.append(e)
+            else:
+                new_entries.extend(r)        
+        self.td_unit.entry_sets[self.setname].update(not_applicable)
+        if self.td_unit.trace_ops:
+            print(
+                f"[trace] storing in {self.setname}: {not_applicable}", file=stderr)
+        return new_entries
+
+    def close(self): self.cop.close()
+
+    def __str__(self):
+        # return f"{StoreFilteredInSet.op_name()} {self.setname}({self.cop})"
+        return f"{{ {self.cop} }}/> {self.setname}"
 
 class MacroCall(Operation):
     """Represents a macro call."""
 
     def op_name() -> str: return "do"
 
-    def __init__(self, macro_name :str): 
+    def __init__(self, macro_name: str):
         self.macro_name = macro_name
-        self.cop : ComplexOperation = None
+        self.cop: ComplexOperation = None
 
-    def init(self, td_unit : 'TDUnit', parent : 'ASTNode', verbose: bool):         
-        super().init(td_unit,parent,verbose)
+    def init(self, td_unit: 'TDUnit', parent: 'ASTNode', verbose: bool):
+        super().init(td_unit, parent, verbose)
         self.cop = td_unit.macros[self.macro_name]
 
     def next_entry(self):
         return self.cop.next_entry()
 
-    def is_macro(self) -> bool: 
+    def is_macro(self) -> bool:
         return True
 
-    def is_transformer(self) -> bool: 
+    def is_transformer(self) -> bool:
         return self.cop.is_transformer()
 
-    def is_extractor(self) -> bool: 
+    def is_extractor(self) -> bool:
         return self.cop.is_extractor()
 
     def is_transformer_or_extractor(self) -> bool:
@@ -244,15 +275,16 @@ class KeepAlwaysModifier(Operation):
 
     def op_name() -> str: return "+"
 
-    def __init__(self, op : Operation):
-        self.op = op        
+    def __init__(self, op: Operation):
+        self.op = op
 
-    def init(self, td_unit : 'TDUnit', parent : 'ASTNode', verbose: bool): 
-        super().init(td_unit,parent,verbose)
-        op = self.op        
-        op.init(td_unit,parent,verbose)
+    def init(self, td_unit: 'TDUnit', parent: 'ASTNode', verbose: bool):
+        super().init(td_unit, parent, verbose)
+        op = self.op
+        op.init(td_unit, parent, verbose)
         if not op.is_transformer_or_extractor():
-            raise InitializationFailed(f"[{self}] no transformer or extractor: {op}")
+            raise InitializationFailed(
+                f"[{self}] no transformer or extractor: {op}")
 
     def process(self, entry: str) -> List[str]:
         entries = self.op.process(entry)
@@ -262,8 +294,8 @@ class KeepAlwaysModifier(Operation):
         return entries
 
     def close(self):
-        self.op.close()    
-        
+        self.op.close()
+
     def __str__(self):
         return KeepAlwaysModifier.op_name() + str(self.op)
 
@@ -278,27 +310,28 @@ class KeepOnlyIfFilteredModifier(Operation):
 
     def op_name() -> str: return "*"
 
-    def __init__(self, op : Operation):
+    def __init__(self, op: Operation):
         self.op = op
-        
-    def init(self, td_unit : 'TDUnit', parent : 'ASTNode', verbose: bool):         
-        super().init(td_unit,parent,verbose)
+
+    def init(self, td_unit: 'TDUnit', parent: 'ASTNode', verbose: bool):
+        super().init(td_unit, parent, verbose)
         op = self.op
         if not (op.is_transformer() or op.is_extractor()):
-            raise InitializationFailed(f"[{self} no transformer or extractor: {op}")
-        op.init(td_unit,parent,verbose)
+            raise InitializationFailed(
+                f"[{self} no transformer or extractor: {op}")
+        op.init(td_unit, parent, verbose)
 
     def process(self, entry: str) -> List[str]:
         entries = self.op.process(entry)
         if entries is None:
             entries = [entry]
         return entries
-        
+
     def close(self):
-        self.op.close()    
+        self.op.close()
 
     def __str__(self):
-        return KeepOnlyIfFilteredModifier.op_name() + str(self.op)        
+        return KeepOnlyIfFilteredModifier.op_name() + str(self.op)
 
 
 class NegateFilterModifier(Operation):
@@ -307,17 +340,17 @@ class NegateFilterModifier(Operation):
         list will be returned and vice versa.
     """
 
-    def op_name() -> str : return "!"
+    def op_name() -> str: return "!"
 
-    def __init__(self, op : Operation):
+    def __init__(self, op: Operation):
         self.op = op
-        
-    def init(self, td_unit : 'TDUnit', parent : 'ASTNode', verbose: bool):         
-        super().init(td_unit,parent,verbose)
+
+    def init(self, td_unit: 'TDUnit', parent: 'ASTNode', verbose: bool):
+        super().init(td_unit, parent, verbose)
         op = self.op
         if not (op.is_filter()):
-            raise InitializationFailed(f"[{self}] no filter: {op}")            
-        op.init(td_unit,parent,verbose)
+            raise InitializationFailed(f"[{self}] no filter: {op}")
+        op.init(td_unit, parent, verbose)
 
     def process(self, entry: str) -> List[str]:
         entries = self.op.process(entry)
@@ -325,12 +358,12 @@ class NegateFilterModifier(Operation):
             return [entry]
         else:
             return []
-        
+
     def close(self):
-        self.op.close()    
+        self.op.close()
 
     def __str__(self):
-        return NegateFilterModifier.op_name() + str(self.op)        
+        return NegateFilterModifier.op_name() + str(self.op)
 
 
 class Or(Operation):
@@ -345,7 +378,7 @@ class Or(Operation):
 
     def init(self, td_unit: 'TDUnit', parent: 'ASTNode', verbose: bool):
         super().init(td_unit, parent, verbose)
-        for cop in self.cops: 
+        for cop in self.cops:
             if not cop.is_filter():
                 msg = f"[{self}] no filter: {cop}"
                 raise InitializationFailed(msg)
@@ -368,7 +401,7 @@ class Or(Operation):
         return new_entries
 
 
-    def close(self): 
+    def close(self):
         for cop in self.cops:
             cop.close()
 
