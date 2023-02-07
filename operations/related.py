@@ -43,15 +43,15 @@ class Related(Transformer):
 
     def process(self, entry: str) -> List[str]:
         if not self._twitter:
-            self._twitter = get_nlp_model("twitter")
+            self._twitter = get_nlp_model("twitter", self.td_unit.verbose)
         get_tms = self._twitter.most_similar
 
         # if not self._google:
-        #    self._google = get_nlp_model("google")
+        #    self._google = get_nlp_model("google", self.td_unit.verbose)
         # get_gms = self._google.most_similar
 
         if not self._wiki:
-            self._wiki = get_nlp_model("wiki")
+            self._wiki = get_nlp_model("wiki", self.td_unit.verbose)
         get_wms = self._wiki.most_similar
 
         lentry = entry.lower()
