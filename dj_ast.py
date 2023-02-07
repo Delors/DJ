@@ -410,31 +410,31 @@ class Body(ASTNode):
         # information all operations that a new entry will be processed
         for cop in self.cops:
             if not isinstance(cop, Comment):
-            cop.next_entry()
+                cop.next_entry()
 
         # apply all operations in the specified order on the entry
         for cop in self.cops:
             if not isinstance(cop, Comment):
-            if self.td_unit.trace_ops:
-                escaped_entry = entry.replace(
-                    "\\", "\\\\").replace("\"", "\\\"")
+                if self.td_unit.trace_ops:
+                    escaped_entry = entry.replace(
+                        "\\", "\\\\").replace("\"", "\\\"")
                     s_cop = str(cop)
                     if s_cop.startswith("use"):
-                print(
+                        print(
                             f'[trace] applying: {s_cop}',
                             file=stderr
                         )
                     else:
                         print(
                             f'[trace] applying: {s_cop}( {escaped_entry} )',
-                    file=stderr
-                )
-            cop.process_entries([entry])
+                            file=stderr
+                        )
+                cop.process_entries([entry])
 
     def close(self):
         for cop in self.cops:
             if not isinstance(cop, Comment):
-            cop.close()
+                cop.close()
 
 
 class TDUnit(ASTNode):
@@ -457,7 +457,7 @@ class TDUnit(ASTNode):
 
         self.trace_ops = False  # provide detailed information about an operation's effect
 
-        self.verbose = False # provide configuration and initialization related information
+        self.verbose = False  # provide configuration and initialization related information
 
     def __str__(self):
         return str(self.header)+"\n\n"+str(self.body)
