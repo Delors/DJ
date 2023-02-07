@@ -82,25 +82,26 @@ class Write(Report):
 
     def op_name() -> str: return "write"
 
-    def __init__(self,filename) -> None:
+    def __init__(self, filename) -> None:
         super().__init__()
         self.filename = filename
         self.file = None
         
-    def init(self, td_unit: 'TDUnit', parent : 'ASTNode', verbose: bool):         
-        super().init(td_unit,parent,verbose)
-        self.file = open(enrich_filename(self.filename),"w",encoding="utf-8")
+    def init(self, td_unit: 'TDUnit', parent: 'ASTNode', verbose: bool):
+        super().init(td_unit, parent, verbose)
+        # let's append ... this enables multiple writes to the same file
+        self.file = open(enrich_filename(self.filename), "a", encoding="utf-8")
 
     def is_reporter(self) -> bool: return True   
 
     def do_print(self, entry: str):
-        print(entry,file=self.file)
+        print(entry, file=self.file)
 
     def close(self):
         try:
             self.file.close()
         except Exception as e:
-            print(f"failed closing {self.filename}",file=stderr)
+            print(f"failed closing {self.filename}", file=stderr)
             pass
                
     def __str__(self):
