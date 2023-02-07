@@ -242,9 +242,17 @@ class ComplexOperation(ASTNode):
                 previous_entries = current_entries
                 current_entries = op.process_entries(current_entries)
                 if td_unit.trace_ops:
-                    print(f"[trace] {str(op)} ( {previous_entries} ) => {current_entries}", file=stderr)
+                    s_op = str(op)
+                    if s_op.startswith("use"):
+                        print(
+                            f"[trace] {s_op} => {current_entries}",
+                            file=stderr)
+                    else:
+                        print(
+                            f"[trace] {s_op} ( {previous_entries} ) => {current_entries}",
+                            file=stderr)
             except Exception as e:
-                print(traceback.format_exc(),file=stderr)
+                print(traceback.format_exc(), file=stderr)
                 print(f"[error] {op}({entries}) failed: {str(e)}", file=stderr)
                 exit(-2)
 
