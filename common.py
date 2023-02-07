@@ -10,15 +10,17 @@ class InitializationFailed(RuntimeError):
     """ Errors that are related to user problems. """
     pass
 
-def escape(s : str) -> str:
-    return \
-        s.replace('\\',"\\\\")\
-         .replace('\n',"\\n")\
-         .replace('\t',"\\t")\
-         .replace('\r',"\\r")\
-         .replace('\"',"\\\"")
 
-def unescape(s : str) -> str:
+def escape(s: str) -> str:
+    return \
+        s.replace('\\', "\\\\")\
+         .replace('\n', "\\n")\
+         .replace('\t', "\\t")\
+         .replace('\r', "\\r")\
+         .replace('\"', "\\\"")
+
+
+def unescape(s: str) -> str:
     """ The escape character is \ and the following escape 
         sequences are supported:
         \\  => \
@@ -31,27 +33,29 @@ def unescape(s : str) -> str:
         process entries!
     """
     return \
-        s.replace("\\\\",'\\')\
-         .replace("\\n",'\n')\
-         .replace("\\t",'\t')\
-         .replace("\\r",'\r')\
-         .replace("\\\"",'"')\
+        s.replace("\\\\", '\\')\
+         .replace("\\n", '\n')\
+         .replace("\\t", '\t')\
+         .replace("\\r", '\r')\
+         .replace("\\\"", '"')\
 
-def locate_resource(filename : str) -> str:
+
+
+def locate_resource(filename: str) -> str:
     """ Tries to locate the file by searching for it relatively to the current
         folder or the folder where this python script is stored unless the 
         filename is already absolute.
     """
     if os.path.isabs(filename):
         return filename
-    
+
     if os.path.exists(filename):
         return filename
-    
+
     try:
         common_path = os.path.dirname(__file__)
-        dj_filename = os.path.join(common_path,filename)
-        resources_filename = os.path.join(common_path,"resources",filename)
+        dj_filename = os.path.join(common_path, filename)
+        resources_filename = os.path.join(common_path, "resources", filename)
         if os.path.exists(dj_filename):
             return dj_filename
         elif os.path.exists(resources_filename):
@@ -62,10 +66,11 @@ def locate_resource(filename : str) -> str:
     except Exception as e:
         raise InitializationFailed(f"can't locate {filename}: {e}")
 
-def read_utf8file(filename: str) -> list[str] :
+
+def read_utf8file(filename: str) -> list[str]:
     abs_filename = locate_resource(filename)
     lines = []
-    try: 
+    try:
         with open(abs_filename, 'r', encoding='utf-8') as fin:
             for line in fin:
                 # We want to be able to process words with spaces
@@ -77,6 +82,7 @@ def read_utf8file(filename: str) -> list[str] :
         raise InitializationFailed(f"can't read {filename}: {e}")
     return lines
 
+
 def enrich_filename(filename: str) -> str:
     """ Extends the current filename with the current date.
     """
@@ -84,16 +90,18 @@ def enrich_filename(filename: str) -> str:
     if filename.find(date) >= 0:
         return filename
 
-    last_dot_index = filename.rfind(".")    
+    last_dot_index = filename.rfind(".")
     if last_dot_index == -1:
         return filename+"."+date
-    
+
     return filename[0:last_dot_index]+"."+date+filename[last_dot_index:]
 
-def get_filename(filename : str) -> str:
+
+def get_filename(filename: str) -> str:
     if filename[0] != "\"" or filename[len(filename)-1] != "\"":
         raise Exception("the filename has to be quoted (\")")
     return filename[1:-1]
+
 
 """ Hunspell
 def _load_dict(lang : str):
@@ -125,19 +133,22 @@ dictionaries = {
 }
 """
 
-def _load_dict(lang : str):
+
+def _load_dict(lang: str):
     try:
         last_folder_seperator = lang.rfind("/")
-        lang_path = lang[0:last_folder_seperator]        
-        abs_lang = os.path.join(locate_resource(lang_path),lang[last_folder_seperator+1:])
+        lang_path = lang[0:last_folder_seperator]
+        abs_lang = os.path.join(locate_resource(
+            lang_path), lang[last_folder_seperator+1:])
         return pynuspell.load_from_path(abs_lang)
     except Exception as e:
         raise ValueError("can't load: "+lang+"; "+str(e))
 
+
 dictionaries = {
-    "en":_load_dict("dicts/en/en_US"),            # American English
-    "de":_load_dict("dicts/de/de_DE_frami"),      # German (Modern)
-    "nl":_load_dict('dicts/nl_NL/nl_NL'),         # Netherlands
+    "en": _load_dict("dicts/en/en_US"),            # American English
+    "de": _load_dict("dicts/de/de_DE_frami"),      # German (Modern)
+    "nl": _load_dict('dicts/nl_NL/nl_NL'),         # Netherlands
 }
 """
     "da":_load_dict('dicts/da_DK/da_DK'),         # Danish
@@ -158,25 +169,27 @@ dictionaries = {
 
 
 _nlp_models = {
-    # The initial value object (string) will be replaced 
+    # The initial value object (string) will be replaced
     # by the GENSIM model when the model was loaded by
     # a call to the `get_nlp_model` method.
-    "twitter" : 'glove-twitter-200',        
-    "google"  : 'word2vec-google-news-300',
-    "wiki"    : 'glove-wiki-gigaword-300'
+    "twitter": 'glove-twitter-200',
+    "google": 'word2vec-google-news-300',
+    "wiki": 'glove-wiki-gigaword-300'
 }
+
 
 def get_nlp_model(model: str, verbose : bool):
     global _nlp_models
     nlp_model = _nlp_models[model]
-    if isinstance(nlp_model,str):
+    if isinstance(nlp_model, str):
         gensim_module = importlib.import_module("gensim.downloader")
+        gensim_load = getattr(gensim_module, "load")
         if verbose:
-        print(f"[info] loading {model} (this will take time)", file=stderr)
+            print(f"[info] loading {model} (this will take time)", file=stderr)
         nlp_model = gensim_load(nlp_model)
         _nlp_models[model] = nlp_model
         if verbose: 
-        print(f"[info] loaded {model}({nlp_model})", file=stderr)
+            print(f"[info] loaded {model}({nlp_model})", file=stderr)
     return nlp_model
 
 
@@ -184,19 +197,20 @@ _nlp_vocabs = {
     # EMPTY! - lazily initialized by calling "get_nlp_vocab"
 }
 
+
 def get_nlp_vocab(model: str, verbose: bool):
-    # Returns an nlp model's underlying dictionary. This can, e.g., 
+    # Returns an nlp model's underlying dictionary. This can, e.g.,
     # be used to check if a word exists in the model.
     global _nlp_vocabs
     nlp_vocab = _nlp_vocabs.get(model)
     if not nlp_vocab:
         if verbose:
-        print(
-            f"[info] initializing {model} vocabulary (this will take time)",
-            file=stderr
-        )
+            print(
+                f"[info] initializing {model} vocabulary (this will take time)",
+                file=stderr
+            )
         nlp_vocab = get_nlp_model(model,verbose).key_to_index
         _nlp_vocabs[model] = nlp_vocab
         if verbose:
-        print(f"[info] initialized {model} vocabulary", file=stderr)
+            print(f"[info] initialized {model} vocabulary", file=stderr)
     return nlp_vocab
