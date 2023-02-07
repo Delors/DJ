@@ -37,7 +37,7 @@ class CorrectSpelling(Transformer):
         advanced handling regarding the usage of upper letters.
         """
         case_folded_entry = entry.lower()
-        words = []
+        words = set()
         for d in dictionaries.values():
             for s in d.suggest(entry):
                 if self.USE_DAMERAU_LEVENSHTEIN:
@@ -57,12 +57,12 @@ class CorrectSpelling(Transformer):
                             s.find(" ") != -1:
                         pass
                     else:
-                        words.append(s)
+                        words.add(s)
 
         if len(words) == 0:
             return None
         else:
-            return words
+            return list(words)
 
 
 CORRECT_SPELLING = CorrectSpelling()
