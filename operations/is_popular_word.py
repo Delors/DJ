@@ -24,9 +24,10 @@ class IsPopularWord(Filter):
 
     def process(self, entry: str) -> List[str]:
         if not self._twitter_vocab:
-            self._twitter_vocab = get_nlp_vocab("twitter")
+            self._twitter_vocab = get_nlp_vocab(
+                "twitter", self.td_unit.verbose)
         if not self._google_vocab:
-            self._google_vocab = get_nlp_vocab("google")
+            self._google_vocab = get_nlp_vocab("google", self.td_unit.verbose)
 
         lentry = entry.lower()
 

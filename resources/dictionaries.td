@@ -7,7 +7,6 @@
 #   Frankfurt an der Oder
 # Output:  
 #   FrankfurtanderOder
-#   FrankfurtAnDerOder
 #   Frankfurt
 #   Oder
 #   
@@ -17,6 +16,7 @@
 #   VladimirPavel
 #   Vladimir        
 #   Pavel
+#   VPavel
 #
 # Input:
 #   Militär

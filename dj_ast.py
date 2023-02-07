@@ -90,7 +90,7 @@ class Operation(ASTNode):
     @abstractmethod
     def op_name() -> str:
         """ The operation's name or mnemonic."""
-        raise NotImplementedError()
+        raise NotImplementedError("subclasses must override this method")
 
     def init(self, td_unit: 'TDUnit', parent: 'ASTNode', verbose: bool):
         super().init(td_unit, parent, verbose)

@@ -5,7 +5,9 @@ from dj_ast import TDUnit, ASTNode, Filter
 
 
 class Sieve(Filter):
-    """Only accepts entries which consists of the chars found in the specified file."""
+    """ Only accepts entries which consist of the chars found in the 
+        specified file.
+    """
 
     def op_name() -> str: return "sieve"
 
