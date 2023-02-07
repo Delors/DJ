@@ -332,24 +332,46 @@ class NegateFilterModifier(Operation):
     def __str__(self):
         return NegateFilterModifier.op_name() + str(self.op)        
 
+
 class Or(Operation):
 
-    def op_name() -> str : return "or"
+    def op_name() -> str: return "or"
 
-    def __init__(self, cops : List[ComplexOperation]) -> None:
-        self.cops = cops
+    def __init__(self, cops: List[ComplexOperation]) -> None:
+        self.cops = cops # ONLY FILTERS ARE ALLOWED HERE (VALIDATED IN init)
 
-    def init(self, td_unit : 'TDUnit', parent : 'ASTNode', verbose: bool):         
-        super().init(td_unit,parent,verbose)
+    def is_filter(self) -> bool:
+        return True
+
+    def init(self, td_unit: 'TDUnit', parent: 'ASTNode', verbose: bool):
+        super().init(td_unit, parent, verbose)
         for cop in self.cops: 
             if not cop.is_filter():
                 msg = f"[{self}] no filter: {cop}"
                 raise InitializationFailed(msg)
-        for cop in self.cops: cop.init(td_unit,parent,verbose)
+        for cop in self.cops:
+            cop.init(td_unit, parent, verbose)
+
+    def next_entry(self):
+        for cop in self.cops:
+            cop.next_entry()
+
+    def process_entries(self, entries: List[str]) -> List[str]:
+        # "ignored" entries are already filtered beforehand...
+        new_entries = []
+        for e in entries:
+            for cop in self.cops:
+                r = cop.process_entries([e])
+                if len(r) != 0:
+                    new_entries.append(e)
+                    break
+        return new_entries
+
 
     def close(self): 
-        for cop in self.cops: cop.close()    
+        for cop in self.cops:
+            cop.close()
 
     def __str__(self):
-        cops = ", ".join(map (lambda x: str(x), self.cops))
-        return Or.op_name() +"(" + cops + ")"
+        cops = ", ".join(map(lambda x: str(x), self.cops))
+        return Or.op_name() + "(" + cops + ")"
