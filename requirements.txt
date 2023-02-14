@@ -1,6 +1,7 @@
 python-Levenshtein==0.12.2
 jellyfish==0.9.0
 gensim==4.2.0
+parsimonious==0.10.0
 
 # Currently (as of Oct. 2022) not available for python 3.10
 # need to be built from source.
