@@ -60,9 +60,8 @@ from operations.strip_ws import STRIP_WS
 from operations.sub_split import SubSplit
 from operations.upper import UPPER
 from operations.title import TITLE
-from operations.as_append_hc_rule import AS_APPEND_HC_RULE
-from operations.as_prepend_hc_rule import AS_PREPEND_HC_RULE
-from operations.m import M
+from operations.prepend import Prepend
+from operations.find_all import FindAll
 
 
 """
@@ -122,7 +121,7 @@ DJ_GRAMMAR = Grammar(
                       is_regular_word /
                       is_popular_word /
                       sieve /
-                      m /
+                      find_all /
                       get_no /
                       get_sc /
                       cut /
@@ -145,6 +144,7 @@ DJ_GRAMMAR = Grammar(
                       replace /
                       map /
                       pos_map /
+                      prepend /
                       split /
                       sub_split /
                       number /
@@ -152,9 +152,7 @@ DJ_GRAMMAR = Grammar(
                       mangle_dates /                      
                       deleetify /
                       related /
-                      correct_spelling /
-                      as_preprend_hc_rule /
-                      as_append_hc_rule
+                      correct_spelling 
 
     # Core operators                  
     # ======================================
@@ -183,7 +181,7 @@ DJ_GRAMMAR = Grammar(
     is_popular_word = "is_popular_word"
     sieve           = "sieve" ws+ file_name
     # 2. EXTRACTORS
-    m               = "m" ws+ quoted_string
+    find_all        = "find_all" ws+ quoted_string
     get_no          = "get_no"
     get_sc          = "get_sc"
     cut             = "cut" ws+ ("l" / "r") ws+ int_value ws+ int_value
@@ -204,9 +202,10 @@ DJ_GRAMMAR = Grammar(
     remove_sc       = "remove_sc"
     strip_no_and_sc = "strip_no_and_sc"    
     reverse         = "reverse"
-    replace         = "replace" ws+ file_name
+    replace         = "replace" ws+ file_name    
     map             = "map" ws+ quoted_string ws+ quoted_string
     pos_map         = "pos_map" ws+ quoted_string
+    prepend         = "prepend" (ws+ "each")? ws+ quoted_string
     split           = "split" ws+ quoted_string
     sub_split       = "sub_split" ws+ quoted_string
     number          = "number" ws+ quoted_string   
@@ -215,8 +214,6 @@ DJ_GRAMMAR = Grammar(
     deleetify       = "deleetify"    
     related         = "related" ws+ float_value    
     correct_spelling = "correct_spelling"
-    as_preprend_hc_rule = "as_preprend_hc_rule"
-    as_append_hc_rule = "as_append_hc_rule"
     """
 )
 
@@ -339,7 +336,7 @@ class DJTreeVisitor (NodeVisitor):
     def visit_is_regular_word(self,_n,_c): return IS_REGULAR_WORD
     def visit_is_popular_word(self,_n,_c): return IS_POPULAR_WORD
     def visit_sieve(self,_n,c): (_,_,f)=c ; return Sieve(f)
-    def visit_m(self,_n,c): (_,_,r)=c ; return M(r)
+    def visit_find_all(self,_n,c): (_,_,r)=c ; return FindAll(r)
     def visit_get_no(self,_n,_c): return GET_NO
     def visit_get_sc(self,_n,_c): return GET_SC
     def visit_cut(self,_n,c): 
@@ -365,6 +362,14 @@ class DJTreeVisitor (NodeVisitor):
     def visit_replace(self,_n,c): (_,_,f)=c ; return Replace(f)
     def visit_map(self,_n,c): (_,_,s,_,ts)=c ; return Map(s,ts)
     def visit_pos_map(self,_n,c): (_,_,pm)=c ; return PosMap(pm)
+    def visit_prepend(self,_n,c): 
+        (_,m,_,s) = c
+        # The following test is really awkward, but I didn't find a 
+        # simpler solution to just test for the presence of this flag...
+        if isinstance(m,list): 
+            return Prepend(True,s)
+        else:
+            return Prepend(False,s)
     def visit_split(self,_n,c): (_,_,s) = c ; return Split(s)
     def visit_sub_split(self,_n,c): (_,_,s) = c ; return SubSplit(s)
     def visit_number(self,_n,c): (_,_,cs) = c ; return Number(cs)
@@ -373,8 +378,6 @@ class DJTreeVisitor (NodeVisitor):
     def visit_deleetify(self,_n,_c): return DELEETIFY
     def visit_related(self,_n,c): (_,_,r)=c ; return Related(r)    
     def visit_correct_spelling(self,_n,_c): return CORRECT_SPELLING
-    def visit_as_preprend_hc_rule(self,_n,_c): return AS_PREPEND_HC_RULE
-    def visit_as_append_hc_rule(self,_n,_c): return AS_APPEND_HC_RULE
 
 
 DJ_EXAMPLE_FILE = """
