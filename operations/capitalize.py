@@ -4,7 +4,10 @@ from dj_ast import Transformer
 
 
 class Capitalize(Transformer):
-    """Capitalizes a given entry."""
+    """Capitalizes a given entry. 
+    
+        I.e., the first character of a string is converted to a capital letter.
+    """
 
     def op_name() -> str: return "capitalize"
 
