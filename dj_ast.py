@@ -293,7 +293,7 @@ class IgnoreEntries(ASTNode):
         # 1. reads in the file and stores the entries to
         #    be ignored in the TDUnit object.
         to_be_ignored = set(read_utf8file(self.filename))
-        td_unit.ignored_entries.union(to_be_ignored)
+        td_unit.ignored_entries = td_unit.ignored_entries.union(to_be_ignored)
         if verbose:
             msg = f"[debug] ignoring:{self.filename} (#{len(to_be_ignored)})"
             print(msg, file=stderr)
