@@ -15,6 +15,7 @@ from parsimonious.exceptions import IncompleteParseError
 from common import get_filename, locate_resource, enrich_filename
 from common import escape, unescape
 from common import read_utf8file
+from common import InitializationFailed
 from grammar import DJ_GRAMMAR, DJTreeVisitor
 from dj_ast import Operation, TDUnit
 from dj_ops import ComplexOperation
@@ -109,7 +110,11 @@ def main() -> int:
     if verbose:
         print(
             "[debug] ============== I N I T I A L I Z A T I O N =============", file=stderr)
-    td_unit.init(td_unit, None, verbose=verbose)
+    try:
+        td_unit.init(td_unit, None, verbose=verbose)
+    except InitializationFailed as ex:
+        print(f"[error] {ex.args[0]}")
+        return 1
 
     # 2. apply operations
     if verbose:
