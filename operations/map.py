@@ -19,7 +19,7 @@ class Map(Transformer):
         super().init(td_unit,parent,verbose)
         if len(self.source_char) != 1:
             raise InitializationFailed(f"{self}: invalid length for source char")
-        if len(self.target_char) == 0:
+        if len(self.target_chars) == 0:
             raise InitializationFailed(f"{self}: invalid length for target chars")
         if not set(self.source_char).isdisjoint(self.target_chars):
             msg = f'{self}: useless identity mapping {self.source_char} => "{", ".join(self.target_chars)}"'
