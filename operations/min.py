@@ -38,7 +38,7 @@ class Min(Filter):
         super().init(td_unit, parent, verbose)
         if self.min_count <= 0:
             raise InitializationFailed(
-                f"min {self.operator} {self.min_count} has to be > 0")
+                f"{self}: min {self.operator} {self.min_count} has to be > 0")
 
     def process(self, entry: str) -> List[str]:
         count = 0

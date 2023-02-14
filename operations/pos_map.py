@@ -32,7 +32,7 @@ class PosMap(Transformer):
         super().init(td_unit, parent, verbose)
         if (len(self.target_chars) == 0):
             raise InitializationFailed(
-                "pos_map's target chars must not be empty")
+                f"{self}: pos_map's target chars must not be empty")
 
     def process(self, entry: str) -> List[str]:
         entries = []

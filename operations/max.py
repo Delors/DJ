@@ -36,7 +36,7 @@ class Max(Filter):
         super().init(td_unit, parent, verbose)
         max_count = self.max_count
         if max_count < 0:
-            msg = f"max {self.operator} has to be >= 0 (actual {max_count})"
+            msg = f"{self}: max {self.operator} has to be >= 0 (actual {max_count})"
             raise InitializationFailed(msg)
 
 

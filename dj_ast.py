@@ -324,7 +324,7 @@ class ConfigureOperation(ASTNode):
         try:
             old_value = getattr(op_class, self.field_name)
         except AttributeError:
-            msg = f"unknown field name: {op_class_name}.{self.field_name}"
+            msg = f"{self}: unknown field name {op_class_name}.{self.field_name}"
             raise InitializationFailed(msg)
 
         if verbose:
@@ -343,7 +343,7 @@ class ConfigureOperation(ASTNode):
         elif value_type == str:
             value = self.field_value
         else:
-            msg = f"unsupported: {value_type}; supported int, bool, float and str"
+            msg = f"{self} unsupported type {value_type}; supported int, bool, float and str"
             raise InitializationFailed(msg)
 
         setattr(op_class, self.field_name, value)

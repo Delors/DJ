@@ -33,12 +33,13 @@ class Related(Transformer):
         # configurable.
         if self.KEEP_ALL_RELATEDNESS < self.MIN_RELATEDNESS:
             raise InitializationFailed(
+                f"{self}: "+
                 f"KEEP_ALL_RELATEDNESS {self.KEEP_ALL_RELATEDNESS} has to be " +
                 f"larger than the MIN_RELATEDNESS {self.MIN_RELATEDNESS}"
             )
         if self.MIN_RELATEDNESS <= 0 or self.MIN_RELATEDNESS >= 1.0:
             raise InitializationFailed(
-                f"MIN_RELATEDNESS {self.MIN_RELATEDNESS} has to be in range (0,1.0)"
+                f"{self}: MIN_RELATEDNESS {self.MIN_RELATEDNESS} has to be in range (0,1.0)"
             )
 
     def process(self, entry: str) -> List[str]:

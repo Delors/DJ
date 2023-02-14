@@ -118,7 +118,7 @@ class UseSet(Operation):
         super().init(td_unit, parent, verbose)
         if not isinstance(parent, ComplexOperation) or \
                 not parent.ops[0] is self:  # TODO check that the complex operation is not a wrapped operation
-            msg = f"a set use has to be a top level and the first operation."
+            msg = f"{self}: a set use has to be a top level and the first operation."
             raise InitializationFailed(msg)
 
     def process_entries(self, entries: List[str]) -> List[str]:
@@ -284,7 +284,7 @@ class KeepAlwaysModifier(Operation):
         op.init(td_unit, parent, verbose)
         if not op.is_transformer_or_extractor():
             raise InitializationFailed(
-                f"[{self}] no transformer or extractor: {op}")
+                f"{self}: {op} is no transformer or extractor")
 
     def process(self, entry: str) -> List[str]:
         entries = self.op.process(entry)
@@ -318,7 +318,7 @@ class KeepOnlyIfFilteredModifier(Operation):
         op = self.op
         if not (op.is_transformer() or op.is_extractor()):
             raise InitializationFailed(
-                f"[{self} no transformer or extractor: {op}")
+                f"{self}: op is no transformer or extractor")
         op.init(td_unit, parent, verbose)
 
     def process(self, entry: str) -> List[str]:
@@ -349,7 +349,7 @@ class NegateFilterModifier(Operation):
         super().init(td_unit, parent, verbose)
         op = self.op
         if not (op.is_filter()):
-            raise InitializationFailed(f"[{self}] no filter: {op}")
+            raise InitializationFailed(f"{self}: {op} is no filter")
         op.init(td_unit, parent, verbose)
 
     def process(self, entry: str) -> List[str]:
@@ -380,7 +380,7 @@ class Or(Operation):
         super().init(td_unit, parent, verbose)
         for cop in self.cops:
             if not cop.is_filter():
-                msg = f"[{self}] no filter: {cop}"
+                msg = f"{self} {cop} is no filter"
                 raise InitializationFailed(msg)
         for cop in self.cops:
             cop.init(td_unit, parent, verbose)

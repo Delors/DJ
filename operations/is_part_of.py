@@ -25,10 +25,10 @@ class IsPartOf(Filter):
         super().init(td_unit, parent, verbose)
         if len(self.sequence) < 2:
             raise InitializationFailed(
-                f"{str(self)}: a sequence has to have at least two characters")
+                f"{self}: a sequence has to have at least two characters")
         if len(self.sequence) < IsPartOf.ENTRY_MIN_LENGTH:
             raise InitializationFailed(
-                f"{str(self)}: the length of the sequence is smaller than ENTRY_MIN_LENGTH"
+                f"{self}: the length of the sequence is smaller than ENTRY_MIN_LENGTH"
             )
 
     def is_filter(self) -> bool: return True

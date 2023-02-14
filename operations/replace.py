@@ -35,7 +35,7 @@ class Replace(Transformer):
                 .replace("\\\\", "\\")
             current_values = self.replacement_table.get(key)
             if current_values:
-                msg = f"[{str(self)}] key ({key}) is already used"
+                msg = f"{self}: {key} is already used"
                 raise InitializationFailed(msg)
             else:
                 self.replacement_table[key] = value

@@ -20,13 +20,13 @@ class Cut(Extractor):
         super().init(td_unit, parent, verbose)
         if self.operator != "l" and self.operator != "r":
             raise InitializationFailed(
-                f"operator ({self.operator}) invalid")
+                f"{self}: operator invalid")
         if self.min < 0:
             raise InitializationFailed(
-                f"{self.min} has to be >= 0")
+                f"{self}: {self.min} has to be >= 0")
         if self.max < self.min:
             raise InitializationFailed(
-                f"invariant not satisfied {self.min} < {self.max}")
+                f"{self}: invariant not satisfied {self.min} < {self.max}")
 
     def process(self, entry: str) -> List[str]:
         if len(entry) < self.min:
