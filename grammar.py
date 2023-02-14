@@ -37,7 +37,7 @@ from operations.is_popular_word import IS_POPULAR_WORD
 from operations.is_regular_word import IS_REGULAR_WORD
 from operations.is_sc import IS_SC
 from operations.is_walk import IsWalk
-from operations.lower import LOWER
+from operations.lower import Lower
 from operations.rotate import Rotate
 from operations.mangle_dates import MANGLE_DATES
 from operations.map import Map
@@ -194,7 +194,7 @@ DJ_GRAMMAR = Grammar(
     fold_ws         = "fold_ws"
     remove_ws       = "remove_ws"
     rotate          = "rotate" ws+ int_value
-    lower           = "lower"
+    lower           = "lower" (ws+ int_value)?
     upper           = "upper"
     title           = "title"
     capitalize      = "capitalize"
@@ -351,7 +351,13 @@ class DJTreeVisitor (NodeVisitor):
     def visit_fold_ws(self,_n,_c): return FOLD_WS
     def visit_remove_ws(self,_n,_c): return REMOVE_WS
     def visit_rotate(self,_n,c): (_,_,by) = c ;return Rotate(by)
-    def visit_lower(self,_n,_c): return LOWER
+    def visit_lower(self,_n,c): 
+        (_,raw_pos) = c
+        try:            
+            [(_,pos)] = raw_pos
+            return Lower(pos)
+        except:
+            return Lower()
     def visit_upper(self,_n,_c): return UPPER
     def visit_title(self,_n,_c): return TITLE
     def visit_capitalize(self,_n,_c): return CAPITALIZE
