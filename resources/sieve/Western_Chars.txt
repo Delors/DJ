@@ -1,0 +1,28 @@
+### Basically the merge of:
+### - iOS15_Western_Keyboard_All_Chars
+### - German_Keyboard_All_Chars
+ 
+^1234567890ß'
+qwertzuiopü+
+asdfghjklöä#
+<yxcvbnm,.-
+°!"§$%&/()=?`
+QWERTZUIOPÜ*
+ASDFGHJKLÖÄ'
+>YXCVBNM;:_
+¹²³¼½¬{[]}\
+@ł€¶ŧ←↓→øþ~æſðđŋħĸł’
+|»«¢„“”µ·…–
+!"#%&'()*+,-./:;<=>?@[\]^_`{|}~¡§«°»¿–—‘’“”„•…‰≈≠¢$£¥₩€₽
+0123456789
+aAáÁàÀâÂåÅäÄãÃāĀæÆbBcCćĆčČçÇ
+dDeEéÉèÈêÊëËėĖęĘēĒfF
+gGhHiIíÍìÌîÎïÏįĮīĪ
+jJkKlLłŁ
+mMnNńŃñÑ
+oOºóÓòÒôÔöÖõÕøØōŌœŒ
+pPqQrR
+sSśŚšŠß
+tTuUúÚùÙûÛüÜūŪ
+vVwWxX
+yYÿŸzZźŹžŽżŻ

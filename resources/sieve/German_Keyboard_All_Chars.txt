@@ -1,0 +1,21 @@
+### German keyboard under linux!
+ 
+### Space
+
+### No modifier key:
+^1234567890ß'
+qwertzuiopü+
+asdfghjklöä#
+<yxcvbnm,.-
+
+### Shift:
+°!"§$%&/()=?`
+QWERTZUIOPÜ*
+ASDFGHJKLÖÄ'
+>YXCVBNM;:_
+
+### AltGr:
+¹²³¼½¬{[]}\
+@ł€¶ŧ←↓→øþ~æſðđŋħĸł’
+|»«¢„“”µ·…–
+
