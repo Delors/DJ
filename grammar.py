@@ -352,9 +352,8 @@ class DJTreeVisitor (NodeVisitor):
     def visit_remove_ws(self,_n,_c): return REMOVE_WS
     def visit_rotate(self,_n,c): (_,_,by) = c ;return Rotate(by)
     def visit_lower(self,_n,c): 
-        (_,raw_pos) = c
         try:            
-            [(_,pos)] = raw_pos
+            (_,[(_,pos)]) = c
             return Lower(pos)
         except:
             return Lower()
