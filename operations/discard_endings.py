@@ -28,7 +28,7 @@ class DiscardEndings(Transformer):
 
     def init(self, td_unit: TDUnit, parent: ASTNode):
         super().init(td_unit, parent)
-        self.endings.union(read_utf8file(self.endings_filename))
+        self.endings = set(read_utf8file(self.endings_filename))
 
     def process(self, entry: str) -> List[str]:
         all_terms = entry.split()
