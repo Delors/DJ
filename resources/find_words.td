@@ -38,7 +38,7 @@ use STRIPPED_MINIMIZED \
         is_part_of "abcdefghijklmnopqrstuvwxyz",
         is_part_of "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
         ) \
-    }!> NO_SEQUENCE                                         write "sequence.txt" 
+    }!> NO_SEQUENCE                                         write "sequences.txt" 
 
 use NO_SEQUENCE \
     { is_pattern }!> NO_PATTERN                             write "patterns.txt"
