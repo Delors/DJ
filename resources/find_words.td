@@ -62,7 +62,7 @@ use UNKNOWN { cut l 1 1 cut r 1 1 do ADVANCED_TRANSFORMATIONS }> CUT_BASE
 use CUT_BASE do IS_WORD                                     write "words.txt"
 
 
-# Now, let's do some splittiung up of the entry to find subwords; 
+# Now, let's do some splitting up of the entry to find subwords; 
 # we no longer check for typos or something similar, because from
 # our experience passwords made up out of multiple words contain
 # no significant typos.
