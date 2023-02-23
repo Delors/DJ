@@ -2,7 +2,7 @@
 #
 # This script assumes that the words are already real world words found on 
 # webpages such as Facebook, Twitter etc..
-# In other words, this script assumes that the respective preprocessing has already occured.
+# In other words, this script assumes that the respective preprocessing has already occurred.
 
 # GENERAL FILTER
 ignore "ignore/de.txt"
@@ -12,7 +12,7 @@ ignore "ignore/de.txt"
 config related K 20
 config related KEEP_ALL_RELATEDNESS 0.75
 
-# We will search for related words in a multistep process.
+# We will search for related words in a multistage process.
 set STEP_ONE
 set STEP_TWO
 
