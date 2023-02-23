@@ -293,7 +293,7 @@ class IgnoreEntries(ASTNode):
         #    be ignored in the TDUnit object.
         to_be_ignored = set(read_utf8file(self.filename))
         td_unit.ignored_entries = td_unit.ignored_entries.union(to_be_ignored)
-        if verbose:
+        if td_unit.verbose:
             msg = f"[debug] ignoring:{self.filename} (#{len(to_be_ignored)})"
             print(msg, file=stderr)
 
@@ -326,7 +326,7 @@ class ConfigureOperation(ASTNode):
             msg = f"{self}: unknown field name {op_class_name}.{self.field_name}"
             raise InitializationFailed(msg)
 
-        if verbose:
+        if td_unit.verbose:
             print(
                 f"[debug] updating: " +
                 f"{op_module.__name__}.{op_class.__name__}.{self.field_name} = " +

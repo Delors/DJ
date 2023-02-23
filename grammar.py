@@ -465,7 +465,8 @@ def main():
 
     print("\nInitialization:")
     print("=====================================================================")        
-    td_unit.init(td_unit,None,verbose = True)
+    td_unit.verbose = True
+    td_unit.init(td_unit,None)
 
 if __name__ == '__main__':
     sys.exit(main())

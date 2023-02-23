@@ -142,7 +142,7 @@ class StoreInSet(Operation):
 
     def init(self, td_unit: TDUnit, parent: ASTNode):
         super().init(td_unit, parent)
-        self.cop.init(td_unit, parent, verbose)
+        self.cop.init(td_unit, parent)
 
     def process_entries(self, entries: List[str]) -> List[str]:
         new_entries = self.cop.process_entries(entries)
@@ -170,7 +170,7 @@ class StoreFilteredInSet(Operation):
 
     def init(self, td_unit: TDUnit, parent: ASTNode):
         super().init(td_unit, parent)
-        self.cop.init(td_unit, parent, verbose)
+        self.cop.init(td_unit, parent)
 
     def process_entries(self, entries: List[str]) -> List[str]:
         new_entries = self.cop.process_entries(entries)
@@ -200,7 +200,7 @@ class StoreNotApplicableInSet(Operation):
 
     def init(self, td_unit: TDUnit, parent: ASTNode):
         super().init(td_unit, parent)
-        self.cop.init(td_unit, parent, verbose)
+        self.cop.init(td_unit, parent)
 
     def process_entries(self, entries: List[str]) -> List[str]:
         not_applicable = []
@@ -281,7 +281,7 @@ class KeepAlwaysModifier(Operation):
     def init(self, td_unit: TDUnit, parent: ASTNode):
         super().init(td_unit, parent)
         op = self.op
-        op.init(td_unit, parent, verbose)
+        op.init(td_unit, parent)
         if not op.is_transformer_or_extractor():
             raise InitializationFailed(
                 f"{self}: {op} is no transformer or extractor")
@@ -319,7 +319,7 @@ class KeepOnlyIfFilteredModifier(Operation):
         if not (op.is_transformer() or op.is_extractor()):
             raise InitializationFailed(
                 f"{self}: op is no transformer or extractor")
-        op.init(td_unit, parent, verbose)
+        op.init(td_unit, parent)
 
     def process(self, entry: str) -> List[str]:
         entries = self.op.process(entry)
@@ -350,7 +350,7 @@ class NegateFilterModifier(Operation):
         op = self.op
         if not (op.is_filter()):
             raise InitializationFailed(f"{self}: {op} is no filter")
-        op.init(td_unit, parent, verbose)
+        op.init(td_unit, parent)
 
     def process(self, entry: str) -> List[str]:
         entries = self.op.process(entry)
@@ -383,7 +383,7 @@ class Or(Operation):
                 msg = f"{self} {cop} is no filter"
                 raise InitializationFailed(msg)
         for cop in self.cops:
-            cop.init(td_unit, parent, verbose)
+            cop.init(td_unit, parent)
 
     def next_entry(self):
         for cop in self.cops:
