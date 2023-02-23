@@ -28,7 +28,7 @@ pip3 install -r requirements.txt
 
 #### Potential Installation Issues
 
-__Gensim and Numpy__
+__Gensim and Numpy__  
 If you install Gensim using pip and Numpy was already installed using "apt" (i.e., using the system's package manager), errors may appear when you want to use respective operations (e.g., `related` or `is_popular_word`). In this case, _first_ remove the global Numpy installation (e.g., `sudo apt remove python3-numpy`) 
 
 __Pynuspell and Python >3.10__
@@ -60,6 +60,8 @@ $ ./dj.py is_popular_word
 Wiesbaden
 ``` 
 
+This will force the on-demand download of the respective NLP models. Therefore, the first usage may take quite some time as several GB need to be downloaded from the web, loaded 
+
 ## Usage
 
 Reads in a (case) specific dictionary and generates an output dictionary by processing each input entry according to some well defined operations. Additionally, DJ can also be used to _just_ analyze existing dictionaries to filter entries.
@@ -82,11 +84,11 @@ _Do not forget to specify `report` or `write "<FILE>"`  at the end; otherwise yo
 python3 dj.py [-o <Operations File>] [-d <Dictionary.utf8.txt>]
 ```
 
-Reads from standard-in or the specified file (`-d`) a dictionary and performs the operations specified in the given operations file. A default file: `default_ops.td` exists, which - however - primarily serves demonstration purposes.
+Reads a dictionary from standard-in or the specified file (`-d`)  and performs the operations specified in the given operations file. You can find some template '.td' files in the resources folder that are related to specific use cases and demonstrate how to use DJ.
 
 ## Operations File
 
-An operations file (`td`) consists of one or multiple (complex) operations which are performed for each entry. Each complex operation is composed of multiple atomic operations where the order in which the atomic operations are specified is generally relevant.
+An operations file (`td`) consists of one or multiple (complex) operations which are performed for each entry. Each complex operation is composed of multiple atomic operations where the order, in which the atomic operations are specified, is generally relevant.
 
 In general the syntax is simply:
 ```
@@ -156,9 +158,9 @@ I.e., the second `+split " "` operation is effectively useless because all space
 
 ### Formatting long operation definitions
 
-To foster readability of long operation definitions it is possible to split up an operations definition over multiple lines by starting the next lines using "\ ". This is then treated as a continuation of the previous line.  Hence, the above rule (Example 2) can also be written as:
+To foster readability of long chains of operation definitions it is possible to split up a chain of operation definitions over multiple lines by ending a line using "\" (please note, that the "\" has to be the very last character!). This will then be treated as a continuation of the previous line.  Hence, the above rule (Example 2) can also be written as:
 
-``` 
+```sh 
 +split " " \
  +remove_ws \
  *map " " "-_" \
@@ -166,18 +168,29 @@ To foster readability of long operation definitions it is possible to split up a
 ```
 
 ## Atomic Operations
-Each atomic operation (e.g., `lower`, `min length`, `related`, `get_no`) performs one well-defined transformation, extraction, filtering operation and most operations provide some level of configurability. 
+Each atomic operation (e.g., `lower`, `min length`, `related`, `get_no`) performs one well-defined transformation, extraction, filtering operation and most operations provide some level of configurability. In general, an operation that does not apply to a certain entry, swallows the entry and does not pass it on to the next operation. This behavior can be modified using the "+" and "*" modifiers.
 
 ### Built-in Operations
-Additionally, DJ has some built-in directives for special purposes:
+Additionally, DJ has some built-in directives for special purposes: 
+ - `_` is the nop operation which does nothing and just passes on the entries from the first operation to the next operation. 
+ - `def <NAME> <operations>` defines a macro; a defined macro is used using `do <NAME>`. Note that the name of the macro has to use capital letters.
+ - `config <operation> <PARAMETER> <python_value>` to configure an operation's global parameters
+ - `ignore "<file>"` to specify files with terms that will always be ignored; for example, when processing a dictionary that contains names of locations (e.g., "Frankfurt an der Oder" or "Rotenburg ob der Tauber" or "South Beach" you often want to ignore specific words to avoid cluttering of the generated dictionary. In this case, , "an", "ob", "der", or "South" and maybe even "Beach" are potentially candidates you want to ignore.)
 
- - `def` to define a macro
- - `config` to configure an operation's global parameters
- - `ignore` to specify a file with terms that will always be ignored; for example, when processing a dictionary that contains names of locations (e.g., "Frankfurt an der Oder" or "Rotenburg ob der Tauber" or "South Beach" you often want to ignore specific words to avoid cluttering of the generated dictionary (here, "an", "ob", "der", or "South" are potentially candidates you want to ignore.))
+Controlling the output:  
+ - `report` to write the result of an operation (sequence) to stdout. 
+ - `write "<file>"` to write out the results of a transformation to a specific file instead of `stdout`. Multiple `write` operations can be used and write to the same file.
 
-Controlling the output
- - `report` to write the result of an operations sequence to stdout. 
- - `write` to write out the results of a transformation to a specific file instead of `stdout`.
+Using intermediate *sets*:  
+It is also possible to capture the (intermediate) result of an operation for later usage. For example, in some cases an intermediate result should be processed in multiple specific manners that are not compatible with each other and the previous operations were computationally expensive (e.g., when using some of the semantics features) or the result should just be given some name. In this case the result can be stored in an intermediate set and used later on. To use a set, it first need to be declared using `set <SET_NAME>`. Afterwards the results of some operations are stored in the set using the set syntax `{ <opertion(s)> }> <SET_NAME>`. Alternatively, to store filtered entries `{ <opertion(s)> }!> <SET_NAME>` can be used. The set is used later on by starting an operations chain using `use <SET_NAME>`.
+
+```sh
+set STEP_ONE
+set STEP_TWO
+
+{ related 0.5 }> STEP_ONE               write "most_related.txt"
+use STEP_ONE related 0.6                write "related.txt"
+```
 
 (For the documentation of specific operations see the code for now.)
 
@@ -187,53 +200,28 @@ A design principle of DJ is to make it possible to develop and test operations i
 
 ```python
 /DJ% python3
-In [1]: from operations.related import Related
-In [2]: R = Related()
-In [3]: R.process("barca")
+In [1]: from dj_ast import TDUnit, Header, Body, ComplexOperation
+In [2]: from operations.related import Related
+In [3]: R = Related()
+In [4]: ast = TDUnit(Header([]),Body([ComplexOperation([R])]))
+In [5]: ast.init(ast,None)
+In [6]: R.process("barca")
 [info] loading twitter (this will take time)
 [info] loaded twitter(KeyedVectors<vector_size=200, 1193514 keys>)
 [info] loading wiki (this will take time)
 [info] loaded wiki(KeyedVectors<vector_size=300, 400000 keys>)
-Out[3]: ['madrid', 'arsenal', 'chelsea', 'milan', 'barcelona', 'bayern', 'barça']
+Out[6]: ['madrid', 'arsenal', 'chelsea', 'milan', 'barcelona', 'bayern', 'barça']
 ```
 
 For example, in the above example, it may make sense to _play around_ with the parameters of the `related` operation as shown in the next example:
 
 ```python
-import importlib
-m = importlib.import_module("operations.related")
-ClassR = getattr(m,"Related")
-setattr(ClassR,"K",25)
-setattr(ClassR,"KEEP_ALL_RELATEDNESS",0.75)
-R = ClassR(0.3)
-R.process("barca")               
+In [7]: R.K = 5
+In [8]: R.KEEP_ALL_RELATEDNESS = 0.4
+In [9]: R.process('barca') 
 ```
 Using the above settings, which are much more relaxed than the standard settings, the following result will be generated:
 
 ```python
-['munchen',
- 'messi',
- 'juventus',
- 'madrid',
- 'ronaldo',
- 'visca',
- 'barcelona',
- 'chelsea',
- 'liverpool',
- 'barça',
- 'manchester',
- 'ucl',
- 'spanyol',
- 'bayern',
- 'juve',
- 'fabregas',
- 'malaga',
- 'dortmund',
- 'arsenal',
- 'psg',
- 'fcb',
- 'guardiola',
- 'inter',
- 'milan',
- 'atletico']
+['guardiola', 'psg', 'espanyol', 'ronaldinho', 'juve', 'madrid', 'milan', "eto'o", 'nou', 'barça', 'arsenal', 'bayern', 'messi', 'sevilla', 'chelsea', 'barcelona', 'rijkaard']
  ```
