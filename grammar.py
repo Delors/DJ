@@ -156,6 +156,7 @@ DJ_GRAMMAR = Grammar(
 
     # Core operators                  
     # ======================================
+    nop             = "_"
     macro_call      = "do" ws+ identifier
     # Handling of (intermediate) sets
     set_store       = "{" continuation? op_defs continuation? ( "}>" / "}!>" / "}/>") ws* identifier
@@ -163,8 +164,7 @@ DJ_GRAMMAR = Grammar(
     # Meta operators that can only be combined with filters
     #or              = "or(" ws* op_defs (ws* "," ws* op_defs)+ ws* ")"
     or              = ~r"or\(\s*" op_defs ( ~r"\s*,\s*" op_defs )+ ~r"\s*\)"s
-    # Reporting operators
-    nop             = "_"
+    # Reporting operators   
     report          = "report"
     write           = "write" ws+ file_name
 
