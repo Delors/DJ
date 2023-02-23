@@ -32,8 +32,8 @@ class Max(Filter):
         self.test = self._tests[operator]
         self.max_count = max_count
 
-    def init(self, td_unit: TDUnit, parent: ASTNode, verbose: bool):
-        super().init(td_unit, parent, verbose)
+    def init(self, td_unit: TDUnit, parent: ASTNode):
+        super().init(td_unit, parent)
         max_count = self.max_count
         if max_count < 0:
             msg = f"{self}: max {self.operator} has to be >= 0 (actual {max_count})"

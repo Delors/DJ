@@ -9,7 +9,7 @@ from common import InitializationFailed, read_utf8file
 
 class ASTNode(ABC):
 
-    def init(self, td_unit: 'TDUnit', parent: 'ASTNode', verbose: bool):
+    def init(self, td_unit: 'TDUnit', parent: 'ASTNode'):
         """ Performs a semantic validation and initialization 
             of this node and then calls the method on child nodes. 
 
@@ -22,8 +22,7 @@ class ASTNode(ABC):
         """
         self.td_unit = td_unit
         self.parent = parent
-        self.verbose = verbose
-
+        return self
 
 class Comment(ASTNode):
 
@@ -92,9 +91,9 @@ class Operation(ASTNode):
         """ The operation's name or mnemonic."""
         raise NotImplementedError("subclasses must override this method")
 
-    def init(self, td_unit: 'TDUnit', parent: 'ASTNode', verbose: bool):
-        super().init(td_unit, parent, verbose)
-
+    def init(self, td_unit: 'TDUnit', parent: 'ASTNode'):
+        return super().init(td_unit, parent)
+        
     def next_entry(self):
         pass
 
@@ -222,10 +221,10 @@ class ComplexOperation(ASTNode):
     def is_reporter(self) -> bool:
         return all(op.is_reporter() for op in self.ops)
 
-    def init(self, td_unit: 'TDUnit', parent: ASTNode, verbose: bool):
-        super().init(td_unit, parent, verbose)
+    def init(self, td_unit: 'TDUnit', parent: ASTNode):
+        super().init(td_unit, parent)
         for op in self.ops:
-            op.init(td_unit, self, verbose)
+            op.init(td_unit, self)
 
     def next_entry(self):
         for op in self.ops:
@@ -276,8 +275,8 @@ class SetDefinition(ASTNode):
     def __str__(self) -> str:
         return "set "+self.name
 
-    def init(self, td_unit: 'TDUnit', parent: ASTNode, verbose: bool):
-        super().init(td_unit, parent, verbose)
+    def init(self, td_unit: 'TDUnit', parent: ASTNode):
+        super().init(td_unit, parent)
         td_unit.entry_sets[self.name] = set()
 
 
@@ -288,8 +287,8 @@ class IgnoreEntries(ASTNode):
     def __str__(self) -> str:
         return "ignore \""+self.filename+"\""
 
-    def init(self, td_unit: 'TDUnit', parent: ASTNode, verbose: bool):
-        super().init(td_unit, parent, verbose)
+    def init(self, td_unit: 'TDUnit', parent: ASTNode):
+        super().init(td_unit, parent)
         # 1. reads in the file and stores the entries to
         #    be ignored in the TDUnit object.
         to_be_ignored = set(read_utf8file(self.filename))
@@ -313,8 +312,8 @@ class ConfigureOperation(ASTNode):
             self.field_name+" " +\
             self.field_value
 
-    def init(self, td_unit: 'TDUnit', parent: ASTNode, verbose: bool):
-        super().init(td_unit, parent, verbose)
+    def init(self, td_unit: 'TDUnit', parent: ASTNode):
+        super().init(td_unit, parent)
         op_module = import_module("operations."+self.module_name)
         op_class_name = "".join(
             map(lambda x: x.capitalize(), self.module_name.split("_"))
@@ -358,12 +357,12 @@ class MacroDefinition(ASTNode):
     def __str__(self) -> str:
         return "def "+self.name+" "+str(self.cop)
 
-    def init(self, td_unit: 'TDUnit', parent: ASTNode, verbose: bool):
-        super().init(td_unit, parent, verbose)
+    def init(self, td_unit: 'TDUnit', parent: ASTNode):
+        super().init(td_unit, parent)
         # 1. reads in the file and stores the entries to
         #    be ignored in the TDUnit object.
         td_unit.macros[self.name] = self.cop
-        self.cop.init(td_unit, self, verbose)
+        self.cop.init(td_unit, self)
 
     def close(self):
         self.cop.close()
@@ -377,10 +376,10 @@ class Header(ASTNode):
     def __str__(self):
         return "\n".join(str(o) for o in self.setup_ops)
 
-    def init(self, td_unit: 'TDUnit', parent: ASTNode, verbose: bool):
-        super().init(td_unit, parent, verbose)
+    def init(self, td_unit: 'TDUnit', parent: ASTNode):
+        super().init(td_unit, parent)
         for o in self.setup_ops:
-            o.init(td_unit, self, verbose)
+            o.init(td_unit, self)
 
     def close(self):
         for setup_op in self.setup_ops:
@@ -398,11 +397,11 @@ class Body(ASTNode):
     def __str__(self):
         return "\n".join(map(str, self.cops))
 
-    def init(self, td_unit: 'TDUnit', parent: ASTNode, verbose: bool):
-        super().init(td_unit, parent, verbose)
+    def init(self, td_unit: 'TDUnit', parent: ASTNode):
+        super().init(td_unit, parent)
         self.td_unit = td_unit
         for cop in self.cops:
-            cop.init(td_unit, self, verbose)
+            cop.init(td_unit, self)
 
     def process(self, entry: str):
         # -1. The ignored check for the entry is done by TDUnit
@@ -462,10 +461,10 @@ class TDUnit(ASTNode):
     def __str__(self):
         return str(self.header)+"\n\n"+str(self.body)
 
-    def init(self, td_unit: 'TDUnit', parent: ASTNode, verbose: bool):
-        super().init(td_unit, parent, verbose)
-        self.header.init(td_unit, self, verbose)
-        self.body.init(td_unit, self, verbose)
+    def init(self, td_unit: 'TDUnit', parent: ASTNode):
+        super().init(td_unit, parent)
+        self.header.init(td_unit, self)
+        self.body.init(td_unit, self)
 
     def process(self, no: int, entry: str):
         if entry not in self.ignored_entries:

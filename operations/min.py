@@ -58,8 +58,8 @@ class Min(Filter):
         self.test = None
         self.min_count = min_count
 
-    def init(self, td_unit: TDUnit, parent: ASTNode, verbose: bool):
-        super().init(td_unit, parent, verbose)
+    def init(self, td_unit: TDUnit, parent: ASTNode):
+        super().init(td_unit, parent)
         try:
             self.test = self._tests[self.operator]
         except:
@@ -68,6 +68,7 @@ class Min(Filter):
         if self.min_count <= 0:
             raise InitializationFailed(
                 f"{self}: min {self.operator} {self.min_count} has to be > 0")
+        return self # enables a fluid style
 
     def process(self, entry: str) -> List[str]:
         return self.test(entry,self.min_count)        

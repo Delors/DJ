@@ -21,8 +21,8 @@ class FindAll(Extractor):
         self.regexp = regexp
         self.m = None # the matcher that will be derived from the regexp at "init" time
 
-    def init(self, td_unit: TDUnit, parent: ASTNode, verbose: bool):
-        super().init(td_unit, parent, verbose)
+    def init(self, td_unit: TDUnit, parent: ASTNode):
+        super().init(td_unit, parent)
         try:
             self.m = re.compile(self.regexp)
         except Exception as e:

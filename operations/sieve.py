@@ -15,8 +15,8 @@ class Sieve(Filter):
         self.sieve_filename = sieve_filename
         self.chars = set()
 
-    def init(self, td_unit: TDUnit, parent: ASTNode, verbose: bool):
-        super().init(td_unit, parent, verbose)
+    def init(self, td_unit: TDUnit, parent: ASTNode):
+        super().init(td_unit, parent)
         for line in read_utf8file(self.sieve_filename):
             # recall that the lines are already rigth-stripped.
             for c in line:

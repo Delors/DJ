@@ -1,6 +1,6 @@
 from typing import List
 
-from dj_ast import Extractor
+from dj_ast import TDUnit, ASTNode, Extractor
 from common import InitializationFailed
 
 
@@ -16,8 +16,8 @@ class Cut(Extractor):
         self.min = min
         self.max = max
 
-    def init(self, td_unit: 'TDUnit', parent: 'ASTNode', verbose: bool):
-        super().init(td_unit, parent, verbose)
+    def init(self, td_unit: TDUnit, parent: ASTNode):
+        super().init(td_unit, parent)
         if self.operator != "l" and self.operator != "r":
             raise InitializationFailed(
                 f"{self}: operator invalid")

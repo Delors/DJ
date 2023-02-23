@@ -8,9 +8,9 @@ class TestMap(unittest.TestCase):
 
     def setUp(self):
         self.map_a_to_1 = Map("a", "1")
-        self.map_a_to_1.init(None, None, False)
+        self.map_a_to_1.init(None, None) # map has no AST dependencies
         self.map_b_to_1_and_2 = Map("b", "12")
-        self.map_b_to_1_and_2.init(None, None, False)
+        self.map_b_to_1_and_2.init(None, None)
 
     def test_is_transformer(self):
         self.assertTrue(self.map_a_to_1.is_transformer())
@@ -22,7 +22,7 @@ class TestMap(unittest.TestCase):
     def test_init(self):
         map = Map("a", "a")
         self.assertRaises(InitializationFailed, Map.init,
-                          map, None, None, False)
+                          map, None, None) # map has no AST dependencies
 
     def test_single_map(self):
         self.assertEqual(self.map_a_to_1.process("affe"), ["1ffe"])

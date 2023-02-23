@@ -17,8 +17,8 @@ class Replace(Transformer):
         self.replacements_filename = replacements_filename
         self.replacement_table: dict[str, str] = {}
 
-    def init(self, td_unit: TDUnit, parent: ASTNode, verbose: bool):
-        super().init(td_unit, parent, verbose)
+    def init(self, td_unit: TDUnit, parent: ASTNode):
+        super().init(td_unit, parent)
         entries = read_utf8file(self.replacements_filename)
         for line in entries:
             sline = line.strip()

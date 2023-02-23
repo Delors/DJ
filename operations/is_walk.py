@@ -142,8 +142,8 @@ class IsWalk(Filter):
     MIN_SUB_WALK_LENGTH = 3.0
     MIN_WALK_LENGTH = 3.0  # with 3.0 "just" two adjacent characters are not enough
 
-    def init(self, td_unit: TDUnit, parent: ASTNode, verbose: bool):
-        super().init(td_unit, parent, verbose)
+    def init(self, td_unit: TDUnit, parent: ASTNode):
+        super().init(td_unit, parent)
         self._keyboard_layout = globals()[IsWalk.LAYOUT]
         self._min_walk_length = IsWalk.MIN_WALK_LENGTH
         self._min_sub_walk_length = IsWalk.MIN_SUB_WALK_LENGTH

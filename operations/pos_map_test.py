@@ -17,7 +17,8 @@ class TestPosMap(unittest.TestCase):
 
     def test_constructor_and_initialization(self):
         posmap = PosMap("")
-        self.assertRaises(InitializationFailed, PosMap.init, posmap, None,None,True)
+        self.assertRaises(InitializationFailed,
+                          PosMap.init, posmap, None, None)
 
     def test_map(self):
         self.assertEqual(

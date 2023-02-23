@@ -21,8 +21,8 @@ class Lower(Transformer):
     def __init__(self, pos : int = None) -> None:
         self.pos = pos
 
-    def init(self, td_unit: TDUnit, parent: ASTNode, verbose: bool):
-        super().init(td_unit, parent, verbose)
+    def init(self, td_unit: TDUnit, parent: ASTNode):
+        super().init(td_unit, parent)
         if self.pos is not None and self.pos < 0:
             raise InitializationFailed(f"{self}: pos has to be >= 0")
 

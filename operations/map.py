@@ -15,12 +15,14 @@ class Map(Transformer):
         self.raw_target_chars = target_chars
         self.target_chars = set(target_chars)
 
-    def init(self, td_unit: TDUnit, parent: ASTNode, verbose: bool):
-        super().init(td_unit,parent,verbose)
+    def init(self, td_unit: TDUnit, parent: ASTNode):
+        super().init(td_unit, parent)
         if len(self.source_char) != 1:
-            raise InitializationFailed(f"{self}: invalid length for source char")
+            raise InitializationFailed(
+                f"{self}: invalid length for source char")
         if len(self.target_chars) == 0:
-            raise InitializationFailed(f"{self}: invalid length for target chars")
+            raise InitializationFailed(
+                f"{self}: invalid length for target chars")
         if not set(self.source_char).isdisjoint(self.target_chars):
             msg = f'{self}: useless identity mapping {self.source_char} => "{", ".join(self.target_chars)}"'
             raise InitializationFailed(msg)

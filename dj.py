@@ -111,7 +111,7 @@ def main() -> int:
         print(
             "[debug] ============== I N I T I A L I Z A T I O N =============", file=stderr)
     try:
-        td_unit.init(td_unit, None, verbose=verbose)
+        td_unit.init(td_unit, None)
     except InitializationFailed as ex:
         print(f"[error] {ex.args[0]}")
         return 1

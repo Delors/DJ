@@ -27,8 +27,8 @@ class Related(Transformer):
         self._wiki = None
         self.MIN_RELATEDNESS = MIN_RELATEDNESS
 
-    def init(self, td_unit: 'TDUnit', parent: 'ASTNode', verbose: bool):
-        super().init(td_unit, parent, verbose)
+    def init(self, td_unit: TDUnit, parent: ASTNode):
+        super().init(td_unit, parent)
         # The test is required here, because both variables are user
         # configurable.
         if self.KEEP_ALL_RELATEDNESS < self.MIN_RELATEDNESS:
@@ -66,15 +66,15 @@ class Related(Transformer):
 
         # recall that the wiki model only uses small letters
         with suppress(KeyError):
-            ms.extend(get_wms(topn=self.K*2, positive=[lentry]))
+            ms.extend(get_wms(topn=Related.K*2, positive=[lentry]))
 
         ms.sort(key=lambda e: e[1], reverse=True)
         result = set()
         for (k, v) in ms:
-            if v >= self.KEEP_ALL_RELATEDNESS:
+            if v >= Related.KEEP_ALL_RELATEDNESS:
                 result.add(k)
             elif v >= self.MIN_RELATEDNESS:
-                if len(result) >= self.K:
+                if len(result) >= Related.K:
                     break
                 else:
                     result.add(k)

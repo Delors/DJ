@@ -86,8 +86,8 @@ class Write(Report):
         self.filename = filename
         self.file = None
 
-    def init(self, td_unit: 'TDUnit', parent: 'ASTNode', verbose: bool):
-        super().init(td_unit, parent, verbose)
+    def init(self, td_unit: TDUnit, parent: ASTNode):
+        super().init(td_unit, parent)
         # let's append ... this enables multiple writes to the same file
         self.file = open(enrich_filename(self.filename), "a", encoding="utf-8")
 
@@ -114,8 +114,8 @@ class UseSet(Operation):
     def __init__(self, setname) -> None:
         self.setname = setname
 
-    def init(self, td_unit: 'TDUnit', parent: 'ASTNode', verbose: bool):
-        super().init(td_unit, parent, verbose)
+    def init(self, td_unit: TDUnit, parent: ASTNode):
+        super().init(td_unit, parent)
         if not isinstance(parent, ComplexOperation) or \
                 not parent.ops[0] is self:  # TODO check that the complex operation is not a wrapped operation
             msg = f"{self}: a set use has to be a top level and the first operation."
@@ -140,8 +140,8 @@ class StoreInSet(Operation):
         self.setname = setname
         self.cop = cop
 
-    def init(self, td_unit: 'TDUnit', parent: 'ASTNode', verbose: bool):
-        super().init(td_unit, parent, verbose)
+    def init(self, td_unit: TDUnit, parent: ASTNode):
+        super().init(td_unit, parent)
         self.cop.init(td_unit, parent, verbose)
 
     def process_entries(self, entries: List[str]) -> List[str]:
@@ -168,8 +168,8 @@ class StoreFilteredInSet(Operation):
         self.setname = setname
         self.cop = cop
 
-    def init(self, td_unit: 'TDUnit', parent: 'ASTNode', verbose: bool):
-        super().init(td_unit, parent, verbose)
+    def init(self, td_unit: TDUnit, parent: ASTNode):
+        super().init(td_unit, parent)
         self.cop.init(td_unit, parent, verbose)
 
     def process_entries(self, entries: List[str]) -> List[str]:
@@ -198,8 +198,8 @@ class StoreNotApplicableInSet(Operation):
         self.setname = setname
         self.cop = cop
 
-    def init(self, td_unit: 'TDUnit', parent: 'ASTNode', verbose: bool):
-        super().init(td_unit, parent, verbose)
+    def init(self, td_unit: TDUnit, parent: ASTNode):
+        super().init(td_unit, parent)
         self.cop.init(td_unit, parent, verbose)
 
     def process_entries(self, entries: List[str]) -> List[str]:
@@ -232,8 +232,8 @@ class MacroCall(Operation):
         self.macro_name = macro_name
         self.cop: ComplexOperation = None
 
-    def init(self, td_unit: 'TDUnit', parent: 'ASTNode', verbose: bool):
-        super().init(td_unit, parent, verbose)
+    def init(self, td_unit: TDUnit, parent: ASTNode):
+        super().init(td_unit, parent)
         self.cop = td_unit.macros[self.macro_name]
 
     def next_entry(self):
@@ -278,8 +278,8 @@ class KeepAlwaysModifier(Operation):
     def __init__(self, op: Operation):
         self.op = op
 
-    def init(self, td_unit: 'TDUnit', parent: 'ASTNode', verbose: bool):
-        super().init(td_unit, parent, verbose)
+    def init(self, td_unit: TDUnit, parent: ASTNode):
+        super().init(td_unit, parent)
         op = self.op
         op.init(td_unit, parent, verbose)
         if not op.is_transformer_or_extractor():
@@ -313,8 +313,8 @@ class KeepOnlyIfFilteredModifier(Operation):
     def __init__(self, op: Operation):
         self.op = op
 
-    def init(self, td_unit: 'TDUnit', parent: 'ASTNode', verbose: bool):
-        super().init(td_unit, parent, verbose)
+    def init(self, td_unit: TDUnit, parent: ASTNode):
+        super().init(td_unit, parent)
         op = self.op
         if not (op.is_transformer() or op.is_extractor()):
             raise InitializationFailed(
@@ -345,8 +345,8 @@ class NegateFilterModifier(Operation):
     def __init__(self, op: Operation):
         self.op = op
 
-    def init(self, td_unit: 'TDUnit', parent: 'ASTNode', verbose: bool):
-        super().init(td_unit, parent, verbose)
+    def init(self, td_unit: TDUnit, parent: ASTNode):
+        super().init(td_unit, parent)
         op = self.op
         if not (op.is_filter()):
             raise InitializationFailed(f"{self}: {op} is no filter")
@@ -376,8 +376,8 @@ class Or(Operation):
     def is_filter(self) -> bool:
         return True
 
-    def init(self, td_unit: 'TDUnit', parent: 'ASTNode', verbose: bool):
-        super().init(td_unit, parent, verbose)
+    def init(self, td_unit: TDUnit, parent: ASTNode):
+        super().init(td_unit, parent)
         for cop in self.cops:
             if not cop.is_filter():
                 msg = f"{self} {cop} is no filter"

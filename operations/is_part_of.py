@@ -21,8 +21,8 @@ class IsPartOf(Filter):
     def __init__(self, sequence: str) -> None:
         self.sequence = sequence
 
-    def init(self, td_unit: TDUnit, parent: ASTNode, verbose: bool):
-        super().init(td_unit, parent, verbose)
+    def init(self, td_unit: TDUnit, parent: ASTNode):
+        super().init(td_unit, parent)
         if len(self.sequence) < 2:
             raise InitializationFailed(
                 f"{self}: a sequence has to have at least two characters")

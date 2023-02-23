@@ -26,8 +26,8 @@ class DiscardEndings(Transformer):
         self.endings_filename = endings_filename
         self.endings: Set[str] = set()
 
-    def init(self, td_unit: TDUnit, parent: ASTNode, verbose: bool):
-        super().init(td_unit, parent, verbose)
+    def init(self, td_unit: TDUnit, parent: ASTNode):
+        super().init(td_unit, parent)
         self.endings.union(read_utf8file(self.endings_filename))
 
     def process(self, entry: str) -> List[str]:

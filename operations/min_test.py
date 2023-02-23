@@ -6,13 +6,13 @@ from operations.min import Min
 class TestMin(unittest.TestCase):
 
     def setUp(self):
-        self.mln_2 = Min("length", 2)
-        self.mlo_2 = Min("lower", 2)
-        self.mup_2 = Min("upper", 2)
-        self.mnu_2 = Min("numeric", 2)
-        self.mle_2 = Min("letter", 2)
-        self.msy_2 = Min("symbol", 2)
-        self.mnl_2 = Min("non_letter", 2)
+        self.mln_2 = Min("length", 2).init(None, None)
+        self.mlo_2 = Min("lower", 2).init(None, None)
+        self.mup_2 = Min("upper", 2).init(None, None)
+        self.mnu_2 = Min("numeric", 2).init(None, None)
+        self.mle_2 = Min("letter", 2).init(None, None)
+        self.msy_2 = Min("symbol", 2).init(None, None)
+        self.mnl_2 = Min("non_letter", 2).init(None, None)
 
     def test_is_filter(self):
         self.assertTrue(self.mln_2.is_filter())
@@ -41,7 +41,7 @@ class TestMin(unittest.TestCase):
         self.assertListEqual(self.msy_2.process("ABC"), [])
         self.assertListEqual(self.mnl_2.process("ABC"), [])
 
-    def test_to_few_respective_chars(self):
+    def test_too_few_respective_chars(self):
         self.assertListEqual(self.mlo_2.process("aBC"), [])
         self.assertListEqual(self.mup_2.process("Abc"), [])
         self.assertListEqual(self.mnu_2.process("1BC"), [])
@@ -51,7 +51,7 @@ class TestMin(unittest.TestCase):
         self.assertListEqual(self.mnl_2.process("$BC"), [])
 
     def test_enough_respective_chars(self):
-        self.assertListEqual(self.mlo_2.process("abC"), ["abC"])                
+        self.assertListEqual(self.mlo_2.process("abC"), ["abC"])
         self.assertListEqual(self.mup_2.process("ABc"), ["ABc"])
         self.assertListEqual(self.mnu_2.process("1a2"), ["1a2"])
         self.assertListEqual(self.mle_2.process("a2_B"), ["a2_B"])

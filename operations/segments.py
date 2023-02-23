@@ -28,8 +28,8 @@ class Segments(Extractor):
         self.min_length = min_length
         self.max_length = max_length
 
-    def init(self, td_unit: TDUnit, parent: ASTNode, verbose: bool):
-        super().init(td_unit, parent, verbose)
+    def init(self, td_unit: TDUnit, parent: ASTNode):
+        super().init(td_unit, parent)
         if self.max_length < self.min_length:
             msg = f"{self}: MAX_LENGTH < MIN_LENGTH"
             raise InitializationFailed(msg)

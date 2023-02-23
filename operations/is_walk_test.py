@@ -10,13 +10,13 @@ class TestIsWalk(unittest.TestCase):
         is_kw.IsWalk.LAYOUT = "KEYBOARD_DE"
         is_kw.IsWalk.MIN_SUB_WALK_LENGTH = 3
         is_kw.IsWalk.MIN_WALK_LENGTH = 3
-        self.KW.init(None,None,False)
+        self.KW.init(None,None) # "is_walk" has no AST dependencies
 
         self.PW = is_kw.IsWalk()
         is_kw.IsWalk.LAYOUT = "PIN_PAD"
         is_kw.IsWalk.MIN_SUB_WALK_LENGTH = float('inf')
         is_kw.IsWalk.MIN_WALK_LENGTH = 3
-        self.PW.init(None,None,False)
+        self.PW.init(None,None)
         
 
     def test_is_filter(self):

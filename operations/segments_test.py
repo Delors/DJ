@@ -22,9 +22,9 @@ class TestSegments(unittest.TestCase):
         s_0_0 = Segments(0, 0)
         s_2_1 = Segments(2, 1)
         self.assertRaises(InitializationFailed, Segments.init,
-                          s_0_0, None, None, True)
+                          s_0_0, None, None) # segments has no AST dependencies
         self.assertRaises(InitializationFailed, Segments.init,
-                          s_2_1, None, None, True)
+                          s_2_1, None, None)
 
     def test_segmentation(self):
         self.assertEqual(self.S3.process("affe"), [
