@@ -5,8 +5,8 @@ from dj_ast import Transformer, TDUnit, ASTNode
 
 
 class Lower(Transformer):
-    """ Converts the complete entry or a specified 
-        character to lower case. I.e., standard usage is:
+    """ Converts the complete entry or the character at the 
+        specified index to lower case. I.e., standard usage is:
 
             lower
         or 
