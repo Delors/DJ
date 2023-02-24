@@ -88,12 +88,17 @@ def main() -> int:
         with open(args.operations, mode="r") as f:
             raw_td_file += f.read()
     if args.adhoc_operations and len(args.adhoc_operations) > 0:
-        raw_td_file += "\n" + " ".join(args.adhoc_operations)
+        if not raw_td_file.endswith("\n") and len(raw_td_file) > 0:
+            raw_td_file += "\n"    
+        raw_td_file += " ".join(args.adhoc_operations)
+    if len(raw_td_file) == 0:
+        print("[error] arguments missing; use dj.py -h for help", file=stderr)
+        return -1
     try:
         dj_source_tree = DJ_GRAMMAR.parse(raw_td_file)
     except IncompleteParseError as e:
-        print(str(e), file=stderr)
-        return -1
+        print("[error] "+str(e), file=stderr)
+        return -2
 
     td_unit: TDUnit = DJTreeVisitor().visit(dj_source_tree)
     td_unit.report_progress = args.progress
