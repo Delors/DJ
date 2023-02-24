@@ -34,7 +34,7 @@ from operations.get_sc import GET_SC
 from operations.is_part_of import IsPartOf
 from operations.is_pattern import IS_PATTERN
 from operations.is_popular_word import IS_POPULAR_WORD
-from operations.is_regular_word import IS_REGULAR_WORD
+from operations.is_regular_word import IsRegularWord
 from operations.is_sc import IS_SC
 from operations.is_walk import IsWalk
 from operations.lower import Lower
@@ -91,7 +91,7 @@ DJ_GRAMMAR = Grammar(
     float_value     = ~r"[0-9]+(\.[0-9]+)?"
     int_value       = ~r"[0-9][0-9]*"
     python_identifier = ~r"[a-zA-Z_][a-zA-Z0-9_]*"
-    python_value    = ~r"[a-zA-Z0-9._+]+"
+    python_value    = ~r"[a-zA-Z0-9._+\[\]\"]+" # we also support simple lists of strings
 
     ignore          = "ignore" ws+ file_name
     set             = "set" ws+ identifier
@@ -333,7 +333,7 @@ class DJTreeVisitor (NodeVisitor):
     def visit_is_part_of(self,_n,c): (_,_,seq) = c ; return IsPartOf(seq)
     def visit_is_pattern(self,_n,_c): return IS_PATTERN
     def visit_is_walk(self,_n,_c): return IsWalk() # IsWalk is configurable
-    def visit_is_regular_word(self,_n,_c): return IS_REGULAR_WORD
+    def visit_is_regular_word(self,_n,_c): return IsRegularWord() # IsRegularWord is configurable
     def visit_is_popular_word(self,_n,_c): return IS_POPULAR_WORD
     def visit_sieve(self,_n,c): (_,_,f)=c ; return Sieve(f)
     def visit_find_all(self,_n,c): (_,_,r)=c ; return FindAll(r)

@@ -341,6 +341,8 @@ class ConfigureOperation(ASTNode):
             value = float(self.field_value)
         elif value_type == str:
             value = self.field_value
+        elif value_type == list:
+            value = eval(self.field_value)
         else:
             msg = f"{self} unsupported type {value_type}; supported int, bool, float and str"
             raise InitializationFailed(msg)
