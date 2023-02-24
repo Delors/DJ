@@ -1,0 +1,19 @@
+ignore "ignore/de.txt"
+ignore "ignore/en.txt"
+
+set POSSIBLE_WORDS
+set NUMBERS
+
+# 1. Step extract numbers and generate rules out of them
+
+
+# Let's find all numbers that were prepended to a term:
+find_all "^([0-9]+)(?:[^0-9])" \
+    reverse \
+    prepend each "^" \
+    write                                   "prepended_numbers.rule"
+
+# Let's find all numbers that were appended to a term:
+find_all "^([0-9]+)(?:[^0-9])" \
+    prepend each "$" \
+    write                                   "append_numbers.rule"
