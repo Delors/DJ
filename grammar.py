@@ -21,7 +21,7 @@ from dj_ops import NOP, REPORT, Write, MacroCall, Or
 from dj_ops import UseSet, StoreInSet, StoreFilteredInSet, StoreNotApplicableInSet
 from dj_ops import NegateFilterModifier, KeepAlwaysModifier, KeepOnlyIfFilteredModifier
 from operations.capitalize import CAPITALIZE
-from operations.correct_spelling import CORRECT_SPELLING
+from operations.correct_spelling import CorrectSpelling
 from operations.cut import Cut
 from operations.deduplicate_reversed import DEDUPLICATE_REVERSED
 from operations.deduplicate import DEDUPLICATE
@@ -382,7 +382,7 @@ class DJTreeVisitor (NodeVisitor):
     def visit_mangle_dates(self,_n,_c): return MANGLE_DATES
     def visit_deleetify(self,_n,_c): return DELEETIFY
     def visit_related(self,_n,c): (_,_,r)=c ; return Related(r)    
-    def visit_correct_spelling(self,_n,_c): return CORRECT_SPELLING
+    def visit_correct_spelling(self,_n,_c): return CorrectSpelling()
 
 
 DJ_EXAMPLE_FILE = """

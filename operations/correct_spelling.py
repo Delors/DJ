@@ -3,8 +3,8 @@ from typing import List
 from Levenshtein import distance as levenshtein_distance
 from jellyfish import damerau_levenshtein_distance
 
-from dj_ast import Transformer
-from common import dictionaries
+from dj_ast import TDUnit, ASTNode, Transformer
+from common import dictionaries as all_dictionaries
 
 
 class CorrectSpelling(Transformer):
@@ -23,12 +23,23 @@ class CorrectSpelling(Transformer):
     """
     Sometimes the correction of a word can lead to two words (e.g., 
     "houseold" > ["household", "house old"]). 
-    If this setting is set to true, such "corrections" are ignored.
+    If this setting is set to true, the second "correction" is ignored.
     """
+
+    DICTIONARIES = ["de","en"]
 
     MAX_EDIT_DISTANCE = 1
 
     def op_name() -> str: return "correct_spelling"
+
+    def __init__(self) -> None:
+        self.dictionaries = []
+
+    def init(self, td_unit: TDUnit, parent: ASTNode):
+        super().init(td_unit, parent)
+        for d in CorrectSpelling.DICTIONARIES:
+            self.dictionaries.append(all_dictionaries[d])
+        return self
 
     def process(self, entry: str) -> List[str]:
         """
@@ -38,7 +49,7 @@ class CorrectSpelling(Transformer):
         """
         case_folded_entry = entry.lower()
         words = set()
-        for d in dictionaries.values():
+        for d in self.dictionaries:
             for s in d.suggest(entry):
                 if self.USE_DAMERAU_LEVENSHTEIN:
                     edit_distance = damerau_levenshtein_distance(entry, s)
@@ -64,5 +75,3 @@ class CorrectSpelling(Transformer):
         else:
             return list(words)
 
-
-CORRECT_SPELLING = CorrectSpelling()

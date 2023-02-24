@@ -18,7 +18,7 @@ class IsRegularWord(Filter):
 
     def op_name() -> str: return "is_regular_word"
 
-    DICTIONARIES = ["de","en","nl"]
+    DICTIONARIES = ["de","en"]
 
     def __init__(self) -> None:
         self.dictionaries = []
