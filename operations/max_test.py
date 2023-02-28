@@ -6,13 +6,13 @@ from operations.max import Max
 class TestMax(unittest.TestCase):
 
     def setUp(self):
-        self.mcnt_2 = Max("length", 2)
-        self.mlo_2 = Max("lower", 2)
-        self.mup_2 = Max("upper", 2)
-        self.mnu_2 = Max("numeric", 2)
-        self.mle_2 = Max("letter", 2)
-        self.msy_2 = Max("symbol", 2)
-        self.mnl_2 = Max("non_letter", 2)
+        self.mcnt_2 = Max("length", 2).init(None,None)
+        self.mlo_2 = Max("lower", 2).init(None,None)
+        self.mup_2 = Max("upper", 2).init(None,None)
+        self.mnu_2 = Max("numeric", 2).init(None,None)
+        self.mle_2 = Max("letter", 2).init(None,None)
+        self.msy_2 = Max("symbol", 2).init(None,None)
+        self.mnl_2 = Max("non_letter", 2).init(None,None)
 
     def test_is_filter(self):
         self.assertTrue(self.mcnt_2.is_filter())
