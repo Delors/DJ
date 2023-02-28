@@ -5,7 +5,7 @@ from dj_ast import Extractor, TDUnit, ASTNode
 
 
 class Segments(Extractor):
-    """ Returns all segments of a given maxium length and with a given minimum length.
+    """ Returns all segments of a given minimum und maximum length.
 
         Example: 
         Started:
@@ -38,7 +38,7 @@ class Segments(Extractor):
             msg = f"{self}: MIN_LENGTH has to be equal or larger than 1"
             raise InitializationFailed(msg)
 
-        return
+        return self
 
     def process(self, entry: str) -> List[str]:
         if len(entry) < self.min_length:
