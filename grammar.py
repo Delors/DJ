@@ -46,9 +46,10 @@ from operations.min import Min
 from operations.number import Number
 from operations.pos_map import PosMap
 from operations.related import Related
+from operations.remove_ws import REMOVE_WS
 from operations.remove_no import REMOVE_NO
 from operations.remove_sc import REMOVE_SC
-from operations.remove_ws import REMOVE_WS
+from operations.remove import Remove
 from operations.replace import Replace
 from operations.reverse import REVERSE
 from operations.segments import Segments
@@ -132,14 +133,15 @@ DJ_GRAMMAR = Grammar(
                       segments /
                       strip_ws /
                       fold_ws /
-                      remove_ws /
                       rotate /
                       lower /
                       upper /
                       title /
                       capitalize /
+                      remove_ws /
                       remove_no /
                       remove_sc /
+                      remove /
                       strip_no_and_sc /
                       reverse /
                       replace /
@@ -194,14 +196,15 @@ DJ_GRAMMAR = Grammar(
     # 3. TRANSFORMERS
     strip_ws        = "strip_ws"
     fold_ws         = "fold_ws"
-    remove_ws       = "remove_ws"
     rotate          = "rotate" ws+ int_value
     lower           = "lower" (ws+ int_value)?
     upper           = "upper"
     title           = "title"
     capitalize      = "capitalize"
+    remove_ws       = "remove_ws"
     remove_no       = "remove_no"
     remove_sc       = "remove_sc"
+    remove          = "remove" ws+ quoted_string
     strip_no_and_sc = "strip_no_and_sc"    
     reverse         = "reverse"
     replace         = "replace" ws+ file_name    
@@ -352,7 +355,6 @@ class DJTreeVisitor (NodeVisitor):
     def visit_segments(self,_n,c): (_,_,min,_,max)=c ; return Segments(min,max)
     def visit_strip_ws(self,_n,_c): return STRIP_WS
     def visit_fold_ws(self,_n,_c): return FOLD_WS
-    def visit_remove_ws(self,_n,_c): return REMOVE_WS
     def visit_rotate(self,_n,c): (_,_,by) = c ;return Rotate(by)
     def visit_lower(self,_n,c): 
         try:            
@@ -363,8 +365,10 @@ class DJTreeVisitor (NodeVisitor):
     def visit_upper(self,_n,_c): return UPPER
     def visit_title(self,_n,_c): return TITLE
     def visit_capitalize(self,_n,_c): return CAPITALIZE
+    def visit_remove_ws(self,_n,_c): return REMOVE_WS
     def visit_remove_no(self,_n,_c): return REMOVE_NO
     def visit_remove_sc(self,_n,_c): return REMOVE_SC
+    def visit_remove(self,_n,c): (_,_,cs) = c; return Remove(cs)
     def visit_strip_no_and_sc(self,_n,_c): return STRIP_NO_AND_SC
     def visit_reverse(self,_n,_c): return REVERSE
     def visit_replace(self,_n,c): (_,_,f)=c ; return Replace(f)
