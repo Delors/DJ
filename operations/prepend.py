@@ -6,14 +6,19 @@ from common import InitializationFailed,escape
 
 
 class Prepend(Transformer):
-    """ Prepends a given string to each character of an entry.
+    """ Prepends a given string to (each character of) an entry.
 
-        E.g., to converts an entry such that it can be used as a Hashcat 
-        prepend rule a combination of this rule with `reverse` can be 
-        used.
+        E.g., to convert an entry such that it can be prepended to a 
+        term using Hashcat's prepend rule a combination of this rule 
+        with `reverse` can be used.
 
             reverse prepend each "^"
             
+        If you want to create a Hashcat append rule out of an entry:
+        
+            prepend each "$"
+        
+        is sufficient.
     """
 
     def op_name() -> str: return "prepend"
@@ -27,7 +32,7 @@ class Prepend(Transformer):
         if len(self.s) == 0 :
             msg = f"{self}: useless prepend operation"
             raise InitializationFailed(msg)
-        return    
+        return self
 
     def process(self, entry: str) -> List[str]:
         if len(entry) > 0:
