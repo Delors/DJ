@@ -62,6 +62,7 @@ from operations.upper import UPPER
 from operations.title import TITLE
 from operations.prepend import Prepend
 from operations.find_all import FindAll
+from operations.omit import Omit
 
 
 """
@@ -142,6 +143,7 @@ DJ_GRAMMAR = Grammar(
                       strip_no_and_sc /
                       reverse /
                       replace /
+                      omit /
                       map /
                       pos_map /
                       prepend /
@@ -203,6 +205,7 @@ DJ_GRAMMAR = Grammar(
     strip_no_and_sc = "strip_no_and_sc"    
     reverse         = "reverse"
     replace         = "replace" ws+ file_name    
+    omit            = "omit" ws+ int_value
     map             = "map" ws+ quoted_string ws+ quoted_string
     pos_map         = "pos_map" ws+ quoted_string
     prepend         = "prepend" (ws+ "each")? ws+ quoted_string
@@ -365,6 +368,7 @@ class DJTreeVisitor (NodeVisitor):
     def visit_strip_no_and_sc(self,_n,_c): return STRIP_NO_AND_SC
     def visit_reverse(self,_n,_c): return REVERSE
     def visit_replace(self,_n,c): (_,_,f)=c ; return Replace(f)
+    def visit_omit(self,_n,c): (_,_,v)=c ; return Omit(v)
     def visit_map(self,_n,c): (_,_,s,_,ts)=c ; return Map(s,ts)
     def visit_pos_map(self,_n,c): (_,_,pm)=c ; return PosMap(pm)
     def visit_prepend(self,_n,c): 
