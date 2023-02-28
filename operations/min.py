@@ -12,10 +12,10 @@ class Min(Filter):
 
     def op_name() -> str: return "min"
 
-    def _test_length(entry: str,min_count: int) -> str: 
+    def _test_length(entry: str,min_count: int) -> List[str]: 
         return [entry] if len(entry) >= min_count else []
 
-    def _test_unique(entry: str,min_count: int) -> str:
+    def _test_unique(entry: str,min_count: int) -> List[str]:
         cs = set()
         count = 0
         for c in entry:
@@ -33,7 +33,7 @@ class Min(Filter):
     def _test_not_alpha(c: str) -> bool: return not c.isalpha()
     def _test_symbol(c: str) -> bool: return not c.isalnum()
 
-    def _count(entry, min_count,f):
+    def _count(entry, min_count,f) -> List[str]:
         count = 0
         for c in entry:
             if f(c):
@@ -63,12 +63,12 @@ class Min(Filter):
         try:
             self.test = self._tests[self.operator]
         except:
-            raise InitializationFailed(f"{self}: unsupported operator")
+            raise InitializationFailed(f"{self}: unsupported operator ({', '.join(self._tests.keys())})")
 
         if self.min_count <= 0:
             raise InitializationFailed(
                 f"{self}: min {self.operator} {self.min_count} has to be > 0")
-        return self # enables a fluid style
+        return self # enables a fluid programming style
 
     def process(self, entry: str) -> List[str]:
         return self.test(entry,self.min_count)        
