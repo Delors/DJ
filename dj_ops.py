@@ -61,8 +61,7 @@ class Report(Operation):
 
     def next_entry(self):
         if not self.td_unit.unique:
-        self.reported_entries.clear()
-        return super().next_entry()
+            self.reported_entries.clear()        
 
     def do_print(self, entry: str):
         print(entry)
