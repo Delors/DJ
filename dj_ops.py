@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Set
 from sys import stderr
 
 from common import escape, enrich_filename, InitializationFailed
