@@ -26,6 +26,7 @@ class Map(Transformer):
         if not set(self.source_char).isdisjoint(self.target_chars):
             msg = f'{self}: useless identity mapping {self.source_char} => "{", ".join(self.target_chars)}"'
             raise InitializationFailed(msg)
+        return self
 
     def process(self, entry: str) -> List[str]:
         if self.source_char in entry:
