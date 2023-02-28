@@ -469,6 +469,7 @@ class TDUnit(ASTNode):
         self.body.init(td_unit, self)
 
     def process(self, no: int, entry: str):
+        if len(entry) == 0:
         if entry not in self.ignored_entries:
             if self.report_progress:
                 print(f"[progress] processing #{no}: {entry}", file=stderr)
