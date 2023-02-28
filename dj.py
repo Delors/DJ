@@ -72,6 +72,12 @@ def main() -> int:
         action="store_true"
     )
     parser.add_argument(
+        '-u',
+        '--unique',
+        help="an entry is reported only once to the first effective output target; this keeps all entries in memory; do not use on memory-constraint systems with huge dictionaries",
+        action="store_true"
+    )    
+    parser.add_argument(
         'adhoc_operations',
         metavar='OPs',
         type=str,
@@ -81,6 +87,7 @@ def main() -> int:
     args = parser.parse_args()
     verbose = args.verbose
     trace_ops = args.trace_ops
+    unique = args.unique
 
     # 1. parse spec to get TDUnit
     raw_td_file = ""
@@ -104,6 +111,7 @@ def main() -> int:
     td_unit.report_progress = args.progress
     td_unit.verbose = verbose
     td_unit.trace_ops = trace_ops
+    td_unit.unique = unique
     if verbose:
         ast = "\n".join(
             map(lambda l: "[debug] " + l, str(td_unit).splitlines()))

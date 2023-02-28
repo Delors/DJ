@@ -460,6 +460,8 @@ class TDUnit(ASTNode):
 
         self.verbose = False  # provide configuration and initialization related information
 
+        self.unique = False # controls if a result is only reported once
+
     def __str__(self):
         return str(self.header)+"\n\n"+str(self.body)
 
@@ -470,6 +472,8 @@ class TDUnit(ASTNode):
 
     def process(self, no: int, entry: str):
         if len(entry) == 0:
+            return
+            
         if entry not in self.ignored_entries:
             if self.report_progress:
                 print(f"[progress] processing #{no}: {entry}", file=stderr)
