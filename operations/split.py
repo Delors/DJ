@@ -14,7 +14,8 @@ class Split(Transformer):
         self.split_char = split_char
 
     def process(self, entry: str) -> List[str]:
-        assert len(entry) > 0
+        if len(entry) == 0:
+            return None
 
         all_segments = entry.split(self.split_char)
         # "all_segments" will have at least two elements
