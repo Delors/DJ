@@ -43,6 +43,7 @@ from operations.mangle_dates import MANGLE_DATES
 from operations.map import Map
 from operations.max import Max
 from operations.min import Min
+from operations.has import Has
 from operations.number import Number
 from operations.pos_map import PosMap
 from operations.related import Related
@@ -116,6 +117,7 @@ DJ_GRAMMAR = Grammar(
                       write /
                       min /
                       max /
+                      has /
                       is_sc /
                       is_pattern /
                       is_walk /
@@ -148,6 +150,7 @@ DJ_GRAMMAR = Grammar(
                       omit /
                       map /
                       pos_map /
+                      append /
                       prepend /
                       split /
                       sub_split /
@@ -177,6 +180,7 @@ DJ_GRAMMAR = Grammar(
     # 1. FILTERS    
     min             = "min" ws+ op_operator ws+ int_value
     max             = "max" ws+ op_operator ws+ int_value
+    has             = "has" ws+ op_operator ws+ int_value
     is_sc           = "is_sc"    
     is_pattern      = "is_pattern"
     is_walk         = "is_walk"
@@ -211,6 +215,7 @@ DJ_GRAMMAR = Grammar(
     omit            = "omit" ws+ int_value
     map             = "map" ws+ quoted_string ws+ quoted_string
     pos_map         = "pos_map" ws+ quoted_string
+    append          = "append" (ws+ "each")? ws+ quoted_string
     prepend         = "prepend" (ws+ "each")? ws+ quoted_string
     split           = "split" ws+ quoted_string
     sub_split       = "sub_split" ws+ quoted_string
@@ -335,6 +340,7 @@ class DJTreeVisitor (NodeVisitor):
     #       "_" is used for things that are not relevant
     def visit_min(self,_n,c): (_,_,op,_,v)=c ; return Min(op,v)
     def visit_max(self,_n,c): (_,_,op,_,v)=c ; return Max(op,v)
+    def visit_has(self,_n,c): (_,_,op,_,v)=c ; return Has(op,v)
     def visit_is_sc(self,_n,_c): return IS_SC
     def visit_is_part_of(self,_n,c): (_,_,seq) = c ; return IsPartOf(seq)
     def visit_is_pattern(self,_n,_c): return IS_PATTERN
@@ -375,6 +381,14 @@ class DJTreeVisitor (NodeVisitor):
     def visit_omit(self,_n,c): (_,_,v)=c ; return Omit(v)
     def visit_map(self,_n,c): (_,_,s,_,ts)=c ; return Map(s,ts)
     def visit_pos_map(self,_n,c): (_,_,pm)=c ; return PosMap(pm)
+    def visit_append(self,_n,c): 
+        (_,m,_,s) = c
+        # The following test is really awkward, but I didn't find a 
+        # simpler solution to just test for the presence of this flag...
+        if isinstance(m,list): 
+            return Append(True,s)
+        else:
+            return Append(False,s)
     def visit_prepend(self,_n,c): 
         (_,m,_,s) = c
         # The following test is really awkward, but I didn't find a 
