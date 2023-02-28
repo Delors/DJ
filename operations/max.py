@@ -5,7 +5,9 @@ from common import InitializationFailed
 
 
 class Max(Filter):
-    """Only accepts entries with a given maximum number of the specified character class."""
+    """Only accepts entries with a given maximum number of characters
+       of the specified character class.
+    """
 
     def op_name() -> str: return "max"
 
@@ -29,16 +31,20 @@ class Max(Filter):
 
     def __init__(self, operator: str, max_count: int):
         self.operator = operator
-        self.test = self._tests[operator]
+        self.test = None
         self.max_count = max_count
 
     def init(self, td_unit: TDUnit, parent: ASTNode):
         super().init(td_unit, parent)
+        try:
+            self.test = self._tests[self.operator]
+        except:
+            raise InitializationFailed(f"{self}: unsupported operator ({', '.join(self._tests.keys())})")
         max_count = self.max_count
         if max_count < 0:
             msg = f"{self}: max {self.operator} has to be >= 0 (actual {max_count})"
             raise InitializationFailed(msg)
-
+        return self
 
     def process(self, entry: str) -> List[str]:
         count = 0
@@ -47,7 +53,6 @@ class Max(Filter):
                 count += 1
                 if count > self.max_count:
                     return []
-
         return [entry]
 
     def __str__(self):
