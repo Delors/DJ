@@ -6,10 +6,12 @@ ignore "ignore/fr.txt"
 set STRIPPED_MINIMIZED
 set NO_SEQUENCE
 set NO_PATTERN
-set NO_PATTERN_NO_WALK
+set NO_SEQ_NO_PATTERN_NO_WALK
 set NO_WORD
-set UNKNOWN
-set CUT_BASE
+set UNKNOWN_1
+set UNKNOWN_2
+set CROPPED
+set GARBAGE
 
 def IS_WORD \
  or( is_regular_word, is_popular_word )
@@ -44,22 +46,33 @@ use NO_SEQUENCE \
     { is_pattern }!> NO_PATTERN                             write "patterns.txt"
 
 use NO_PATTERN \
-    { is_walk }!> NO_PATTERN_NO_WALK                        write "walks.txt"
+    { is_walk }!> NO_SEQ_NO_PATTERN_NO_WALK                 write "walks.txt"
 
-use NO_PATTERN_NO_WALK \
-    { do IS_WORD }!> NO_WORD                                write "words.txt"
-    
-use NO_WORD { correct_spelling *strip_no_and_sc }/> UNKNOWN write "words.txt"  
+use NO_SEQ_NO_PATTERN_NO_WALK \
+    { do IS_WORD }!> NO_WORD                                write "simple_words.txt"
+
+use NO_WORD \
+    do ADVANCED_TRANSFORMATIONS \
+    min length 4 \
+    { +find_all "[A-Z][a-z]*" \
+      do IS_WORD }!> UNKNOWN_1                              write "no_simple_words.txt"
+
+# ATTENTION: using "correct_spelling" may lead to many new words which
+#            is undesireable if we just want to find "original" words!  
+# use NO_WORD { correct_spelling *strip_no_and_sc }/> UNKNOWN write "words.txt"  
 
 # When we reach this point, the initial entry was no direct pattern,
 # no (keyboard)walk, no regular word and also no popular word; 
-# additionally, simple corrections where also not successfull;
-# hence a simple "cut l 1 1" or "cut r 1 1" is useless.
-use UNKNOWN { cut l 2 2 do ADVANCED_TRANSFORMATIONS }> CUT_BASE
-use UNKNOWN { cut r 2 2 do ADVANCED_TRANSFORMATIONS }> CUT_BASE
-use UNKNOWN { cut l 1 1 cut r 1 1 do ADVANCED_TRANSFORMATIONS }> CUT_BASE                 
+use UNKNOWN_1 { cut l 1 2 }> CROPPED
+use UNKNOWN_1 { cut r 1 2 }> CROPPED
+use UNKNOWN_1 { cut l 1 1 cut r 1 1 }> CROPPED                 
 
-use CUT_BASE do IS_WORD                                     write "words.txt"
+use CROPPED \
+    do ADVANCED_TRANSFORMATIONS \
+    min length 4 \
+    {   +find_all "[A-Z][a-z]*" \
+        do IS_WORD }!> UNKNOWN_2 \ 
+    min length 4                                           write "cropped_words.txt"
 
 
 # Now, let's do some splitting up of the entry to find subwords; 
@@ -67,5 +80,7 @@ use CUT_BASE do IS_WORD                                     write "words.txt"
 # our experience passwords made up out of multiple words contain
 # no significant typos.
 
-# TODO
+use UNKNOWN_2 { find_all "[A-Z][a-z]*" }!> GARBAGE         write "sub_words.txt"
+
+use GARBAGE                                                write "garbage.txt"
 
