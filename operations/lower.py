@@ -27,12 +27,14 @@ class Lower(Transformer):
             raise InitializationFailed(f"{self}: pos has to be >= 0")
 
     def process(self, entry: str) -> List[str]:
-        if self.pos is None:
+        pos = self.pos
+        if pos is None:
             lower = entry.lower()
-        else:
-            pos = self.pos
+        else: 
             if len(entry) > pos:
                 lower = entry[0:pos] + entry[pos].lower() + entry[pos+1:]
+            else:
+                lower = entry
 
         if lower != entry:
             return [lower]
