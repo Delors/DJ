@@ -9,6 +9,7 @@ import traceback
 
 from abc import ABC, abstractmethod
 from typing import List, Set, Tuple, Callable
+from time import time
 
 from parsimonious.exceptions import IncompleteParseError
 
@@ -20,7 +21,7 @@ from grammar import DJ_GRAMMAR, DJTreeVisitor
 from dj_ast import Operation, TDUnit
 from dj_ops import ComplexOperation
 
-def transform_entries(td_unit: TDUnit, dictionary_filename: str):
+def transform_entries(td_unit: TDUnit, dictionary_filename: str, report_pace : bool):
     """Transforms the entries of a given dictionary."""
     d_in = None
     if dictionary_filename:
@@ -29,10 +30,16 @@ def transform_entries(td_unit: TDUnit, dictionary_filename: str):
         d_in = stdin
 
     count = 0
+    start = time()
+    last_count = 0
     for entry in d_in:
         count = count + 1
         sentry = entry.rstrip("\r\n")
         td_unit.process(count, sentry)
+        if report_pace and time()-start > 5:
+            print(f"[info] processed: {count}; speed: {(count-last_count)//(time()-start)} entries per second",file=stderr)
+            last_count = count
+            start = time()
 
     if dictionary_filename:  # test that we don't close stdin
         d_in.close()
@@ -68,7 +75,12 @@ def main() -> int:
     parser.add_argument(
         '-p',
         '--progress',
-        help="prints progress information",
+        help="prints detailed progress information",
+        action="store_true"
+    )
+    parser.add_argument(
+        '--pace',
+        help="prints speed information",
         action="store_true"
     )
     parser.add_argument(
@@ -133,7 +145,7 @@ def main() -> int:
     if verbose:
         print(
             "[debug] ============== T R A N S F O R M A T I O N =============", file=stderr)
-    transform_entries(td_unit, args.dictionary)
+    transform_entries(td_unit, args.dictionary, args.pace)
 
     # 3. cleanup operations (in particular closing of file output streams)
     if verbose:
