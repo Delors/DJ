@@ -175,4 +175,7 @@ class IsWalk(Filter):
                     current_length = 1
             last_e = e
 
-        return [entry]
+        if current_length <= self._min_sub_walk_length:
+            return []
+        else:
+            return [entry]
