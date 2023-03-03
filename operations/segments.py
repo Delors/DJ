@@ -9,7 +9,7 @@ class Segments(Extractor):
 
         Example: 
         Started:
-            $ ./DJ.py segments 2
+            $ ./DJ.py segments 1 8 
         Given:
             abcd
         Result:
