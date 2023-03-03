@@ -38,6 +38,7 @@ from operations.is_regular_word import IsRegularWord
 from operations.is_sc import IS_SC
 from operations.is_walk import IsWalk
 from operations.lower import Lower
+from operations.upper import Upper
 from operations.rotate import Rotate
 from operations.mangle_dates import MANGLE_DATES
 from operations.map import Map
@@ -60,7 +61,6 @@ from operations.split import Split
 from operations.strip_no_and_sc import STRIP_NO_AND_SC
 from operations.strip_ws import STRIP_WS
 from operations.sub_split import SubSplit
-from operations.upper import UPPER
 from operations.title import TITLE
 from operations.prepend import Prepend
 from operations.find_all import FindAll
@@ -202,7 +202,7 @@ DJ_GRAMMAR = Grammar(
     fold_ws         = "fold_ws"
     rotate          = "rotate" ws+ int_value
     lower           = "lower" (ws+ int_value)?
-    upper           = "upper"
+    upper           = "upper" (ws+ int_value)?
     title           = "title"
     capitalize      = "capitalize"
     remove_ws       = "remove_ws"
@@ -368,7 +368,12 @@ class DJTreeVisitor (NodeVisitor):
             return Lower(pos)
         except:
             return Lower()
-    def visit_upper(self,_n,_c): return UPPER
+    def visit_upper(self,_n,c): 
+        try:            
+            (_,[(_,pos)]) = c
+            return Upper(pos)
+        except:
+            return Upper()
     def visit_title(self,_n,_c): return TITLE
     def visit_capitalize(self,_n,_c): return CAPITALIZE
     def visit_remove_ws(self,_n,_c): return REMOVE_WS
