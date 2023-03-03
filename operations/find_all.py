@@ -11,7 +11,7 @@ class FindAll(Extractor):
         "'[A-Z][a-z]*'" could be used.
 
         # Example Usage
-        `./dj.py 'm "[A-Z][a-z]*" report'`
+        `./dj.py 'find_all "[A-Z][a-z]*" report'`
     """
 
     def op_name() -> str: return "find_all"
