@@ -65,6 +65,7 @@ from operations.title import TITLE
 from operations.prepend import Prepend
 from operations.find_all import FindAll
 from operations.omit import Omit
+from operations.multiply import Multiply
 
 
 """
@@ -152,6 +153,7 @@ DJ_GRAMMAR = Grammar(
                       pos_map /
                       append /
                       prepend /
+                      multiply /
                       split /
                       sub_split /
                       number /
@@ -215,6 +217,7 @@ DJ_GRAMMAR = Grammar(
     omit            = "omit" ws+ int_value
     map             = "map" ws+ quoted_string ws+ quoted_string
     pos_map         = "pos_map" ws+ quoted_string
+    multiply        = "multiply" ws+ int_value
     append          = "append" (ws+ "each")? ws+ quoted_string
     prepend         = "prepend" (ws+ "each")? ws+ quoted_string
     split           = "split" ws+ quoted_string
@@ -402,6 +405,7 @@ class DJTreeVisitor (NodeVisitor):
             return Prepend(True,s)
         else:
             return Prepend(False,s)
+    def visit_multiply(self,_n,c): (_,_,f) = c ; return Multiply(f)            
     def visit_split(self,_n,c): (_,_,s) = c ; return Split(s)
     def visit_sub_split(self,_n,c): (_,_,s) = c ; return SubSplit(s)
     def visit_number(self,_n,c): (_,_,cs) = c ; return Number(cs)
