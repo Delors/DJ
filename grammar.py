@@ -37,6 +37,7 @@ from operations.is_popular_word import IS_POPULAR_WORD
 from operations.is_regular_word import IsRegularWord
 from operations.is_sc import IS_SC
 from operations.is_walk import IsWalk
+from operations.select_longest import SELECT_LONGEST
 from operations.lower import Lower
 from operations.upper import Upper
 from operations.rotate import Rotate
@@ -126,6 +127,7 @@ DJ_GRAMMAR = Grammar(
                       is_regular_word /
                       is_popular_word /
                       sieve /
+                      select_longest /
                       find_all /
                       get_no /
                       get_sc /
@@ -190,6 +192,7 @@ DJ_GRAMMAR = Grammar(
     is_regular_word = "is_regular_word"
     is_popular_word = "is_popular_word"
     sieve           = "sieve" ws+ file_name
+    select_longest  = "select_longest"
     # 2. EXTRACTORS
     find_all        = "find_all" ws+ quoted_string
     get_no          = "get_no"
@@ -351,6 +354,7 @@ class DJTreeVisitor (NodeVisitor):
     def visit_is_regular_word(self,_n,_c): return IsRegularWord() # IsRegularWord is configurable
     def visit_is_popular_word(self,_n,_c): return IS_POPULAR_WORD
     def visit_sieve(self,_n,c): (_,_,f)=c ; return Sieve(f)
+    def visit_select_longest(self,_n,_c): return SELECT_LONGEST
     def visit_find_all(self,_n,c): (_,_,r)=c ; return FindAll(r)
     def visit_get_no(self,_n,_c): return GET_NO
     def visit_get_sc(self,_n,_c): return GET_SC
