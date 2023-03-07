@@ -66,12 +66,18 @@ class Report(Operation):
     def do_print(self, entry: str):
         print(entry)
 
-    def process(self, entry: str) -> List[str]:
-        if entry not in self.reported_entries:
-            self.reported_entries.add(entry)
-            self.do_print(entry)
+    # def process(self, entry: str) -> List[str]:
+    #    if entry not in self.reported_entries:
+    #        self.reported_entries.add(entry)
+    #        self.do_print(entry)
+    #    return [entry]
 
-        return [entry]
+    def process_entries(self, entries: List[str]) -> List[str]:
+        for e in entries:
+            if e not in self.reported_entries:
+                self.reported_entries.add(e)
+                self.do_print(e)
+        return entries
 
 
 REPORT = Report()
@@ -352,12 +358,18 @@ class NegateFilterModifier(Operation):
             raise InitializationFailed(f"{self}: {op} is no filter")
         op.init(td_unit, parent)
 
-    def process(self, entry: str) -> List[str]:
-        entries = self.op.process(entry)
-        if entries == []:
-            return [entry]
-        else:
-            return []
+    # IMPLEMENTATION IF WE WOULD REUSE OPERATION'S `process_entries`method:
+    # def process(self, entry: str) -> List[str]:
+    #    entries = self.op.process(entry)
+    #    if entries == []:
+    #        return [entry]
+    #    else:
+    #        return []
+
+    def process_entries(self, entries: List[str]) -> List[str]:
+        # "ignored" entries are already filtered beforehand...
+        accepted_entries = self.op.process_entries(entries)
+        return [ e for e in entries if e not in accepted_entries ]
 
     def close(self):
         self.op.close()
