@@ -481,7 +481,7 @@ class TDUnit(ASTNode):
             # clear all (intermediate) sets
             for k in self.entry_sets.keys():
                 self.entry_sets[k].clear()
-            # delegate to the body the application of the rules
+            # delegate to the body for the application of the rules
             self.body.process(entry)
 
         else:
