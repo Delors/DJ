@@ -72,11 +72,17 @@ Reads in a (case) specific dictionary and generates an output dictionary by proc
 python3 dj.py <operations>
 ```
 
-In this case a dictionary will be read from stdin and then the specified operations will be performed for each entry. 
+In this case, a dictionary will be read from stdin and then the specified operations will be performed for each entry. 
 
 For example, in case of `python3 DJ.py lower report` every entry of the given dictionary will be converted to lower case and will then be output. Entries which are already in lower case will be ignored. 
 
 _Do not forget to specify `report` or `write "<FILE>"`  at the end; otherwise you'll have no output!_
+
+More complex operations specifications are also possible using appropriate escaping/parameter expansion. The next example shows how to specify some configuration operations:
+
+```sh
+python3 dj.py "config related K 100"$'\n'"related 0.5 related 0.6 related 0.7 report"
+```
 
 ### Standard Usage
 
@@ -172,6 +178,7 @@ Each atomic operation (e.g., `lower`, `min length`, `related`, `get_no`) perform
 
 ### Built-in Operations
 Additionally, DJ has some built-in directives for special purposes: 
+ - `gen <GENERATOR> <python_value>` triggers the specified generator to generate new terms using the specified configuration value.
  - `_` is the nop operation which does nothing and just passes on the entries from the first operation to the next operation. 
  - `def <NAME> <operations>` defines a macro; a defined macro is used using `do <NAME>`. Note that the name of the macro has to use capital letters.
  - `config <operation> <PARAMETER> <python_value>` to configure an operation's global parameters
