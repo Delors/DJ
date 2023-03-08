@@ -64,6 +64,7 @@ from operations.strip_ws import STRIP_WS
 from operations.sub_split import SubSplit
 from operations.title import TITLE
 from operations.prepend import Prepend
+from operations.append import Append
 from operations.find_all import FindAll
 from operations.omit import Omit
 from operations.multiply import Multiply
