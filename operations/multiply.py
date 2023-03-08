@@ -1,6 +1,5 @@
 from typing import List
 
-from matplotlib.transforms import Transform
 from common import InitializationFailed
 
 from dj_ast import ASTNode, TDUnit, Transformer
