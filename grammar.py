@@ -16,7 +16,7 @@ from common import unescape
 
 from dj_ast import ComplexOperation
 from dj_ast import TDUnit, Body, Header, Comment
-from dj_ast import IgnoreEntries, SetDefinition, MacroDefinition, ConfigureOperation
+from dj_ast import Generate, IgnoreEntries, SetDefinition, MacroDefinition, ConfigureOperation
 from dj_ops import NOP, REPORT, Write, MacroCall, Or
 from dj_ops import UseSet, StoreInSet, StoreFilteredInSet, StoreNotApplicableInSet
 from dj_ops import NegateFilterModifier, KeepAlwaysModifier, KeepOnlyIfFilteredModifier
@@ -80,7 +80,7 @@ and "_reversed" would then remain unmatched.
 DJ_GRAMMAR = Grammar(
     r"""    
     file            = header body 
-    header          = ( ignore / set / config / def / comment / _meaningless ) *
+    header          = ( ignore / set / config / def / gen / comment / _meaningless ) *
     body            = ( op_defs / comment / _meaningless ) +
     
     nl              = ~r"[\r\n]"m
@@ -96,12 +96,14 @@ DJ_GRAMMAR = Grammar(
     float_value     = ~r"[0-9]+(\.[0-9]+)?"
     int_value       = ~r"[0-9][0-9]*"
     python_identifier = ~r"[a-zA-Z_][a-zA-Z0-9_]*"
-    python_value    = ~r"[a-zA-Z0-9._+\[\]\"]+" # we also support simple lists of strings
+    #python_value    = ~r"[a-zA-Z0-9._+\[\]\",]+" # we also support simple lists of strings
+    python_value    = ~r"[^\n\r]+" # we also support simple lists of strings
 
     ignore          = "ignore" ws+ file_name
     set             = "set" ws+ identifier
     config          = "config" ws+ python_identifier ws+ python_identifier ws+ python_value
     def             = "def" ws+ identifier continuation op_defs
+    gen             = "gen" ws+ ("alt") ws+ python_value
 
     op_defs         = op_modifier? op_def (continuation op_defs)* 
 
@@ -261,8 +263,11 @@ class DJTreeVisitor (NodeVisitor):
         raw_text = node.text
         return unescape(raw_text[1:len(raw_text)-1])
 
+    def visit_gen(_,node,children):
+        (_gen,_ws,mode,_ws,value) = children
+        return Generate(mode.text,value)
 
-    def visit_ignore(self, node, children):        
+    def visit_ignore(self, _node, children):        
         (_ignore,_ws,filename) = children     
         return IgnoreEntries(filename)
 

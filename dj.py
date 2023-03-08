@@ -1,11 +1,11 @@
 #!/usr/bin/python3
 
 # Dr. Michael Eichberg (mail@michael-eichberg.de)
-# (c) 2022
+# (c) 2022,2023
 
 from sys import stdin, stderr, exit
 import argparse
-import traceback
+from itertools import chain
 
 from abc import ABC, abstractmethod
 from typing import List, Set, Tuple, Callable
@@ -21,8 +21,16 @@ from grammar import DJ_GRAMMAR, DJTreeVisitor
 from dj_ast import Operation, TDUnit
 from dj_ops import ComplexOperation
 
-def transform_entries(td_unit: TDUnit, dictionary_filename: str, report_pace : bool):
-    """Transforms the entries of a given dictionary."""
+
+def transform_entries(td_unit: TDUnit, dictionary_filename: str, report_pace: bool):
+    """ Transforms the entries of a dictionary.
+        A dictionary can come from three sources; however, at most two sources
+        are used.
+        1) a generator
+        2) a file or stdin
+    """
+    generators = td_unit.instantiate_generators()
+
     d_in = None
     if dictionary_filename:
         d_in = open(dictionary_filename, 'r')
@@ -32,12 +40,13 @@ def transform_entries(td_unit: TDUnit, dictionary_filename: str, report_pace : b
     count = 0
     start = time()
     last_count = 0
-    for entry in d_in:
+    for entry in chain(generators, d_in):
         count = count + 1
         sentry = entry.rstrip("\r\n")
         td_unit.process(count, sentry)
         if report_pace and time()-start > 5:
-            print(f"[info] processed: {count}; speed: {(count-last_count)//(time()-start)} entries per second",file=stderr)
+            print(
+                f"[info] processed: {count}; speed: {(count-last_count)//(time()-start)} entries per second", file=stderr)
             last_count = count
             start = time()
 
@@ -88,7 +97,7 @@ def main() -> int:
         '--unique',
         help="an entry is reported only once to the first effective output target; this keeps all entries in memory; do not use on memory-constraint systems with huge dictionaries",
         action="store_true"
-    )    
+    )
     parser.add_argument(
         'adhoc_operations',
         metavar='OPs',
@@ -108,7 +117,7 @@ def main() -> int:
             raw_td_file += f.read()
     if args.adhoc_operations and len(args.adhoc_operations) > 0:
         if not raw_td_file.endswith("\n") and len(raw_td_file) > 0:
-            raw_td_file += "\n"    
+            raw_td_file += "\n"
         raw_td_file += " ".join(args.adhoc_operations)
     if len(raw_td_file) == 0:
         print("[error] arguments missing; use dj.py -h for help", file=stderr)

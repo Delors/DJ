@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
-from typing import List, Tuple
+from typing import List, Tuple, Iterable
 from importlib import import_module
+from itertools import chain
 from sys import stderr, exit
 import traceback
 
@@ -298,6 +299,41 @@ class IgnoreEntries(ASTNode):
             print(msg, file=stderr)
 
 
+class Generate(ASTNode):
+    
+    def __init__(self, mode, raw_config_value):
+        self.mode = mode
+        self.raw_config_value = raw_config_value
+        self.config = None # will be initialized by init
+
+    def __str__(self) -> str:
+        return f"gen {self.mode} {self.raw_config_value}"
+    
+    def init(self, td_unit: 'TDUnit', parent: ASTNode):
+        super().init(td_unit, parent)
+
+        if self.mode == "alt":
+            self.config = eval(self.raw_config_value)
+        else:
+            raise InitializationFailed(f"{self}: unknown generator")
+
+        return self
+    
+    def instantiate(self) -> Iterable[str]:
+        if self.mode == "alt":
+            def gen_alt(s,l_of_l_of_strs):
+                if len(l_of_l_of_strs) == 0:
+                    yield s
+                else:
+                    for n in l_of_l_of_strs[0]:
+                       yield from gen_alt(s+n,l_of_l_of_strs[1:])
+            g = gen_alt("",self.config)
+            return g
+        else:
+            # this code should never be reached!
+            raise NotImplementedError
+
+
 class ConfigureOperation(ASTNode):
 
     def __init__(self, module_name, field_name, field_value):
@@ -341,13 +377,14 @@ class ConfigureOperation(ASTNode):
             value = float(self.field_value)
         elif value_type == str:
             value = self.field_value
-        elif value_type == list:
+        elif value_type == list: # this also handles lists of lists...
             value = eval(self.field_value)
         else:
             msg = f"{self} unsupported type {value_type}; supported int, bool, float and str"
             raise InitializationFailed(msg)
 
         setattr(op_class, self.field_name, value)
+        return self
 
 
 class MacroDefinition(ASTNode):
@@ -383,10 +420,23 @@ class Header(ASTNode):
         for o in self.setup_ops:
             o.init(td_unit, self)
 
+    def instantiate_generators(self) -> Iterable[str]:
+        its = []
+        for o in self.setup_ops:
+            try:
+                # "only generators support instantiate()"
+                g = o.instantiate()
+                its.append(g)
+            except:
+                pass
+        return chain(*its)
+
     def close(self):
         for setup_op in self.setup_ops:
             if isinstance(setup_op, MacroDefinition):
                 setup_op.close()
+
+
 
 
 class Body(ASTNode):
@@ -469,6 +519,9 @@ class TDUnit(ASTNode):
         super().init(td_unit, parent)
         self.header.init(td_unit, self)
         self.body.init(td_unit, self)
+
+    def instantiate_generators(self) -> Iterable[str]:        
+        return self.header.instantiate_generators()
 
     def process(self, no: int, entry: str):
         if len(entry) == 0:
