@@ -8,18 +8,20 @@ class Segments(Extractor):
     """ Returns all segments of a given minimum und maximum length.
 
         Example: 
-        Started:
-            $ ./DJ.py segments 1 8 
-        Given:
-            abcd
-        Result:
-            ab
-            bc
-            cd
-            a
-            b
-            c
-            d
+        ```
+        echo "abcde" | ./dj.py 'segments 1 3 report'
+        cd
+        e
+        bc
+        cde
+        a
+        c
+        d
+        abc
+        bcd
+        de
+        ab
+        b
         ```
     """
     def op_name() -> str: return "segments"
@@ -52,4 +54,4 @@ class Segments(Extractor):
         return segments
 
     def __str__(self):
-        return f"{Segments.op_name()} {self.max_length}"
+        return f"{Segments.op_name()} {self.min_length} {self.max_length}"
