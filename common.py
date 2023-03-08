@@ -185,7 +185,7 @@ def get_nlp_model(model: str, verbose : bool):
             # Try to load pickled model            
             with open(pickle_file,"rb") as f:
                 if verbose:
-                    print(f"[info] loading pickeled {model} (this will take time)", file=stderr)
+                    print(f"[info] loading pickeled {model}", file=stderr)
                 _nlp_models[model] = nlp_model = pickle.load(f)
                 if verbose: 
                     print(f"[info] loaded pickeled {model}({nlp_model})", file=stderr)
