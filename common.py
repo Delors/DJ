@@ -2,6 +2,7 @@ import os
 from sys import stderr
 from datetime import datetime
 import importlib
+import pickle, pathlib
 
 import pynuspell
 
@@ -179,14 +180,33 @@ def get_nlp_model(model: str, verbose : bool):
     global _nlp_models
     nlp_model = _nlp_models[model]
     if isinstance(nlp_model, str):
-        gensim_module = importlib.import_module("gensim.downloader")
-        gensim_load = getattr(gensim_module, "load")
-        if verbose:
-            print(f"[info] loading {model} (this will take time)", file=stderr)
-        nlp_model = gensim_load(nlp_model)
-        _nlp_models[model] = nlp_model
-        if verbose: 
-            print(f"[info] loaded {model}({nlp_model})", file=stderr)
+        pickle_file = pathlib.Path.home().joinpath("gensim-data/"+nlp_model+".pickle")
+        try:
+            # Try to load pickled model            
+            with open(pickle_file,"rb") as f:
+                if verbose:
+                    print(f"[info] loading pickeled {model} (this will take time)", file=stderr)
+                _nlp_models[model] = nlp_model = pickle.load(f)
+                if verbose: 
+                    print(f"[info] loaded pickeled {model}({nlp_model})", file=stderr)
+        except:
+            gensim_module = importlib.import_module("gensim.downloader")
+            gensim_load = getattr(gensim_module, "load")
+            if verbose:
+                print(f"[info] loading {model} (this will take time)", file=stderr)
+            nlp_model = gensim_load(nlp_model)
+            _nlp_models[model] = nlp_model
+            if verbose: 
+                print(f"[info] loaded {model}({nlp_model})", file=stderr)
+            
+            # pickle loaded model to make it available for the next time
+            if verbose: 
+                print(f"[info] creating pickled representation for {model}", file=stderr)
+            with open(pickle_file,"wb") as f:
+                pickle.dump(nlp_model, f)
+            if verbose: 
+                print(f"[info] created pickled representation for {model}", file=stderr)                
+        
     return nlp_model
 
 
