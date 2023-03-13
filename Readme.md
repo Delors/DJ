@@ -78,7 +78,7 @@ For example, in case of `python3 DJ.py lower report` every entry of the given di
 
 _Do not forget to specify `report` or `write "<FILE>"`  at the end; otherwise you'll have no output!_
 
-More complex operations specifications are also possible using appropriate escaping/parameter expansion. The next example shows how to specify some configuration operations:
+More complex operations specifications are also possible on the command line using appropriate escaping/parameter expansion. The next example shows how to specify some configuration operations:
 
 ```sh
 python3 dj.py "config related K 100"$'\n'"related 0.5 related 0.6 related 0.7 report"
