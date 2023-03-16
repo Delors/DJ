@@ -362,17 +362,23 @@ class ConfigureOperation(ASTNode):
             msg = f"{self}: unknown field name {op_class_name}.{self.field_name}"
             raise InitializationFailed(msg)
 
+        value_type = type(old_value)
+
         if td_unit.verbose:
             print(
                 f"[debug] updating: " +
                 f"{op_module.__name__}.{op_class.__name__}.{self.field_name} = " +
-                f"{self.field_value} (old value: {old_value})", file=stderr)
+                f"{self.field_value} (before: {old_value})", file=stderr)
 
-        value_type = type(old_value)
         if value_type == int:
             value = int(self.field_value)
         elif value_type == bool:
-            value = bool(self.field_value)
+            if self.field_value == "True":
+                value = True
+            elif self.field_value == "False":
+                value = False
+            else:
+                raise ValueError(f"unknown boolean value {self.field_value}")
         elif value_type == float:
             value = float(self.field_value)
         elif value_type == str:
@@ -380,7 +386,7 @@ class ConfigureOperation(ASTNode):
         elif value_type == list: # this also handles lists of lists...
             value = eval(self.field_value)
         else:
-            msg = f"{self} unsupported type {value_type}; supported int, bool, float and str"
+            msg = f"{self} unsupported type {value_type}; supported int, bool, float, str, list of <one of the previous>"
             raise InitializationFailed(msg)
 
         setattr(op_class, self.field_name, value)
