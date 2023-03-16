@@ -56,7 +56,7 @@ In general, DJ can be used offline. However, some operations (in particular `rel
 To force DJ to download the necessary data just start DJ with the `related` operation and type a single word:
 
 ```bash
-$ ./dj.py is_popular_word
+$ ./dj.py -v 'is_popular_word related 0.5 report'
 Wiesbaden
 ``` 
 
