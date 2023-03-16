@@ -8,7 +8,7 @@ class StripNOAndSC(Transformer):
 
     def op_name() -> str: return "strip_numbers_and_sc"
 
-    STRIP_CHARS = "0123456789<>|,;.:_#'+*~@€²³`´^°!\"§$%&/=µ()[]{}\\-"
+    STRIP_CHARS = "0123456789<>|,;.:_#'+*~@€²³`´^°!\"§$%&/=?µ()[]{}\\- "
 
     def process(self, entry: str) -> List[str]:
 
