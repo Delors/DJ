@@ -95,7 +95,9 @@ class Write(Report):
     def init(self, td_unit: TDUnit, parent: ASTNode):
         super().init(td_unit, parent)
         # let's append ... this enables multiple writes to the same file
-        self.file = open(enrich_filename(self.filename), "a", encoding="utf-8")
+        # in one TD file
+        filename = enrich_filename(self.filename)
+        self.file = open(filename, "a", encoding="utf-8")
 
     def is_reporter(self) -> bool: return True
 
