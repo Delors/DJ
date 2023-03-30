@@ -1,0 +1,6 @@
+# Numbers are often used as word replacements, e.g., 2 for "to", 4 for "for".
+
+1 \s 
+2 \s
+3 \s
+4 \s
