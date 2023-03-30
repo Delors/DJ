@@ -25,14 +25,16 @@ class Replace(Transformer):
             if sline.startswith("# "):
                 continue
             (raw_key, raw_value) = sline.split()
-            key = raw_key\
-                .replace("\\s", " ")\
-                .replace("\#", "#")\
-                .replace("\\\\", "\\")
-            value = raw_value\
-                .replace("\\s", " ")\
-                .replace("\#", "#")\
-                .replace("\\\\", "\\")
+            key = "\\".join(
+                list(map(lambda s : s.replace("\\s", " ")\
+                    .replace("\\#", "#") ,
+                     raw_key.split("\\\\"))
+                    ))
+            value = "\\".join(
+                list(map(lambda s : s.replace("\\s", " ")\
+                    .replace("\\#", "#") ,
+                     raw_value.split("\\\\"))
+                    ))               
             current_values = self.replacement_table.get(key)
             if current_values:
                 msg = f"{self}: {key} is already used"
