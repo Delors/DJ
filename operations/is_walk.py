@@ -223,7 +223,7 @@ KEYBOARDS = {
     }
 }
 
-# TODO Make keyboard configuration configurable by putting it into a python file which - when specified - registers itself with the set of keyboards...
+# IMPROVE Make keyboard configuration configurable by putting it into a python file which - when specified - registers itself with the set of keyboards...
 
 
 class IsWalk(Filter):
@@ -250,7 +250,7 @@ class IsWalk(Filter):
             keyboards = KEYBOARDS #globals()[KEYBOARDS]
             self._keyboard_layout = keyboards[self.keyboard]
         except Exception as e:
-            raise InitializationFailed(f"{self}: unkown keyboard")
+            raise InitializationFailed(f"{self}: unknown keyboard")
         self._min_walk_length = IsWalk.MIN_WALK_LENGTH
         self._min_sub_walk_length = IsWalk.MIN_SUB_WALK_LENGTH
 
@@ -259,7 +259,6 @@ class IsWalk(Filter):
     def process(self, entry: str) -> List[str]:
         if len(entry) < self._min_walk_length:
             return []
-
         last_e = entry[0]
         current_length = 1
         for e in entry[1:]:
@@ -275,16 +274,16 @@ class IsWalk(Filter):
                     break
 
             if not found:
-                if current_length <= self._min_sub_walk_length:
+                if current_length != len(entry) and current_length <= self._min_sub_walk_length:
                     return []
                 else:
                     current_length = 1
             last_e = e
 
-        if current_length < self._min_sub_walk_length:
+        if current_length != len(entry) and current_length < self._min_sub_walk_length:            
             return []
         else:
             return [entry]
 
     def __str__(self):
-        return f"{IsWalk.op_name()} {self.keyboard}"
+        return f'{IsWalk.op_name()} "{self.keyboard}"'

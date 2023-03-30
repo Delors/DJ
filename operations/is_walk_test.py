@@ -6,14 +6,12 @@ import operations.is_walk as is_kw
 class TestIsWalk(unittest.TestCase):
 
     def setUp(self):
-        self.KW = is_kw.IsWalk()
-        is_kw.IsWalk.LAYOUT = "KEYBOARD_DE"
+        self.KW = is_kw.IsWalk("KEYBOARD_DE")
         is_kw.IsWalk.MIN_SUB_WALK_LENGTH = 3
         is_kw.IsWalk.MIN_WALK_LENGTH = 3
         self.KW.init(None,None) # "is_walk" has no AST dependencies
 
-        self.PW = is_kw.IsWalk()
-        is_kw.IsWalk.LAYOUT = "PIN_PAD"
+        self.PW = is_kw.IsWalk("PIN_PAD")
         is_kw.IsWalk.MIN_SUB_WALK_LENGTH = float('inf')
         is_kw.IsWalk.MIN_WALK_LENGTH = 3
         self.PW.init(None,None)
@@ -23,7 +21,7 @@ class TestIsWalk(unittest.TestCase):
         self.assertTrue(self.KW.is_filter())
 
     def test__str__(self):
-        self.assertEqual(self.KW.__str__(), "is_walk")
+        self.assertEqual(self.KW.__str__(), 'is_walk "KEYBOARD_DE"')
 
     def test_horizontal_kw(self):
         self.assertEqual(self.KW.process("asdf"), ["asdf"])
@@ -45,7 +43,7 @@ class TestIsWalk(unittest.TestCase):
 
     def test_pw_selection(self):
         # The following is "only" a walk on a pin pad!
-        self.assertEqual(self.KW.process("1236"), ["1236"])
+        self.assertEqual(self.PW.process("1236"), ["1236"])
 
     def test_pw_inf_sub_walk_length(self):
         # The following is "only" a walk on a pin pad!
