@@ -17,7 +17,7 @@ from common import unescape
 from dj_ast import ComplexOperation
 from dj_ast import TDUnit, Body, Header, Comment
 from dj_ast import Generate, IgnoreEntries, SetDefinition, MacroDefinition, ConfigureOperation
-from dj_ops import NOP, REPORT, Write, MacroCall, Or, All
+from dj_ops import NOP, REPORT, Write, MacroCall, Or, All, NonEmpty, BreakUp
 from dj_ops import UseSet, StoreInSet, StoreFilteredInSet, StoreNotApplicableInSet
 from dj_ops import NegateFilterModifier, KeepAlwaysModifier, KeepOnlyIfFilteredModifier
 from operations.capitalize import CAPITALIZE
@@ -119,6 +119,8 @@ DJ_GRAMMAR = Grammar(
                       set_use /
                       or /
                       all /
+                      non_empty /
+                      break_up /
                       nop /
                       report /
                       write /
@@ -179,8 +181,10 @@ DJ_GRAMMAR = Grammar(
     set_use         = "use" ws+ identifier # a set use always has to be the first op in an op_defs
     # Meta operators that are set related
     all             = ~r"all\s*\(\s*N/A\s*=\s*" boolean_value ~r"\s*,\s*\[\]\s*=\s*" boolean_value ~r"\s*,\s*" op_defs ~r"\s*,\s*" op_defs ~r"\s*\)"s
+    non_empty       = ~r"non_empty\s*\(\s*N/A\s*=\s*"s boolean_value ~r"\s*,\s*\[\]\s*=\s*"s boolean_value ~r"\s*,\s*"s op_defs ~r"\s*\)"s
     #or              = "or(" ws* op_defs (ws* "," ws* op_defs)+ ws* ")"
     or              = ~r"or\s*\(\s*" op_defs ( ~r"\s*,\s*" op_defs )+ ~r"\s*\)"s
+    break_up        = ~r"break_up\s*\(\s*" op_defs ~r"\s*\)"s
     # Reporting operators   
     report          = "report"
     write           = "write" ws+ file_name
@@ -353,6 +357,14 @@ class DJTreeVisitor (NodeVisitor):
         all_cops = [cop]
         all_cops.extend(cops)
         return Or(all_cops)
+
+    def visit_non_empty(self, node, visited_children):
+        (_,on_none,_,on_empty,_,cop,_) = visited_children
+        return NonEmpty(on_none,on_empty, cop)
+
+    def visit_break_up(self, n, visited_children):
+        (_, test, _) = visited_children
+        return BreakUp(test)
 
     def visit_all(self, n, visited_children):
         (_, n_a, _, empty, _, cop, _, test, _) = visited_children
