@@ -24,7 +24,8 @@ class DeLeetify(Transformer):
             ("1","i"),
             ("!","i"),
             ("@","a"),
-            ("$","s")
+            ("$","s"),
+            ("5","s")
     }
     """
     """ Currently not used transliterations:
