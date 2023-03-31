@@ -13,9 +13,6 @@ class DeLeetify(Transformer):
         a spellchecker directly to deleetify a word will generally not work
         for heavily leetified words, e.g., _T4553_, which might stand for 
         _Tasse_ in German.
-
-        We currently only deleetify words containing
-        a, e, i and o.
     """
 
     def op_name() -> str: return "deleetify"
@@ -24,8 +21,11 @@ class DeLeetify(Transformer):
             ("0","o"),
             ("3","e"),
             ("4","a"),
-            ("1","i")
-        }
+            ("1","i"),
+            ("!","i"),
+            ("@","a"),
+            ("$","s")
+    }
     """
     """ Currently not used transliterations:
             [("5","s")],
