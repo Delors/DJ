@@ -11,8 +11,9 @@ class Upper(Transformer):
     def op_name() -> str: return "upper"
 
 
-    def __init__(self, pos : int = None) -> None:
+    def __init__(self, pos : int = None, letter_with_index : bool = False) -> None:
         self.pos = pos
+        self.letter_with_index = letter_with_index
 
     def init(self, td_unit: TDUnit, parent: ASTNode):
         super().init(td_unit, parent)
@@ -23,11 +24,23 @@ class Upper(Transformer):
         pos = self.pos
         if pos is None:
             upper = entry.upper()
-        else:
+        elif not self.letter_with_index:
             if len(entry) > pos:
                 upper = entry[0:pos] + entry[pos].upper() + entry[pos+1:]
             else:
                 upper = entry
+        else:
+            upper = ""
+            i = 0
+            for c in entry:
+                if c.isalpha():
+                    if i == pos:
+                        upper += c.upper()
+                    else:
+                        upper += c
+                    i += 1
+                else:
+                    upper += c
 
         if upper != entry:
             return [upper]
@@ -36,6 +49,9 @@ class Upper(Transformer):
 
     def __str__(self):
         if self.pos:
-            return f"{Upper.op_name()} {self.pos}"
+            pos = str(self.pos)
+            if self.letter_with_index:
+                pos = "l"+pos
+            return f"{Upper.op_name()} {pos}"
         else:
             return Upper.op_name()

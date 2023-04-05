@@ -212,7 +212,7 @@ DJ_GRAMMAR = Grammar(
     fold_ws         = "fold_ws"
     rotate          = "rotate" ws+ int_value
     lower           = "lower" (ws+ int_value)?
-    upper           = "upper" (ws+ int_value)?
+    upper           = "upper" (ws+ "l"? int_value)?
     title           = "title"
     capitalize      = "capitalize"
     remove_ws       = "remove_ws"
@@ -386,8 +386,11 @@ class DJTreeVisitor (NodeVisitor):
             return Lower()
     def visit_upper(self,_n,c): 
         try:            
-            (_,[(_,pos)]) = c
-            return Upper(pos)
+            (_,[(_,l_opt,pos)]) = c
+            if isinstance(l_opt,list):
+                return Upper(pos,letter_with_index=True)
+            else:
+                return Upper(pos)
         except:
             return Upper()
     def visit_title(self,_n,_c): return TITLE
