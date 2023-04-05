@@ -45,6 +45,7 @@ ignore "ignore/al.txt"
 # DEFINITIONS OF MACROS
 def UMLAUT_TO_ASCII replace "replace/UmlautToAscii.txt"
 def REWRITE_UMLAUT replace "replace/RewriteUmlaut.txt"
+
 def SC_TO_SPACE replace "replace/SpecialCharToSpace.txt"
 
 
