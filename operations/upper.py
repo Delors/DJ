@@ -48,7 +48,7 @@ class Upper(Transformer):
             return None
 
     def __str__(self):
-        if self.pos:
+        if self.pos is not None:
             pos = str(self.pos)
             if self.letter_with_index:
                 pos = "l"+pos
