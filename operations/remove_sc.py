@@ -14,7 +14,7 @@ class RemoveSC(Transformer):
     """
 
     NON_SPECIAL_CHARACTERS_REGEXP = \
-        "[^<>|,;.:_#'+*~@€²³`'^°!\"§$%&/()\[\]{}\\\-]+"
+        "[^<>|,;.:_#'’+*~@€²³`'^°!\"§$%&/()\[\]{}\\\-]+"
 
     def op_name() -> str: return "remove_sc"
 
