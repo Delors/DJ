@@ -17,3 +17,7 @@
 î i
 ô o
 û u
+
+# special cases, e.g., Noël
+ë e
+Ë E

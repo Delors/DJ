@@ -1,0 +1,8 @@
+# This list contain a collection of slavic letters (turkmen, czech, slovak,...)
+# THIS LIST IS CURRENTLY NOT COMPLETE!
+# THIS LIST IS CREATED ON A BY NEED BASIS!
+Ň N
+ň n
+Ñ N
+ť t
+Ť T

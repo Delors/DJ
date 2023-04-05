@@ -3,11 +3,22 @@
 # If you want to replace a space use \s to escape \ use \\ to replace a # use \#
 # empty lines are ignored.
 
-á a
-é e
-í i
-ó o
-ú u
-Ñ N
-ñ n
-ü u
+##### THE FOLLOWING LIST MAY NOT BE COMPLETE!!!
+
+Ą A
+ą a
+Ę E
+ę e
+Ė E
+ė e
+Į I
+į i
+Ų U
+ų u
+č c
+Č C
+ǅ dz
+Ṧ S
+ṧ s
+ž z
+Ž Z
