@@ -15,8 +15,8 @@ class TestSegments(unittest.TestCase):
         self.assertTrue(self.S3.is_extractor())
 
     def test__str__(self):
-        self.assertEqual(str(self.S3), "segments 3")
-        self.assertEqual(str(self.SInf), "segments inf")
+        self.assertEqual(str(self.S3), "segments 1 3")
+        self.assertEqual(str(self.SInf), "segments 1 inf")
 
     def test_initr(self):
         s_0_0 = Segments(0, 0)

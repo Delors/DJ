@@ -17,7 +17,7 @@ from common import unescape
 from dj_ast import ComplexOperation
 from dj_ast import TDUnit, Body, Header, Comment
 from dj_ast import Generate, IgnoreEntries, SetDefinition, MacroDefinition, ConfigureOperation
-from dj_ops import NOP, REPORT, Write, MacroCall, Or
+from dj_ops import NOP, REPORT, Write, MacroCall, Or, All, NonEmpty, BreakUp
 from dj_ops import UseSet, StoreInSet, StoreFilteredInSet, StoreNotApplicableInSet
 from dj_ops import NegateFilterModifier, KeepAlwaysModifier, KeepOnlyIfFilteredModifier
 from operations.capitalize import CAPITALIZE
@@ -97,6 +97,7 @@ DJ_GRAMMAR = Grammar(
     op_operator     = ~r"[a-z_]+"
     float_value     = ~r"[0-9]+(\.[0-9]+)?"
     int_value       = ~r"[0-9][0-9]*"
+    boolean_value   = "True" / "False"
     python_identifier = ~r"[a-zA-Z_][a-zA-Z0-9_]*"
     #python_value    = ~r"[a-zA-Z0-9._+\[\]\",]+" # we also support simple lists of strings
     python_value    = ~r"[^\n\r]+" # we also support simple lists of strings
@@ -118,6 +119,9 @@ DJ_GRAMMAR = Grammar(
                       set_store /
                       set_use /
                       or /
+                      all /
+                      non_empty /
+                      break_up /
                       nop /
                       report /
                       write /
@@ -177,9 +181,12 @@ DJ_GRAMMAR = Grammar(
     # Handling of (intermediate) sets
     set_store       = "{" continuation? op_defs continuation? ( "}>" / "}!>" / "}/>") ws* identifier
     set_use         = "use" ws+ identifier # a set use always has to be the first op in an op_defs
-    # Meta operators that can only be combined with filters
+    # Meta operators that are set related
+    all             = ~r"all\s*\(\s*N/A\s*=\s*" boolean_value ~r"\s*,\s*\[\]\s*=\s*" boolean_value ~r"\s*,\s*" op_defs ~r"\s*,\s*" op_defs ~r"\s*\)"s
+    non_empty       = ~r"non_empty\s*\(\s*N/A\s*=\s*"s boolean_value ~r"\s*,\s*\[\]\s*=\s*"s boolean_value ~r"\s*,\s*"s op_defs ~r"\s*\)"s
     #or              = "or(" ws* op_defs (ws* "," ws* op_defs)+ ws* ")"
-    or              = ~r"or\(\s*" op_defs ( ~r"\s*,\s*" op_defs )+ ~r"\s*\)"s
+    or              = ~r"or\s*\(\s*" op_defs ( ~r"\s*,\s*" op_defs )+ ~r"\s*\)"s
+    break_up        = ~r"break_up\s*\(\s*" op_defs ~r"\s*\)"s
     # Reporting operators   
     report          = "report"
     write           = "write" ws+ file_name
@@ -192,8 +199,8 @@ DJ_GRAMMAR = Grammar(
     has             = "has" ws+ op_operator ws+ int_value
     is_sc           = "is_sc"    
     is_pattern      = "is_pattern"
-    is_walk         = "is_walk"
-    is_part_of     = "is_part_of" ws+ quoted_string
+    is_walk         = "is_walk" ws+ quoted_string
+    is_part_of      = "is_part_of" ws+ quoted_string
     is_regular_word = "is_regular_word"
     is_popular_word = "is_popular_word"
     sieve           = "sieve" ws+ file_name
@@ -240,64 +247,72 @@ DJ_GRAMMAR = Grammar(
     """
 )
 
+
 class DJTreeVisitor (NodeVisitor):
     # Note that this is a bottom-up visitor.
 
-    def generic_visit(self, node, visited_children): return visited_children or node
+    def generic_visit(
+        self, node, visited_children): return visited_children or node
 
-    def visit_comment(self,node,_children): return Comment(node.text)
-    def visit__meaningless(self,_node,_children): return None
-    def visit_file(self,_node,children): (h, b) = children ; return TDUnit(h,b)
-    def visit_header(self,_node,children):         
+    def visit_comment(self, node, _children): return Comment(node.text)
+    def visit__meaningless(self, _node, _children): return None
+
+    def visit_file(self, _node, children): (
+        h, b) = children; return TDUnit(h, b)
+
+    def visit_header(self, _node, children):
         # unwrapped_children = map(lambda x : x[0],children)
         # return Header([ o for o in unwrapped_children if o is not None ])
         return Header(list(c[0] for c in children if c[0] is not None))
-    def visit_body(self,_node,children): 
+
+    def visit_body(self, _node, children):
         # unwrapped_children = map(lambda x : x[0],children)
         # return Body([ o for o in unwrapped_children if o is not None ])
         return Body(list(c[0] for c in children if c[0] is not None))
 
     def visit_identifier(self, node, _): return node.text
-    def visit_op_operator(self, node, _) : return node.text
+    def visit_op_operator(self, node, _): return node.text
     def visit_float_value(self, node, _): return float(node.text)
     def visit_int_value(self, node, _): return int(node.text)
+
+    def visit_boolean_value(self, node, _):
+        return False if node.text == "False" else True
+
     def visit_python_identifier(self, node, _): return node.text
     def visit_python_value(self, node, _): return node.text
-    def visit_quoted_string(self, node, _children):        
+
+    def visit_quoted_string(self, node, _children):
         raw_text = node.text
         return unescape(raw_text[1:len(raw_text)-1])
 
-    def visit_gen(_,node,children):
-        (_gen,_ws,mode,_ws,value) = children
-        return Generate(mode.text,value)
+    def visit_gen(_, node, children):
+        (_gen, _ws, mode, _ws, value) = children
+        return Generate(mode.text, value)
 
-    def visit_ignore(self, _node, children):        
-        (_ignore,_ws,filename) = children     
+    def visit_ignore(self, _node, children):
+        (_ignore, _ws, filename) = children
         return IgnoreEntries(filename)
 
-
-    def visit_set(self, node, children):        
-        (_set,_ws,name) = children
+    def visit_set(self, node, children):
+        (_set, _ws, name) = children
         return SetDefinition(name)
 
-
-    def visit_config(self, node, children):        
-        (_config,_ws,module_name,_ws,field_name,_ws,value) = children        
-        return ConfigureOperation(module_name,field_name,value)
-
+    def visit_config(self, node, children):
+        (_config, _ws, module_name, _ws, field_name, _ws, value) = children
+        return ConfigureOperation(module_name, field_name, value)
 
     def visit_def(self, _node, visited_children):
-        (_def,_ws,identifier,_ws,op_defs) = visited_children
-        return MacroDefinition(identifier,op_defs)
+        (_def, _ws, identifier, _ws, op_defs) = visited_children
+        return MacroDefinition(identifier, op_defs)
 
-
-    def visit_op_defs(self,node,visited_children):
-        (raw_op_modifier,[op_def],raw_child_op_defs) = visited_children
+    def visit_op_defs(self, node, visited_children):
+        (raw_op_modifier, [op_def], raw_child_op_defs) = visited_children
 
         if isinstance(op_def, Node):
-            raise NotImplementedError(f"visit method missing for {op_def.text}?")
+            raise NotImplementedError(
+                f"visit method missing for {op_def.text}?")
 
-        if isinstance(raw_op_modifier,list):
+        if isinstance(raw_op_modifier, list):
             op_modifier = raw_op_modifier[0][0].text
             if op_modifier == "+":
                 op_def = KeepAlwaysModifier(op_def)
@@ -305,82 +320,104 @@ class DJTreeVisitor (NodeVisitor):
                 op_def = KeepOnlyIfFilteredModifier(op_def)
             elif op_modifier == "!":
                 op_def = NegateFilterModifier(op_def)
-        
+
         op_defs = [op_def]
         # lift the subsequent nodes/operations to a list
-        if isinstance(raw_child_op_defs,list):
+        if isinstance(raw_child_op_defs, list):
             next_ops = raw_child_op_defs[0][1].ops
             op_defs.extend(next_ops)
-        else: # [actually it is:] "elif isinstance(raw_child_op_defs,Node):"
+        else:  # [actually it is:] "elif isinstance(raw_child_op_defs,Node):"
             if len(raw_child_op_defs.children) > 0:
-                (_ws,next) = raw_child_op_defs
-                op_defs.extend(next.ops)           
-        
+                (_ws, next) = raw_child_op_defs
+                op_defs.extend(next.ops)
+
         return ComplexOperation(op_defs)
 
-
-    def visit_macro_call(self,node,visited_children): 
-        (_do,_ws,identifier) = visited_children
+    def visit_macro_call(self, node, visited_children):
+        (_do, _ws, identifier) = visited_children
         return MacroCall(identifier)
-    def visit_set_store(self,node,visited_children) : 
-        (_para,_ws,op_defs,_ws,[store_op],_ws,identifier) = visited_children
+
+    def visit_set_store(self, node, visited_children):
+        (_para, _ws, op_defs, _ws, [store_op],
+         _ws, identifier) = visited_children
         op = store_op.text
-        if  op == "}>":
-            return StoreInSet(identifier,op_defs)        
+        if op == "}>":
+            return StoreInSet(identifier, op_defs)
         elif op == "}!>":
-            return StoreFilteredInSet(identifier,op_defs)     
-        else: # op == "}/>":
-            return StoreNotApplicableInSet(identifier,op_defs)
-    def visit_set_use(self,node,visited_children) : 
-        (_use,_ws,identifier) = visited_children
+            return StoreFilteredInSet(identifier, op_defs)
+        else:  # op == "}/>":
+            return StoreNotApplicableInSet(identifier, op_defs)
+
+    def visit_set_use(self, node, visited_children):
+        (_use, _ws, identifier) = visited_children
         return UseSet(identifier)
-    def visit_or(self,node,visited_children): 
-        (_or_ws,cop,more_cops,_ws) = visited_children
-        # more_cops is a list of tuples where the second tuple 
+
+    def visit_or(self, node, visited_children):
+        (_or_ws, cop, more_cops, _ws) = visited_children
+        # more_cops is a list of tuples where the second tuple
         # value is the complex operation
-        cops = map(lambda x: x[1], more_cops) # strip "ws" nodes
+        cops = map(lambda x: x[1], more_cops)  # strip "ws" nodes
         all_cops = [cop]
         all_cops.extend(cops)
         return Or(all_cops)
 
-    def visit_nop(self,node,_children): return NOP
-    def visit_report(self,node,_children): return REPORT    
-    def visit_write(self,node,children):
-        (_write,_ws,filename) = children
-        return Write(filename)    
+    def visit_non_empty(self, node, visited_children):
+        (_,on_none,_,on_empty,_,cop,_) = visited_children
+        return NonEmpty(on_none,on_empty, cop)
 
-    # IN THE FOLLOWING: 
-    #       "n" stands for Node and 
+    def visit_break_up(self, n, visited_children):
+        (_, test, _) = visited_children
+        return BreakUp(test)
+
+    def visit_all(self, n, visited_children):
+        (_, n_a, _, empty, _, cop, _, test, _) = visited_children
+        return All(n_a, empty, cop, test)
+
+    def visit_nop(self, node, _children): return NOP
+    def visit_report(self, node, _children): return REPORT
+
+    def visit_write(self, node, children):
+        (_write, _ws, filename) = children
+        return Write(filename)
+
+    # IN THE FOLLOWING:
+    #       "n" stands for Node and
     #       "c" stands for the visited children
     #       "_" is used for things that are not relevant
-    def visit_min(self,_n,c): (_,_,op,_,v)=c ; return Min(op,v)
-    def visit_max(self,_n,c): (_,_,op,_,v)=c ; return Max(op,v)
-    def visit_has(self,_n,c): (_,_,op,_,v)=c ; return Has(op,v)
-    def visit_is_sc(self,_n,_c): return IS_SC
-    def visit_is_part_of(self,_n,c): (_,_,seq) = c ; return IsPartOf(seq)
-    def visit_is_pattern(self,_n,_c): return IS_PATTERN
-    def visit_is_walk(self,_n,_c): return IsWalk() # IsWalk is configurable
-    def visit_is_regular_word(self,_n,_c): return IsRegularWord() # IsRegularWord is configurable
-    def visit_is_popular_word(self,_n,_c): return IS_POPULAR_WORD
-    def visit_sieve(self,_n,c): (_,_,f)=c ; return Sieve(f)
-    def visit_select_longest(self,_n,_c): return SELECT_LONGEST
-    def visit_find_all(self,_n,c): (_,_,r)=c ; return FindAll(r)
-    def visit_get_no(self,_n,_c): return GET_NO
-    def visit_get_sc(self,_n,_c): return GET_SC
-    def visit_cut(self,_n,c): 
+    def visit_min(self, _n, c): (_, _, op, _, v) = c; return Min(op, v)
+    def visit_max(self, _n, c): (_, _, op, _, v) = c; return Max(op, v)
+    def visit_has(self, _n, c): (_, _, op, _, v) = c; return Has(op, v)
+    def visit_is_sc(self, _n, _c): return IS_SC
+    def visit_is_part_of(self, _n, c): (_, _, seq) = c; return IsPartOf(seq)
+    def visit_is_pattern(self, _n, _c): return IS_PATTERN
+    def visit_is_walk(self, _n, c): (_, _, k) = c; return IsWalk(k)
+    # IsRegularWord is configurable; hence "on-demand" initialization is required
+    def visit_is_regular_word(self, _n, _c): return IsRegularWord()
+    def visit_is_popular_word(self, _n, _c): return IS_POPULAR_WORD
+    def visit_sieve(self, _n, c): (_, _, f) = c; return Sieve(f)
+    def visit_select_longest(self, _n, _c): return SELECT_LONGEST
+    def visit_find_all(self, _n, c): (_, _, r) = c; return FindAll(r)
+    def visit_get_no(self, _n, _c): return GET_NO
+    def visit_get_sc(self, _n, _c): return GET_SC
+
+    def visit_cut(self, _n, c):
         # "cut" ws "l|r" ws <min> ws <max>
-        (_,_,[op],_,min,_,max) = c ; 
-        return Cut(op.text,min,max)
-    def visit_deduplicate_reversed(self,_n,_c): return DEDUPLICATE_REVERSED
-    def visit_deduplicate(self,_n,_c): return DEDUPLICATE
-    def visit_detriplicate(self,_n,_c): return DETRIPLICATE
-    def visit_segments(self,_n,c): (_,_,min,_,max)=c ; return Segments(min,max)
-    def visit_strip_ws(self,_n,_c): return STRIP_WS
-    def visit_fold_ws(self,_n,_c): return FOLD_WS
-    def visit_rotate(self,_n,c): (_,_,by) = c ;return Rotate(by)
-    def visit_lower(self,_n,c): 
-        try:            
-            (_,[(_,pos)]) = c
+        (_, _, [op], _, min, _, max) = c
+        return Cut(op.text, min, max)
+
+    def visit_deduplicate_reversed(self, _n, _c): return DEDUPLICATE_REVERSED
+    def visit_deduplicate(self, _n, _c): return DEDUPLICATE
+    def visit_detriplicate(self, _n, _c): return DETRIPLICATE
+    def visit_segments(self, _n, c): (
+        _, _, min, _, max) = c; return Segments(min, max)
+
+    def visit_strip_ws(self, _n, _c): return STRIP_WS
+    def visit_fold_ws(self, _n, _c): return FOLD_WS
+    def visit_rotate(self, _n, c): (_, _, by) = c; return Rotate(by)
+
+    def visit_lower(self, _n, c):
+        try:
+            (_, [(_, pos)]) = c
             return Lower(pos)
         except:
             return Lower()
@@ -406,31 +443,36 @@ class DJTreeVisitor (NodeVisitor):
     def visit_omit(self,_n,c): (_,_,v)=c ; return Omit(v)
     def visit_map(self,_n,c): (_,_,s,_,ts)=c ; return Map(s,ts)
     def visit_pos_map(self,_n,c): (_,_,pm)=c ; return PosMap(pm)
+
     def visit_append(self,_n,c): 
         (_,m,_,s) = c
         # The following test is really awkward, but I didn't find a 
         # simpler solution to just test for the presence of this flag...
-        if isinstance(m,list): 
-            return Append(True,s)
+        if isinstance(m, list):
+            return Append(True, s)
         else:
-            return Append(False,s)
-    def visit_prepend(self,_n,c): 
-        (_,m,_,s) = c
-        # The following test is really awkward, but I didn't find a 
+            return Append(False, s)
+
+    def visit_prepend(self, _n, c):
+        (_, m, _, s) = c
+        # The following test is really awkward, but I didn't find a
         # simpler solution to just test for the presence of this flag...
-        if isinstance(m,list): 
-            return Prepend(True,s)
+        if isinstance(m, list):
+            return Prepend(True, s)
         else:
-            return Prepend(False,s)
-    def visit_multiply(self,_n,c): (_,_,f) = c ; return Multiply(f)            
-    def visit_split(self,_n,c): (_,_,s) = c ; return Split(s)
-    def visit_sub_split(self,_n,c): (_,_,s) = c ; return SubSplit(s)
-    def visit_number(self,_n,c): (_,_,cs) = c ; return Number(cs)
-    def visit_discard_endings(self,_n,c): (_,_,f)=c ; return DiscardEndings(f)
-    def visit_mangle_dates(self,_n,_c): return MANGLE_DATES
-    def visit_deleetify(self,_n,_c): return DELEETIFY
-    def visit_related(self,_n,c): (_,_,r)=c ; return Related(r)    
-    def visit_correct_spelling(self,_n,_c): return CorrectSpelling()
+            return Prepend(False, s)
+
+    def visit_multiply(self, _n, c): (_, _, f) = c; return Multiply(f)
+    def visit_split(self, _n, c): (_, _, s) = c; return Split(s)
+    def visit_sub_split(self, _n, c): (_, _, s) = c; return SubSplit(s)
+    def visit_number(self, _n, c): (_, _, cs) = c; return Number(cs)
+    def visit_discard_endings(self, _n, c): (
+        _, _, f) = c; return DiscardEndings(f)
+
+    def visit_mangle_dates(self, _n, _c): return MANGLE_DATES
+    def visit_deleetify(self, _n, _c): return DELEETIFY
+    def visit_related(self, _n, c): (_, _, r) = c; return Related(r)
+    def visit_correct_spelling(self, _n, _c): return CorrectSpelling()
 
 
 DJ_EXAMPLE_FILE = """
@@ -475,46 +517,46 @@ do BASE_TRANSFORMATIONS
 use NO_PATTERNS map "s" "abc\\n\\r\\t" report
 """
 
-DJ_SIMPLE_EXAMPLE_FILE="""
+DJ_SIMPLE_EXAMPLE_FILE = """
 *strip_ws fold_ws report
 """
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description=
-        """Reads and prints a TD file - primarily useful for debugging purposes."""
+        description="""Reads and prints a TD file - primarily useful for debugging purposes."""
     )
     parser.add_argument(
-        '-o', 
-        '--operations', 
+        '-o',
+        '--operations',
         help="a .td file with the specified operations"
     )
     args = parser.parse_args()
     if args.operations:
-        with open(args.operations,mode="r") as f:
+        with open(args.operations, mode="r") as f:
             td_file = f.read()
     else:
-        #td_file = DJ_SIMPLE_EXAMPLE_FILE
+        # td_file = DJ_SIMPLE_EXAMPLE_FILE
         td_file = DJ_EXAMPLE_FILE
 
     print("\nSource:")
     print("=====================================================================")
     tree = DJ_GRAMMAR.parse(td_file)
-    
+
     print("\nSyntaxtree:")
-    print("=====================================================================")    
+    print("=====================================================================")
     print(tree)
 
     print("\nAST:")
-    print("=====================================================================")    
-    td_unit : TDUnit = DJTreeVisitor().visit(tree)
+    print("=====================================================================")
+    td_unit: TDUnit = DJTreeVisitor().visit(tree)
     print(td_unit)
 
     print("\nInitialization:")
-    print("=====================================================================")        
+    print("=====================================================================")
     td_unit.verbose = True
-    td_unit.init(td_unit,None)
+    td_unit.init(td_unit, None)
+
 
 if __name__ == '__main__':
     sys.exit(main())

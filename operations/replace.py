@@ -28,14 +28,16 @@ class Replace(Transformer):
                 (raw_key, raw_value) = sline.split()
             except:
                 raise InitializationFailed(f"{self} contains invalid entry: {sline}")
-            key = raw_key\
-                .replace("\\s", " ")\
-                .replace("\#", "#")\
-                .replace("\\\\", "\\")
-            value = raw_value\
-                .replace("\\s", " ")\
-                .replace("\#", "#")\
-                .replace("\\\\", "\\")
+            key = "\\".join(
+                list(map(lambda s : s.replace("\\s", " ")\
+                    .replace("\\#", "#") ,
+                     raw_key.split("\\\\"))
+                    ))
+            value = "\\".join(
+                list(map(lambda s : s.replace("\\s", " ")\
+                    .replace("\\#", "#") ,
+                     raw_value.split("\\\\"))
+                    ))               
             current_values = self.replacement_table.get(key)
             if current_values:
                 msg = f"{self}: {key} is already used"

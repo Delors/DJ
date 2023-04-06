@@ -1,0 +1,109 @@
+# The goal is to find/extract the passwords that are (to a significant)
+# part based on real words.
+
+config is_part_of       WRAP_AROUND     True
+config is_regular_word  DICTIONARIES    ["en","de","fr","es","nl","pt"]
+
+set STRIPPED
+set BASE
+set NO_PATTERN
+set NO_PATTERN_NO_SEQ
+set NO_SINGLETON
+set NO_SINGLETON_NO_WALK
+set REST
+set NO_SIMPLE_WORD_COMBINATION
+set NO_WORD_COMBINATION
+set NO_EMAIL
+
+def IS_WORD or( is_popular_word, is_regular_word )
+
+def SIMPLE_DELEETIFICATION replace "replace/SimpleLeetspeak.txt"
+
+ 
+{ non_empty(
+    N/A = False, [] = False, 
+    find_all "([A-Za-z0-9]+[.-_])*[A-Za-z0-9]+@[A-Za-z0-9-]+(\.[A-Z|a-z]{2,})+") }!> NO_EMAIL \
+                                            write "rockyou_analysis.emails.txt"
+
+# let's reduce an entry to its "core" by stripping non-letter characters
+use NO_EMAIL { *strip_no_and_sc }> STRIPPED \
+                                            write "rockyou_analysis.stripped.txt"
+
+# let's filter entries which are certainly no "words", e.g. a12345b    
+use STRIPPED { find_all "^[a-zA-Z][^a-zA-Z]{2,}[a-zA-Z]$" }/> BASE \
+                                            write "rockyou_analysis.l_notl+_l.txt"
+
+use BASE                                    write "rockyou_analysis.base.txt"
+
+use BASE { is_pattern }!> NO_PATTERN        write "rockyou_analysis.patterns.txt"
+
+use NO_PATTERN \
+    { or(   is_part_of "abcdefghijklmnopqrstuvwxyz", 
+            is_part_of "0123456789" ) }!> NO_PATTERN_NO_SEQ \
+                                            write "rockyou_analysis.sequences.txt"
+
+# Let's check if a sequence of characters (which may contain digits and special chars)
+# is a word.#   )
+# 
+
+use NO_PATTERN_NO_SEQ is_regular_word       write "rockyou_analysis.regular_words.txt"
+use NO_PATTERN_NO_SEQ is_popular_word       write "rockyou_analysis.popular_words.txt"
+use NO_PATTERN_NO_SEQ \
+    { do IS_WORD }!> NO_SINGLETON           write "rockyou_analysis.regular_or_popular_words.txt" 
+
+# Let's identify keyboard walks
+use NO_SINGLETON \
+    { or(   is_walk "KEYBOARD_DE", 
+            is_walk "KEYBOARD_EN" ) }!> NO_SINGLETON_NO_WALK \
+                                            write "rockyou_analysis.walks.txt"
+
+# Recall that DJ generally applies an operation to "all" results of the previous
+# operation(s). Using foreach, DJ will apply the successor operation to every intermediate
+# result one after another. This makes it possible to judge over the results
+# of an operation w.r.t. a single (intermediate) result. However, in this 
+# particular case it is only "defensive" programming as all previous steps never
+# generate more than one entry for a given entry.
+
+# 1,2,3,4 is often used to abbreviate: one, to/two,three,for/four; e.g.,
+# 1love, get2gether, 3guys
+use NO_SINGLETON_NO_WALK \
+        {or(all(N/A = False, [] = False, deduplicate, do IS_WORD),
+            all(N/A = False, [] = False, detriplicate, do IS_WORD),
+            all(N/A = False, [] = False, split  " " , do IS_WORD),
+            all(N/A = False, [] = False, replace "replace/NumberToWS.txt" max numeric 0 split " ", do IS_WORD),
+            all(N/A = False, [] = False, find_all "^([a-zA-Z]{3,})[0-9]{1,4}([a-zA-Z]{2,})$", do IS_WORD),
+            all(N/A = False, [] = False, max non_letter 0 find_all "[A-Z][a-z]+", do IS_WORD ))}!> NO_SIMPLE_WORD_COMBINATION \
+                                           write "rockyou_analysis.simple_multiple_word_combinations.txt"
+
+
+
+
+# break_up tries to match an entry by splitting it up and matching each part
+# the longest match(es) will be returned, but if and only if at most N characters
+# are not matched, extract_all only accepts filters.
+use NO_SIMPLE_WORD_COMBINATION \
+        { non_empty( 
+                N/A = False, [] = False, 
+                max symbol 1 \
+                max numeric 1 \
+                break_up( do IS_WORD ) \
+                min length 3 \
+                write "rockyou_analysis.extracted_base_words.txt" ) }!> NO_WORD_COMBINATION \
+                                            write "rockyou_analysis.complex_multiple_word_combinations.txt"
+
+use NO_WORD_COMBINATION \
+    {   non_empty(
+            N/A = False, [] = False,
+            do SIMPLE_DELEETIFICATION \
+            max numeric 0 \
+            or( do IS_WORD,
+                non_empty(N/A = False, [] = False, break_up(do IS_WORD))
+            ) ) }!> REST \
+                                            write "rockyou_analysis.leetspeak.txt"
+
+# Let's write out those entries which we have not yet been classified...
+# These are either entries which are to complex for the time being, by
+# e.g., combining multiple words using leetspeak and special characters,
+# or because they are actually random.
+    
+use REST                                    write "rockyou_analysis.rest.txt"

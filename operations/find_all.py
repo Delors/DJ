@@ -32,7 +32,13 @@ class FindAll(Extractor):
     def process(self, entry: str) -> List[str]:
         entries = self.m.findall(entry)
         if len(entries) >= 1:
-            return entries
+            if isinstance(entries[0],str):
+                return entries
+            # obviously capturing groups were used...
+            all = []
+            for entry in entries:
+                all.extend(entry)
+            return all
         else:
             return None
 

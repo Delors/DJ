@@ -35,14 +35,16 @@ class IsPopularWord(Filter):
         # NOTE: in case of the google model it may make sense to check
         #       both capitalizations as a given "password" may use
         #       small letters, even though it is a proper noun
-        if not self._twitter_vocab.get(lentry) and \
-                not self._google_vocab.get(entry):
-            return []
-        # centry = entry.capitalize()
-        # if centry != entry and not self._google_vocab.get(entry):
-        #     return []
-        else:
+        if self._twitter_vocab.get(lentry) or \
+                self._google_vocab.get(entry):
             return [entry]
+        if lentry != entry and self._google_vocab.get(lentry):
+            return [entry]
+        centry = entry.capitalize()
+        if centry != entry and self._google_vocab.get(centry):
+            return [entry]
+
+        return []
 
 
 IS_POPULAR_WORD = IsPopularWord()
