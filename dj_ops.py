@@ -1,5 +1,6 @@
 from typing import List, Set
 from sys import stderr
+import os
 
 from common import escape, enrich_filename, InitializationFailed
 
@@ -95,7 +96,11 @@ class Write(Report):
     def init(self, td_unit: TDUnit, parent: ASTNode):
         super().init(td_unit, parent)
         # let's append ... this enables multiple writes to the same file
-        self.file = open(enrich_filename(self.filename), "a", encoding="utf-8")
+        filename = enrich_filename(self.filename)
+        (head,tail) = os.path.split(filename)
+        if head is not None and not os.path.exists(head):
+            os.makedirs(head)
+        self.file = open(filename, "a", encoding="utf-8")
 
     def is_reporter(self) -> bool: return True
 
