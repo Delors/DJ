@@ -22,9 +22,12 @@ class Replace(Transformer):
         entries = read_utf8file(self.replacements_filename)
         for line in entries:
             sline = line.strip()
-            if sline.startswith("# "):
+            if sline.startswith("#"):
                 continue
-            (raw_key, raw_value) = sline.split()
+            try:
+                (raw_key, raw_value) = sline.split()
+            except:
+                raise InitializationFailed(f"{self} contains invalid entry: {sline}")
             key = "\\".join(
                 list(map(lambda s : s.replace("\\s", " ")\
                     .replace("\\#", "#") ,

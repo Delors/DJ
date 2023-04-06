@@ -157,6 +157,8 @@ ihrerseits
 ihres
 ihresgleichen
 ihrige
+In
+in
 irgend
 irgendein
 irgendeine
@@ -198,6 +200,8 @@ keinen
 keiner
 Keiner
 keines
+Kreisfreie
+kreisfreie
 lassen
 man
 manche

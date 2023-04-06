@@ -58,6 +58,7 @@ from operations.reverse import REVERSE
 from operations.segments import Segments
 from operations.sieve import Sieve
 from operations.strip_ws import STRIP_WS
+from operations.strip import Strip
 from operations.split import Split
 from operations.strip_no_and_sc import STRIP_NO_AND_SC
 from operations.strip_ws import STRIP_WS
@@ -154,6 +155,7 @@ DJ_GRAMMAR = Grammar(
                       remove_no /
                       remove_sc /
                       remove /
+                      strip /
                       strip_no_and_sc /
                       reverse /
                       replace /
@@ -217,13 +219,14 @@ DJ_GRAMMAR = Grammar(
     fold_ws         = "fold_ws"
     rotate          = "rotate" ws+ int_value
     lower           = "lower" (ws+ int_value)?
-    upper           = "upper" (ws+ int_value)?
+    upper           = "upper" (ws+ "l"? int_value)?
     title           = "title"
     capitalize      = "capitalize"
     remove_ws       = "remove_ws"
     remove_no       = "remove_no"
     remove_sc       = "remove_sc"
     remove          = "remove" ws+ quoted_string
+    strip           = "strip" ws+ quoted_string
     strip_no_and_sc = "strip_no_and_sc"    
     reverse         = "reverse"
     replace         = "replace" ws+ file_name    
@@ -418,30 +421,32 @@ class DJTreeVisitor (NodeVisitor):
             return Lower(pos)
         except:
             return Lower()
-
-    def visit_upper(self, _n, c):
-        try:
-            (_, [(_, pos)]) = c
-            return Upper(pos)
+    def visit_upper(self,_n,c): 
+        try:            
+            (_,[(_,l_opt,pos)]) = c
+            if isinstance(l_opt,list):
+                return Upper(pos,letter_with_index=True)
+            else:
+                return Upper(pos)
         except:
             return Upper()
+    def visit_title(self,_n,_c): return TITLE
+    def visit_capitalize(self,_n,_c): return CAPITALIZE
+    def visit_remove_ws(self,_n,_c): return REMOVE_WS
+    def visit_remove_no(self,_n,_c): return REMOVE_NO
+    def visit_remove_sc(self,_n,_c): return REMOVE_SC
+    def visit_remove(self,_n,c): (_,_,cs) = c; return Remove(cs)
+    def visit_strip(self,_n,c): (_,_,cs) = c; return Strip(cs)
+    def visit_strip_no_and_sc(self,_n,_c): return STRIP_NO_AND_SC
+    def visit_reverse(self,_n,_c): return REVERSE
+    def visit_replace(self,_n,c): (_,_,f)=c ; return Replace(f)
+    def visit_omit(self,_n,c): (_,_,v)=c ; return Omit(v)
+    def visit_map(self,_n,c): (_,_,s,_,ts)=c ; return Map(s,ts)
+    def visit_pos_map(self,_n,c): (_,_,pm)=c ; return PosMap(pm)
 
-    def visit_title(self, _n, _c): return TITLE
-    def visit_capitalize(self, _n, _c): return CAPITALIZE
-    def visit_remove_ws(self, _n, _c): return REMOVE_WS
-    def visit_remove_no(self, _n, _c): return REMOVE_NO
-    def visit_remove_sc(self, _n, _c): return REMOVE_SC
-    def visit_remove(self, _n, c): (_, _, cs) = c; return Remove(cs)
-    def visit_strip_no_and_sc(self, _n, _c): return STRIP_NO_AND_SC
-    def visit_reverse(self, _n, _c): return REVERSE
-    def visit_replace(self, _n, c): (_, _, f) = c; return Replace(f)
-    def visit_omit(self, _n, c): (_, _, v) = c; return Omit(v)
-    def visit_map(self, _n, c): (_, _, s, _, ts) = c; return Map(s, ts)
-    def visit_pos_map(self, _n, c): (_, _, pm) = c; return PosMap(pm)
-
-    def visit_append(self, _n, c):
-        (_, m, _, s) = c
-        # The following test is really awkward, but I didn't find a
+    def visit_append(self,_n,c): 
+        (_,m,_,s) = c
+        # The following test is really awkward, but I didn't find a 
         # simpler solution to just test for the presence of this flag...
         if isinstance(m, list):
             return Append(True, s)
