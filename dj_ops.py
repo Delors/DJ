@@ -102,7 +102,7 @@ class Write(Report):
         # in one TD file
         filename = enrich_filename(self.filename)
         (head,tail) = os.path.split(filename)
-        if head is not None and not os.path.exists(head):
+        if head is not None and head != '' and not os.path.exists(head):
             os.makedirs(head)
         self.file = open(filename, "a", encoding="utf-8")
 
