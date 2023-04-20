@@ -16,9 +16,10 @@ class FindAll(Extractor):
 
     def op_name() -> str: return "find_all"
 
-    def __init__(self, regexp : str) -> None:
+    def __init__(self, join : bool, regexp : str) -> None:
         super().__init__()
         self.regexp = regexp
+        self.join = join
         self.m = None # the matcher that will be derived from the regexp at "init" time
 
     def init(self, td_unit: TDUnit, parent: ASTNode):
@@ -34,15 +35,19 @@ class FindAll(Extractor):
         if len(entries) >= 1:
             if isinstance(entries[0],str):
                 return entries
-            # obviously capturing groups were used...
-            all = []
-            for entry in entries:
-                all.extend(entry)
-            return all
+            # obviously capturing groups were used...            
+            if self.join:            
+                return ["".join(map(lambda t: "".join(t) ,entries))]
+            else:
+                all = []
+                for entry in entries:
+                    all.extend(entry)
+                return all
         else:
             return None
 
     def __str__(self):
-        return f"{FindAll.op_name()} \"{escape(self.regexp)}\""
+        join_str = ' join ' if self.join else ' '
+        return f"{FindAll.op_name()}{join_str}\"{escape(self.regexp)}\""
 
 

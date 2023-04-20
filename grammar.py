@@ -206,7 +206,7 @@ DJ_GRAMMAR = Grammar(
     sieve           = "sieve" ws+ file_name
     select_longest  = "select_longest"
     # 2. EXTRACTORS
-    find_all        = "find_all" ws+ quoted_string
+    find_all        = "find_all" (ws+ "join")? ws+ quoted_string
     get_no          = "get_no"
     get_sc          = "get_sc"
     cut             = "cut" ws+ ("l" / "r") ws+ int_value ws+ int_value
@@ -396,7 +396,14 @@ class DJTreeVisitor (NodeVisitor):
     def visit_is_popular_word(self, _n, _c): return IS_POPULAR_WORD
     def visit_sieve(self, _n, c): (_, _, f) = c; return Sieve(f)
     def visit_select_longest(self, _n, _c): return SELECT_LONGEST
-    def visit_find_all(self, _n, c): (_, _, r) = c; return FindAll(r)
+    def visit_find_all(self, _n, c): 
+        # The following test is really awkward, but I didn't find a 
+        # simpler solution to just test for the presence of this flag...
+        (_, join , _, r) = c;         
+        if isinstance(join, List):
+            return FindAll(True,r)
+        else:
+            return FindAll(False,r)
     def visit_get_no(self, _n, _c): return GET_NO
     def visit_get_sc(self, _n, _c): return GET_SC
 
