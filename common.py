@@ -103,6 +103,12 @@ def get_filename(filename: str) -> str:
         raise Exception("the filename has to be quoted (\")")
     return filename[1:-1]
 
+def open_file(filename: str, mode : str) :
+    f = enrich_filename(filename)
+    (head,tail) = os.path.split(f)
+    if head is not None and head != '' and not os.path.exists(head):
+        os.makedirs(head)
+    return open(f, mode, encoding="utf-8")
 
 """ Hunspell
 def _load_dict(lang : str):

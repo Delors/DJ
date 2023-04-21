@@ -2,7 +2,7 @@ from typing import List, Set, Tuple
 from sys import stderr
 import os
 
-from common import escape, enrich_filename, InitializationFailed
+from common import escape, open_file, InitializationFailed
 
 from dj_ast import TDUnit, ASTNode, Body
 from dj_ast import Operation, ComplexOperation
@@ -100,11 +100,7 @@ class Write(Report):
         super().init(td_unit, parent)
         # let's append ... this enables multiple writes to the same file
         # in one TD file
-        filename = enrich_filename(self.filename)
-        (head,tail) = os.path.split(filename)
-        if head is not None and head != '' and not os.path.exists(head):
-            os.makedirs(head)
-        self.file = open(filename, "a", encoding="utf-8")
+        self.file = open_file(self.filename, "a")
 
     def is_reporter(self) -> bool: return True
 

@@ -5,7 +5,7 @@ from itertools import chain
 from sys import stderr, exit
 import traceback
 
-from common import InitializationFailed, read_utf8file
+from common import InitializationFailed, read_utf8file, escape, open_file
 
 
 class ASTNode(ABC):
@@ -332,6 +332,29 @@ class Generate(ASTNode):
         else:
             # this code should never be reached!
             raise NotImplementedError
+
+class CreateFile(ASTNode):
+
+    def __init__(self, filename, initial_value):
+        self.filename = filename
+        self.initial_value = initial_value
+
+    def __str__(self) -> str:
+        ending = ""
+        if self.initial_value != "":
+            ending = f'< "{escape(self.initial_value)}"'
+        return f'create "{self.filename}"{ending}'
+
+    def init(self, td_unit: 'TDUnit', parent: ASTNode):
+        super().init(td_unit, parent)
+        # let's append ... this enables multiple writes to the same file
+        # in one TD file
+        try:
+            file = open_file(self.filename, "w")
+            file.write(self.initial_value)
+            file.close()
+        except Exception as e:
+            raise InitializationFailed(f"{self}: failed creating file - {e}")
 
 
 class ConfigureOperation(ASTNode):

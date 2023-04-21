@@ -16,7 +16,7 @@ from common import unescape
 
 from dj_ast import ComplexOperation
 from dj_ast import TDUnit, Body, Header, Comment
-from dj_ast import Generate, IgnoreEntries, SetDefinition, MacroDefinition, ConfigureOperation
+from dj_ast import Generate, IgnoreEntries, SetDefinition, MacroDefinition, ConfigureOperation, CreateFile
 from dj_ops import NOP, REPORT, Write, MacroCall, Or, All, NonEmpty, BreakUp
 from dj_ops import UseSet, StoreInSet, StoreFilteredInSet, StoreNotApplicableInSet
 from dj_ops import NegateFilterModifier, KeepAlwaysModifier, KeepOnlyIfFilteredModifier
@@ -82,7 +82,7 @@ and "_reversed" would then remain unmatched.
 DJ_GRAMMAR = Grammar(
     r"""    
     file            = header body 
-    header          = ( ignore / set / config / def / gen / comment / _meaningless ) *
+    header          = ( ignore / set / config / def / gen / comment / create / _meaningless ) *
     body            = ( op_defs / comment / _meaningless ) +
     
     nl              = ~r"[\r\n]"m
@@ -107,6 +107,7 @@ DJ_GRAMMAR = Grammar(
     config          = "config" ws+ python_identifier ws+ python_identifier ws+ python_value
     def             = "def" ws+ identifier continuation op_defs
     gen             = "gen" ws+ ("alt") ws+ python_value
+    create          = "create" ws+ file_name (ws* "<" ws* quoted_string)?
 
     op_defs         = op_modifier? op_def (continuation op_defs)* 
 
@@ -296,6 +297,14 @@ class DJTreeVisitor (NodeVisitor):
     def visit_set(self, node, children):
         (_set, _ws, name) = children
         return SetDefinition(name)
+
+    def visit_create(self, node, children):
+        (_create,_ws,filename,initial_value) = children
+        if isinstance(initial_value,List):
+            (_ws,_,_ws,v) = initial_value[0]
+            return CreateFile(filename,unescape(v))
+        else:
+            return CreateFile(filename,"")
 
     def visit_config(self, node, children):
         (_config, _ws, module_name, _ws, field_name, _ws, value) = children
