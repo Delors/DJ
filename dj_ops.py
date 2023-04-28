@@ -162,7 +162,6 @@ class StoreInSet(Operation):
     def close(self): self.cop.close()
 
     def __str__(self):
-        # return f"{StoreInSet.op_name()} {self.setname}({self.cop})"
         return f"{{ {self.cop} }}> {self.setname}"
 
 
@@ -192,7 +191,6 @@ class StoreFilteredInSet(Operation):
     def close(self): self.cop.close()
 
     def __str__(self):
-        # return f"{StoreFilteredInSet.op_name()} {self.setname}({self.cop})"
         return f"{{ {self.cop} }}!> {self.setname}"
 
 
@@ -226,7 +224,6 @@ class StoreNotApplicableInSet(Operation):
     def close(self): self.cop.close()
 
     def __str__(self):
-        # return f"{StoreNotApplicableInSet.op_name()} {self.setname}({self.cop})"
         return f"{{ {self.cop} }}/> {self.setname}"
 
 
