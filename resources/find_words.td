@@ -58,7 +58,7 @@ use NO_WORD \
       do IS_WORD }!> UNKNOWN_1                              write "no_simple_words.txt"
 
 # ATTENTION: using "correct_spelling" may lead to many new words which
-#            is undesireable if we just want to find "original" words!  
+#            is undesirable if we just want to find "original" words!  
 # use NO_WORD { correct_spelling *strip_no_and_sc }/> UNKNOWN write "words.txt"  
 
 # When we reach this point, the initial entry was no direct pattern,
