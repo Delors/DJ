@@ -43,7 +43,7 @@ def unescape(s: str) -> str:
 
 
 def locate_resource(filename: str) -> str:
-    """ Tries to locate the file by searching for it relatively to the current
+    """ Tries to locate the file by searching for it relative to the current
         folder or the folder where this python script is stored unless the 
         filename is already absolute.
     """
