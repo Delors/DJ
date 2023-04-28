@@ -596,15 +596,15 @@ class BreakUp(Operation):
             and chose one that leads to the fewest fragments.
             If we find a break-up in one or two fragments, we stop
             immediately. However, even this approach may result
-            in unexpected results as shwon in the next example:
+            in unexpected results as shown in the next example:
             
             `break_up(is_regular_word)` of `rumbleinthejungle` will
             result in:
             ```
             rumble
-            he
-            jungle
             int
+            he
+            jungle            
             ``` 
             and not in the expected result:
             ```
