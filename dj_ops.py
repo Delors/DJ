@@ -22,7 +22,7 @@ NOP = Nop()
 class Report(Operation):
     """The "report" operation prints out the entry. 
 
-    A report generally terminates a sequence of operations, but it
+    A report often ends a sequence of operations, but it
     can also be used if an intermediate result is actually a desired 
     output and we do not want to have multiple operations. For example:
 
