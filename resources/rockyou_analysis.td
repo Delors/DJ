@@ -1,6 +1,23 @@
 # The goal is to find/extract the passwords that are (to a significant)
 # part based on real words.
 
+create "rockyou_analysis/emails.txt"
+create "rockyou_analysis/stripped.txt"
+create "rockyou_analysis/l_notl+_l.txt"
+create "rockyou_analysis/base.txt"
+create "rockyou_analysis/patterns.txt"
+create "rockyou_analysis/sequences.txt"
+create "rockyou_analysis/regular_words.txt"
+create "rockyou_analysis/popular_words.txt"
+create "rockyou_analysis/regular_or_popular_words.txt" 
+create "rockyou_analysis/walks.txt"
+create "rockyou_analysis/simple_multiple_word_combinations.txt"
+create "rockyou_analysis/extracted_base_words.txt"
+create "rockyou_analysis/complex_multiple_word_combinations.txt"
+create "rockyou_analysis/leetspeak.txt"
+create "rockyou_analysis/rest.txt"
+
+
 config is_part_of       WRAP_AROUND     True
 config is_regular_word  DICTIONARIES    ["en","de","fr","es","nl","pt"]
 
@@ -23,39 +40,39 @@ def SIMPLE_DELEETIFICATION replace "replace/SimpleLeetspeak.txt"
 { non_empty(
     N/A = False, [] = False, 
     find_all "([A-Za-z0-9]+[.-_])*[A-Za-z0-9]+@[A-Za-z0-9-]+(\.[A-Z|a-z]{2,})+") }!> NO_EMAIL \
-                                            write "rockyou_analysis.emails.txt"
+                                            write "rockyou_analysis/emails.txt"
 
 # let's reduce an entry to its "core" by stripping non-letter characters
 use NO_EMAIL { *strip_no_and_sc }> STRIPPED \
-                                            write "rockyou_analysis.stripped.txt"
+                                            write "rockyou_analysis/stripped.txt"
 
 # let's filter entries which are certainly no "words", e.g. a12345b    
 use STRIPPED { find_all "^[a-zA-Z][^a-zA-Z]{2,}[a-zA-Z]$" }/> BASE \
-                                            write "rockyou_analysis.l_notl+_l.txt"
+                                            write "rockyou_analysis/l_notl+_l.txt"
 
-use BASE                                    write "rockyou_analysis.base.txt"
+use BASE                                    write "rockyou_analysis/base.txt"
 
-use BASE { is_pattern }!> NO_PATTERN        write "rockyou_analysis.patterns.txt"
+use BASE { is_pattern }!> NO_PATTERN        write "rockyou_analysis/patterns.txt"
 
 use NO_PATTERN \
     { or(   is_part_of "abcdefghijklmnopqrstuvwxyz", 
             is_part_of "0123456789" ) }!> NO_PATTERN_NO_SEQ \
-                                            write "rockyou_analysis.sequences.txt"
+                                            write "rockyou_analysis/sequences.txt"
 
 # Let's check if a sequence of characters (which may contain digits and special chars)
 # is a word.#   )
 # 
 
-use NO_PATTERN_NO_SEQ is_regular_word       write "rockyou_analysis.regular_words.txt"
-use NO_PATTERN_NO_SEQ is_popular_word       write "rockyou_analysis.popular_words.txt"
+use NO_PATTERN_NO_SEQ is_regular_word       write "rockyou_analysis/regular_words.txt"
+use NO_PATTERN_NO_SEQ is_popular_word       write "rockyou_analysis/popular_words.txt"
 use NO_PATTERN_NO_SEQ \
-    { do IS_WORD }!> NO_SINGLETON           write "rockyou_analysis.regular_or_popular_words.txt" 
+    { do IS_WORD }!> NO_SINGLETON           write "rockyou_analysis/regular_or_popular_words.txt" 
 
 # Let's identify keyboard walks
 use NO_SINGLETON \
     { or(   is_walk "KEYBOARD_DE", 
             is_walk "KEYBOARD_EN" ) }!> NO_SINGLETON_NO_WALK \
-                                            write "rockyou_analysis.walks.txt"
+                                            write "rockyou_analysis/walks.txt"
 
 # Recall that DJ generally applies an operation to "all" results of the previous
 # operation(s). Using foreach, DJ will apply the successor operation to every intermediate
@@ -73,7 +90,7 @@ use NO_SINGLETON_NO_WALK \
             all(N/A = False, [] = False, replace "replace/NumberToWS.txt" max numeric 0 split " ", do IS_WORD),
             all(N/A = False, [] = False, find_all "^([a-zA-Z]{3,})[0-9]{1,4}([a-zA-Z]{2,})$", do IS_WORD),
             all(N/A = False, [] = False, max non_letter 0 find_all "[A-Z][a-z]+", do IS_WORD ))}!> NO_SIMPLE_WORD_COMBINATION \
-                                           write "rockyou_analysis.simple_multiple_word_combinations.txt"
+                                           write "rockyou_analysis/simple_multiple_word_combinations.txt"
 
 
 
@@ -88,8 +105,8 @@ use NO_SIMPLE_WORD_COMBINATION \
                 max numeric 1 \
                 break_up( do IS_WORD ) \
                 min length 3 \
-                write "rockyou_analysis.extracted_base_words.txt" ) }!> NO_WORD_COMBINATION \
-                                            write "rockyou_analysis.complex_multiple_word_combinations.txt"
+                write "rockyou_analysis/extracted_base_words.txt" ) }!> NO_WORD_COMBINATION \
+                                            write "rockyou_analysis/complex_multiple_word_combinations.txt"
 
 use NO_WORD_COMBINATION \
     {   non_empty(
@@ -99,11 +116,11 @@ use NO_WORD_COMBINATION \
             or( do IS_WORD,
                 non_empty(N/A = False, [] = False, break_up(do IS_WORD))
             ) ) }!> REST \
-                                            write "rockyou_analysis.leetspeak.txt"
+                                            write "rockyou_analysis/leetspeak.txt"
 
-# Let's write out those entries which we have not yet been classified...
+# Let's write out those entries which have not yet been classified...
 # These are either entries which are to complex for the time being, by
 # e.g., combining multiple words using leetspeak and special characters,
 # or because they are actually random.
     
-use REST                                    write "rockyou_analysis.rest.txt"
+use REST                                    write "rockyou_analysis/rest.txt"
