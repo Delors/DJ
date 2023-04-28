@@ -70,12 +70,6 @@ class Report(Operation):
     def do_print(self, entry: str):
         print(entry)
 
-    # def process(self, entry: str) -> List[str]:
-    #    if entry not in self.reported_entries:
-    #        self.reported_entries.add(entry)
-    #        self.do_print(entry)
-    #    return [entry]
-
     def process_entries(self, entries: List[str]) -> List[str]:
         for e in entries:
             if e not in self.reported_entries:
