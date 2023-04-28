@@ -38,12 +38,16 @@ class Replace(Transformer):
                     .replace("\\#", "#") ,
                      raw_value.split("\\\\"))
                     ))               
-            current_values = self.replacement_table.get(key)
-            if current_values:
+            
+            if self.replacement_table.get(key):
                 msg = f"{self}: {key} is already used"
                 raise InitializationFailed(msg)
-            else:
-                self.replacement_table[key] = value
+            
+            if self.replacement_table.get(value):
+                msg = f"{self}: the value {value} is later used as a key"
+                raise InitializationFailed(msg)
+             
+            self.replacement_table[key] = value
 
     def process(self, entry: str) -> List[str]:
         e = entry
