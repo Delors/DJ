@@ -310,7 +310,7 @@ class IgnoreEntries(ASTNode):
         to_be_ignored = set(read_utf8file(self.filename))
         td_unit.ignored_entries = td_unit.ignored_entries.union(to_be_ignored)
         if td_unit.verbose:
-            msg = f"[debug] ignoring:{self.filename} (#{len(to_be_ignored)})"
+            msg = f"[debug] ignoring: {self.filename} (#{len(to_be_ignored)})"
             print(msg, file=stderr)
 
 
