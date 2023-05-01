@@ -105,26 +105,41 @@ class Operation(ASTNode):
         Returns a list (potentially empty) if the operation could be 
         applied to (at least) some entries. The entries in the given list need
         to be checked if they should be ignored. That is, 
-        __Process entries is responsible for checking for entries which
+        __`process_entries` is responsible for checking for entries which
         should be explicitly ignored and those which have length zero!__
 
-        Returns None if the operation could not be applied. 
+        Precondition:        
+        The given list of entries does not contain duplicates and all entries
+        have been checked for not being ignored. I.e., all filter operations
+        can pass on the original list if all elements pass the filter.
 
+        Result:
+        Returns None if the operation could not be applied. If the operation
+        returns new entries, then the list does not contain duplicates and
+        none of the entries is ignored.
+        
+        Weekly maintains the order of intermediate results. 
         """
         td_unit = self.td_unit
         all_none = True
-        all_new_entries = set()
+        all_new_entries_set = set()
+        all_new_entries_count = 0
+        all_new_entries = []
         for entry in entries:
             new_entries = self.process(entry)
             if new_entries is not None:
                 all_none = False
                 for new_entry in new_entries:
                     if not new_entry in td_unit.ignored_entries and len(new_entry) > 0:
-                        all_new_entries.add(new_entry)
+                        all_new_entries_set.add(new_entry)
+                        if len(all_new_entries_set) > all_new_entries_count:
+                            all_new_entries_count += 1
+                            all_new_entries.append(new_entry)
         if all_none:
             return None
         else:
-            return list(all_new_entries)
+            return all_new_entries
+        
 
     def process(self, entry: str) -> List[str]:
         """
