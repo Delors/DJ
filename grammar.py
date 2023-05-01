@@ -54,6 +54,7 @@ from operations.remove_no import REMOVE_NO
 from operations.remove_sc import REMOVE_SC
 from operations.remove import Remove
 from operations.replace import Replace
+from operations.multi_replace import MultiReplace
 from operations.reverse import REVERSE
 from operations.segments import Segments
 from operations.sieve import Sieve
@@ -160,6 +161,7 @@ DJ_GRAMMAR = Grammar(
                       strip_no_and_sc /
                       reverse /
                       replace /
+                      multi_replace /
                       omit /
                       map /
                       pos_map /
@@ -231,6 +233,7 @@ DJ_GRAMMAR = Grammar(
     strip_no_and_sc = "strip_no_and_sc"    
     reverse         = "reverse"
     replace         = "replace" ws+ file_name    
+    multi_replace   = "multi_replace" ws+ file_name    
     omit            = "omit" ws+ int_value
     map             = "map" ws+ quoted_string ws+ quoted_string
     pos_map         = "pos_map" ws+ quoted_string
@@ -456,6 +459,7 @@ class DJTreeVisitor (NodeVisitor):
     def visit_strip_no_and_sc(self,_n,_c): return STRIP_NO_AND_SC
     def visit_reverse(self,_n,_c): return REVERSE
     def visit_replace(self,_n,c): (_,_,f)=c ; return Replace(f)
+    def visit_multi_replace(self,_n,c): (_,_,f)=c ; return MultiReplace(f)
     def visit_omit(self,_n,c): (_,_,v)=c ; return Omit(v)
     def visit_map(self,_n,c): (_,_,s,_,ts)=c ; return Map(s,ts)
     def visit_pos_map(self,_n,c): (_,_,pm)=c ; return PosMap(pm)
