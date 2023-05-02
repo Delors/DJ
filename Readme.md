@@ -1,15 +1,15 @@
 # Dictionary Transformation and Generation for Password Recovery aka `Dictionary Juggling` (DJ)
 
 Processes the entries of a _base_ dictionary by applying one to multiple user-definable transformations, extractions,  filtering or generating operations. 
-Basically, DJ enables the trivial definition of user-defineable transformation pipelines to generate dictionaries useable for password recovery.
+Basically, DJ enables the trivial definition of user-definable analysis and transformation pipelines to generate dictionaries useable for password recovery.
 
 ## Installation
 
-To execute basic operations (e.g. `strip`,`remove`,`fold`,..), no special installation steps/downloads are necessary. However, to use the advanced "semantic-based" features, several dictionaries and pre-trained NLP models are required. Some will be downloaded automatically and some need to be pre-installed.
+To execute most basic operations (e.g. `strip`, `remove`, `fold`, etc.) no special installation steps/downloads are necessary. However, to use the advanced dictionary and/or NLP-based features, several dictionaries and pre-trained NLP models are required. Some will be downloaded automatically and some need to be pre-installed. I.e., on first usage of the respective features DJ needs an Internet connection. Alternatively, the respective packages can be downloaded externally and then be installed for complete offline usage.
 
 ### 1. Download dictionaries
 Some of the available operations need well defined dictionaries as a foundation. 
-These dictionaries need to be `hunspell` dictionaries. Most operations rely on those used by [libreoffice](https://github.com/LibreOffice/dictionaries) and the dictionaries need to be placed in the folder `dicts`.
+These dictionaries need to be `hunspell` dictionaries. DJ relies on those used by [libreoffice](https://github.com/LibreOffice/dictionaries) and the dictionaries need to be placed in the folder `dicts`.
 
 ```sh
 mkdir dicts
@@ -90,11 +90,11 @@ python3 dj.py "config related K 100"$'\n'"related 0.5 related 0.6 related 0.7 re
 python3 dj.py [-o <Operations File>] [-d <Dictionary.utf8.txt>]
 ```
 
-Reads a dictionary from standard-in or the specified file (`-d`)  and performs the operations specified in the given operations file. You can find some template '.td' files in the resources folder that are related to specific use cases and demonstrate how to use DJ.
+Reads a dictionary from standard-in or the specified file (`-d`)  and performs the operations specified in the given operations file. You can find some template '.dj' files in the resources folder that are related to specific use cases and demonstrate how to use DJ.
 
 ## Operations File
 
-An operations file (`td`) consists of one or multiple (complex) operations which are performed for each entry. Each complex operation is composed of multiple atomic operations where the order, in which the atomic operations are specified, is generally relevant.
+An operations file (`dj`) consists of one or multiple (complex) operations which are performed for each entry. Each complex operation is composed of multiple atomic operations where the order, in which the atomic operations are specified, is generally relevant.
 
 In general the syntax is simply:
 ```
@@ -143,7 +143,7 @@ In this case you have to chain multiple operations to get the desired output:
 +split " " +remove_ws *map " " "-_" +lower report
 ```
 
-The first operation (`+split " "`) will split up entries using a whitespace as the split character (`" "`). Additionally the original entry is always passed on (`+`). For example, in this case the two new entries `Audi` and `RS` are generated. The second operation will remove the whitespace from the original entry and simple keep the others. After that, we will map each whitespace to either "-" or "_" (`*map " " "-_"`); the `*` operator is used to ensure that entries with a space will no longer be passed on. Effectively, the original "Audi RS" is filtered. The `+lower` operation will then additionally create lower case representations of all current (intermediate) results. At last, we simply print out all results.
+The first operation (`+split " "`) will split up entries using a whitespace as the split character (`" "`). Additionally, the original entry is always passed on (`+`). For example, in this case the two new entries `Audi` and `RS` are generated. The second operation will remove the whitespace from the original entry and simply keeps the others. After that, we will map each whitespace to either "-" or "_" (`*map " " "-_"`); the `*` operator is used to ensure that entries with a space will no longer be passed on. Effectively, the original "Audi RS" is filtered. The `+lower` operation will then additionally create lower case representations of all current (intermediate) results. At last, we simply print out all results.
 
 As said, the order of operation definitions is relevant and if the order would have been:
 
@@ -160,7 +160,7 @@ audi_rs
 Audi_RS
 ``` 
 
-I.e., the second `+split " "` operation is effectively useless because all spaces were replaced beforehand.
+I.e., in this example the second `+split " "` operation is effectively useless because all spaces were already replaced beforehand.
 
 ### Formatting long operation definitions
 
@@ -174,7 +174,7 @@ To foster readability of long chains of operation definitions it is possible to 
 ```
 
 ## Atomic Operations
-Each atomic operation (e.g., `lower`, `min length`, `related`, `get_no`) performs one well-defined transformation, extraction, filtering operation and most operations provide some level of configurability. In general, an operation that does not apply to a certain entry, swallows the entry and does not pass it on to the next operation. This behavior can be modified using the "+" and "*" modifiers.
+Each atomic operation (e.g., `lower`, `min length`, `related`, `get_no`) performs one well-defined transformation, extraction or filtering operation and most operations provide some level of configurability. In general, an operation that does not apply to a certain entry, swallows the entry and does not pass it on to the next operation. This behavior can be modified using the "+" and "*" modifiers as described above.
 
 ### Built-in Operations
 Additionally, DJ has some built-in directives for special purposes: 
@@ -189,7 +189,7 @@ Controlling the output:
  - `write "<file>"` to write out the results of a transformation to a specific file instead of `stdout`. Multiple `write` operations can be used and write to the same file.
 
 Using intermediate *sets*:  
-It is also possible to capture the (intermediate) result of an operation for later usage. For example, in some cases an intermediate result should be processed in multiple specific manners that are not compatible with each other and the previous operations were computationally expensive (e.g., when using some of the semantics features) or the result should just be given some name. In this case the result can be stored in an intermediate set and used later on. To use a set, it first need to be declared using `set <SET_NAME>`. Afterwards the results of some operations are stored in the set using the set syntax `{ <opertion(s)> }> <SET_NAME>`. Alternatively, to store filtered entries `{ <opertion(s)> }!> <SET_NAME>` can be used. The set is used later on by starting an operations chain using `use <SET_NAME>`.
+It is also possible to capture the (intermediate) result of an operation for later usage. For example, in some cases an intermediate result should be processed in multiple specific manners that are not compatible with each other and the previous operations were computationally expensive (e.g., when using some of the semantics features) or the result should just be given some name. In this case, the result can be stored in an intermediate set and used later on. To use a set, it first needs to be declared using `set <SET_NAME>`. Afterwards, the results of some operations are stored in the set using the set syntax `{ <operation(s)> }> <SET_NAME>`. Alternatively, to store filtered entries `{ <operation(s)> }!> <SET_NAME>` can be used. The set is used later on by starting an operations chain using `use <SET_NAME>`.
 
 ```sh
 set STEP_ONE
@@ -232,3 +232,7 @@ Using the above settings, which are much more relaxed than the standard settings
 ```python
 ['guardiola', 'psg', 'espanyol', 'ronaldinho', 'juve', 'madrid', 'milan', "eto'o", 'nou', 'barça', 'arsenal', 'bayern', 'messi', 'sevilla', 'chelsea', 'barcelona', 'rijkaard']
  ```
+
+# Further Documentation
+
+See also [Presentation.marp.md](Presentation.marp.md) for further information.
