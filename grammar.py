@@ -70,6 +70,7 @@ from operations.append import Append
 from operations.find_all import FindAll
 from operations.omit import Omit
 from operations.multiply import Multiply
+from operations.concat import Concat,CONCAT
 
 
 """
@@ -175,7 +176,8 @@ DJ_GRAMMAR = Grammar(
                       mangle_dates /                      
                       deleetify /
                       related /
-                      correct_spelling 
+                      correct_spelling /
+                      concat /
 
     # Core operators                  
     # ======================================
@@ -248,6 +250,7 @@ DJ_GRAMMAR = Grammar(
     deleetify       = "deleetify"    
     related         = "related" ws+ float_value    
     correct_spelling = "correct_spelling"
+    concat          = "concat" (ws+ quoted_string)?
     """
 )
 
@@ -481,6 +484,13 @@ class DJTreeVisitor (NodeVisitor):
             return Prepend(True, s)
         else:
             return Prepend(False, s)
+
+    def visit_concat(self,_n,c):
+        (_,s_opt) = c
+        if isinstance(s_opt,list):
+            return Concat(s_opt[0][1])
+        else:
+            return CONCAT
 
     def visit_multiply(self, _n, c): (_, _, f) = c; return Multiply(f)
     def visit_split(self, _n, c): (_, _, s) = c; return Split(s)
