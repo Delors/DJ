@@ -7,13 +7,13 @@ from dj_ast import Transformer
 class SubSplit(Transformer):
     """ Splits up an entry using the given split_char as a separator
         creating all possible sub splits, keeping the order.
-        E.g. "Abc-def-ghi" with "-" as the split char would create:
-            Abc-def
+        E.g. "abc-def-ghi" with "-" as the split char would create:
+            abc-def
             def-ghi
-            Abc-ghi
+            abc-ghi
     """
 
-    def op_name() -> str: return "sub_splits"
+    def op_name() -> str: return "sub_split"
 
     def __init__(self, split_char: str):
         self.split_char = split_char
@@ -31,23 +31,29 @@ class SubSplit(Transformer):
         if all_segments_count == 1:
             return None
 
-        segments = filter(lambda e: len(e) > 0, all_segments)
+        segments = list(filter(lambda e: len(e) > 0, all_segments))
         segments_count = len(segments)
         if segments_count == 0:
             # the entry just consisted of the split character
             return []
 
         entries = []
-        for i in range(2, segments_count):
-            entries.append(self.split_char.join(segments[0:i]))
-        for i in range(1, segments_count-1):
-            entries.append(self.split_char.join(segments[i:segments_count]))
+
+        def collect(current: str, remaining : list[str],take:int):
+            if take == 0:
+                entries.append(current)
+                return
+            if len(remaining) == 0 or take > len(remaining):
+                return
+
+            collect(current + remaining[0],remaining[1:],take-1)
+            collect(current,remaining[1:],take)
+
+        for i in range(1,segments_count):
+            collect("",segments,i)
 
         entries.extend(segments)
         return entries
 
     def __str__(self):
-        split_char_def = self.split_char\
-            .replace(' ', "\\s")\
-            .replace('\t', "\\t")
-        return f'{SubSplit.op_name()} "{escape(split_char_def)}"'
+        return f'{SubSplit.op_name()} "{escape(self.split_char)}"'
