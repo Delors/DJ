@@ -1,0 +1,37 @@
+ignore "ignore/de.txt"
+ignore "ignore/en.txt"
+
+set POSSIBLE_WORDS
+set NUMBERS
+
+# 1. Step: extract numbers and generate hashcat rules out of them
+
++mangle_dates \
+    get_no \
+    min length 2 \
+    { write "numbers.txt" }> NUMBERS 
+
+use NUMBERS \
+    prepend each "$"                write "append_numbers.rule"
+
+use NUMBERS \
+    reverse prepend each "^"        write "prepend_numbers.rule"
+
+# 2. Step: find words and collect related words
+
+*strip_no_and_sc \
+    +split " " \
+    +split "_" \
+    +remove_sc \
+    +title \
+    +remove_ws \
+    +find_all "[A-Z][a-z]{2,}" \
+    lower 0 \
+    { write "words.txt" }> POSSIBLE_WORDS
+
+use POSSIBLE_WORDS \
+    or( is_regular_word, is_popular_word ) \
+    related 0.6 \
+    min length 3 \
+    sieve "sieve/7bit-ASCII.txt" \
+    write "related_words.txt"

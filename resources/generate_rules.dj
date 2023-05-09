@@ -1,0 +1,20 @@
+# a poor man's rule generator
+
+set LEFT
+set RIGHT
+
+set BASE
+
+{ sieve "resources/sieve/graphene_os_12_password_chars.txt" \
+    min letter 3 \
+    }> BASE
+
+# In both cases we will have at most one match!
+# Hence, for each original entry the sets LEFT and 
+# RIGHT will contain at most one value!
+use BASE { find_all "^[^a-zA-Z]+" reverse prepend each "^" }> LEFT
+use BASE { find_all "[^a-zA-Z]+$" prepend each "$" }> RIGHT
+
+# In case we only have a prependix or an appendix, we 
+# just take the rule as is... 
+use LEFT RIGHT *iset_concat " " report
