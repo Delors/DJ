@@ -1,0 +1,38 @@
+# Sort the passwords based on their structure (luds)
+
+create "structure/l.txt"
+create "structure/u.txt"
+create "structure/d.txt"
+create "structure/s.txt"
+create "structure/lu.txt"
+create "structure/ld.txt"
+create "structure/ls.txt"
+create "structure/ud.txt"
+create "structure/us.txt"
+create "structure/ds.txt"
+create "structure/lud.txt"
+create "structure/lds.txt"
+create "structure/uds.txt"
+create "structure/luds.txt"
+
+set REST
+
+{ or(
+    min lower 1 max upper 0 max numeric 0 max symbol 0 write "structure/l.txt",
+    max lower 0 min upper 1 max numeric 0 max symbol 0 write "structure/u.txt", 
+    max lower 0 max upper 0 min numeric 1 max symbol 0 write "structure/d.txt", 
+    max lower 0 max upper 0 max numeric 0 min symbol 1 write "structure/s.txt", 
+    min lower 1 min upper 1 max numeric 0 max symbol 0 write "structure/lu.txt", 
+    min lower 1 max upper 0 min numeric 1 max symbol 0 write "structure/ld.txt", 
+    min lower 1 max upper 0 max numeric 0 min symbol 1 write "structure/ls.txt", 
+    max lower 0 min upper 1 min numeric 1 max symbol 0 write "structure/ud.txt", 
+    max lower 0 min upper 1 max numeric 0 min symbol 1 write "structure/us.txt", 
+    max lower 0 max upper 0 min numeric 1 min symbol 1 write "structure/ds.txt", 
+    min lower 1 min upper 1 min numeric 1 max symbol 0 write "structure/lud.txt", 
+    min lower 1 max upper 0 min numeric 1 min symbol 1 write "structure/lds.txt",
+    max lower 0 min upper 1 min numeric 1 min symbol 1 write "structure/uds.txt",
+    min lower 1 min upper 1 min numeric 1 min symbol 1 write "structure/luds.txt"  
+) }[]> REST
+
+# just to make sure that we didn't miss something relevant...
+use REST write "structure/unclassified.txt"

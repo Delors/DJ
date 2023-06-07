@@ -1,12 +1,11 @@
-from math import isnan
-from typing import List
 from contextlib import suppress
 
-from dj_ast import Transformer, TDUnit, ASTNode
+from dj_ast import  TDUnit, ASTNode
+from dj_ops import PerEntryTransformer
 from common import InitializationFailed, get_nlp_model
 
 
-class Related(Transformer):
+class Related(PerEntryTransformer):
     """ Returns those terms that are most related; i.e. surpass the 
         RELATEDNESS factor.
 
@@ -27,6 +26,9 @@ class Related(Transformer):
         self._wiki = None
         self.MIN_RELATEDNESS = MIN_RELATEDNESS
 
+    def __str__(self):
+        return f"{Related.op_name()} {self.MIN_RELATEDNESS}"
+
     def init(self, td_unit: TDUnit, parent: ASTNode):
         super().init(td_unit, parent)
         # The test is required here, because both variables are user
@@ -41,8 +43,9 @@ class Related(Transformer):
             raise InitializationFailed(
                 f"{self}: MIN_RELATEDNESS {self.MIN_RELATEDNESS} has to be in range (0,1.0)"
             )
+        return self
 
-    def process(self, entry: str) -> List[str]:
+    def process(self, entry: str) -> list[str]:
         if not self._twitter:
             self._twitter = get_nlp_model("twitter", self.td_unit.verbose)
         get_tms = self._twitter.most_similar
@@ -83,5 +86,4 @@ class Related(Transformer):
 
         return list(result)
 
-    def __str__(self):
-        return f"{Related.op_name()} {self.MIN_RELATEDNESS}"
+

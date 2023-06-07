@@ -1,21 +1,16 @@
-from typing import List
-
-from dj_ast import Filter
+from dj_ops import PerEntryFilter
 
 
-class IsSC(Filter):
-    """ Identifies entries which only consist of certain special chars.
+class IsSC(PerEntryFilter):
+    """ Identifies entries which only consist of the specified special chars.
     """
 
     def op_name() -> str: return "is_sc"
 
     SPECIAL_CHARS = set("^<>|,;.:_#'+*~@€²³`'^°!\"§$%&/()[]{}\\-")
 
-    def process(self, entry: str) -> List[str]:
+    def process(self, entry: str) -> list[str]:
         if any(e for e in entry if e not in self.SPECIAL_CHARS):
             return []
         else:
             return [entry]
-
-
-IS_SC = IsSC()

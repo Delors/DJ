@@ -30,6 +30,7 @@
 # Output:
 #   Achkhoj-Martanovskij
 #   AchkhojMartanovskij
+#   AchkhojRajon
 #   Achkhoj
 #   Martanovskij
 #   Rajon
@@ -50,7 +51,7 @@ def SC_TO_SPACE replace "replace/SpecialCharToSpace.txt"
 
 # REMARKS
 # - "upper" only makes sense for "non-mobile phone" passwords
-# - "remove_numbers" potentially leads to many non-sense words.
+# - "remove_no" potentially leads to many nonsense words.
 # - "deleetify" is a computationally intensive operation and the results
 #             of it may depend on the time when the deleetification
 #             is performed.
@@ -69,23 +70,27 @@ def BASE_TRANSFORMATIONS \
     +remove_ws \
     +number "aeiou"
 
-# RULES
-# A rule takes an entry and generates new candidates.
+# Operations
+# An operation processes a given entry (in particular: filter, transform, extract parts)
 # In general, entries which are unchanged by a transformer
 # are filtered.
-# A "+" directly in front of the rule will
-# ensure that the original entry is passed on to the next step.
-# " A "*" directly in front of the rule will ensure that the current
-# entry-set is passed on if and only if it is not applicable as
-# a whole. Often the "*" operator needs to be combined with
-# the iset_foreach operation to generate the required result.
+# A "+" directly in front of the operation will ensure that the 
+#   original entry is passed on to the next step.
+# " A "*" directly in front of the operation will ensure that the current
+#   entry-set is passed on if and only if it is not applicable.
 
 do BASE_TRANSFORMATIONS report
 split "/" do BASE_TRANSFORMATIONS report
 # split "." do BASE_TRANSFORMATIONS report
 mangle_dates report
 split " " discard_endings "discard_endings/de.txt" do BASE_TRANSFORMATIONS report
-split " " iset_foreach(*title) iset_concat report
 
 
 
+# Convert names where the surname is given in capital letters to the
+# standard format. E.g., Vladimir PAVEL => Vladimir Pavel;
+# however, we do not want to convert entries that are seemingly not names,
+# e.g., in an entry such as "HiHo ALLE", we do not want to change the 
+# capitalization of "HiHo". Therefore, `split " " *title iset_concat report` 
+# wouldn't work.
+split " " ~iset_foreach( max lower 0 min upper 1 capitalize ) iset_concat " " report

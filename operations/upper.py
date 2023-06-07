@@ -1,26 +1,33 @@
-from typing import List
-
 from common import InitializationFailed
-from dj_ast import Transformer, TDUnit, ASTNode
+from dj_ops import PerEntryTransformer
+from dj_ast import TDUnit, ASTNode
 
 
-
-class Upper(Transformer):
+class Upper(PerEntryTransformer):
     """Converts an entry or the specific character to all upper case."""
 
     def op_name() -> str: return "upper"
-
 
     def __init__(self, pos : int = None, letter_with_index : bool = False) -> None:
         self.pos = pos
         self.letter_with_index = letter_with_index
 
+    def __str__(self):
+        if self.pos is not None:
+            pos = str(self.pos)
+            if self.letter_with_index:
+                pos = "l"+pos
+            return f"{Upper.op_name()} {pos}"
+        else:
+            return Upper.op_name()
+        
     def init(self, td_unit: TDUnit, parent: ASTNode):
         super().init(td_unit, parent)
         if self.pos is not None and self.pos < 0:
             raise InitializationFailed(f"{self}: pos has to be >= 0")
+        return self
 
-    def process(self, entry: str) -> List[str]:
+    def process(self, entry: str) -> list[str]:
         pos = self.pos
         if pos is None:
             upper = entry.upper()
@@ -46,12 +53,3 @@ class Upper(Transformer):
             return [upper]
         else:
             return None
-
-    def __str__(self):
-        if self.pos is not None:
-            pos = str(self.pos)
-            if self.letter_with_index:
-                pos = "l"+pos
-            return f"{Upper.op_name()} {pos}"
-        else:
-            return Upper.op_name()

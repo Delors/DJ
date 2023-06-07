@@ -1,14 +1,15 @@
-from typing import List
-
-from dj_ast import Transformer
+from dj_ops import PerEntryTransformer
 
 
-class StripWS(Transformer):
-    """Removes leading and trailing whitespace."""
+class StripWS(PerEntryTransformer):
+    """ Removes leading and trailing whitespace.
+
+        See also: `strip` for a more general strip command.
+    """
 
     def op_name() -> str: return "strip_ws"
 
-    def process(self, entry: str) -> List[str]:
+    def process(self, entry: str) -> list[str]:
         stripped_entry = entry.strip()
         if stripped_entry is entry:
             return None

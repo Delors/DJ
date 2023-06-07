@@ -1,10 +1,8 @@
-from typing import List
-
 from common import escape
-from dj_ast import Transformer
+from dj_ops import PerEntryTransformer
 
 
-class SubSplit(Transformer):
+class SubSplit(PerEntryTransformer):
     """ Splits up an entry using the given split_char as a separator
         creating all possible sub splits, keeping the order.
         E.g. "abc-def-ghi" with "-" as the split char would create:
@@ -17,16 +15,16 @@ class SubSplit(Transformer):
 
     def __init__(self, split_char: str):
         self.split_char = split_char
-        return
 
-    def process(self, entry: str) -> List[str]:
-        assert len(entry) > 0
+    def __str__(self):
+        return f'{SubSplit.op_name()} "{escape(self.split_char)}"'
 
+    def process(self, entry: str) -> list[str]:
         all_segments = entry.split(self.split_char)
 
         all_segments_count = len(all_segments)
         # Recall that, when the split char appears at least once,
-        # we will have at least two segments; even it appears at
+        # we will have at least two segments; even when it appears at
         # the start or end.
         if all_segments_count == 1:
             return None
@@ -39,21 +37,18 @@ class SubSplit(Transformer):
 
         entries = []
 
-        def collect(current: str, remaining : list[str],take:int):
+        def collect(current: str, remaining: list[str], take: int):
             if take == 0:
                 entries.append(current)
                 return
             if len(remaining) == 0 or take > len(remaining):
                 return
 
-            collect(current + remaining[0],remaining[1:],take-1)
-            collect(current,remaining[1:],take)
+            collect(current + remaining[0], remaining[1:], take-1)
+            collect(current, remaining[1:], take)
 
-        for i in range(1,segments_count):
-            collect("",segments,i)
+        for i in range(1, segments_count):
+            collect("", segments, i)
 
         entries.extend(segments)
         return entries
-
-    def __str__(self):
-        return f'{SubSplit.op_name()} "{escape(self.split_char)}"'

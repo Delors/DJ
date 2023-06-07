@@ -1,16 +1,13 @@
-import re
-from typing import List
-
-from dj_ast import Transformer
+from dj_ops import PerEntryTransformer
 
 
-class Reverse(Transformer):
+class Reverse(PerEntryTransformer):
     """ Reverses a given string.
     """
 
     def op_name() -> str: return "reverse"
 
-    def process(self, entry: str) -> List[str]:
+    def process(self, entry: str) -> list[str]:
         new_entry = entry[::-1]
         if new_entry == entry:
             return None

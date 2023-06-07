@@ -1,4 +1,4 @@
-ignore "ignore/de.txt"
+#[optional] ignore "ignore/de.txt"
 
 config is_regular_word DICTIONARIES ["de"]
 

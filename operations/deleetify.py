@@ -1,21 +1,30 @@
 import itertools
 import re
-from typing import List, Set
 
-from dj_ast import Transformer
+from dj_ops import PerEntryTransformer
 
 
-class DeLeetify(Transformer):
+class DeLeetify(PerEntryTransformer):
     """ Deleetifies an entry by replacing the used numbers with their
         respective characters. E.g., *T3st* is deleetified to _Test_. To avoid
         the creation of irrelevant entries, a spellchecker should be used to test 
-        that the deleetified word is a real world. Please note, that using
+        that the deleetified word is a real world. Please note that using
         a spellchecker directly to deleetify a word will generally not work
         for heavily leetified words, e.g., _T4553_, which might stand for 
         _Tasse_ in German.
     """
 
+    # REs to test if we have leetspeak. The REs are based on the assumption that
+    # we never have words with more than three subsequent vowles and that the
+    # numbers 0,3,4,1 are the only relevant ones.
+    # (In reality such words exists; e.g. Aioli !)
+    _re_has_at_least_one_seq_with_at_most_three_numbers = \
+        re.compile("[^0-9]*[0134]{1,3}([^0-9]|$)")
+    _re_has_leetspeak = \
+        re.compile(".*[a-zA-Z]")
+
     def op_name() -> str: return "deleetify"
+
     """
     mappings = {
             ("0","o"),
@@ -48,17 +57,9 @@ class DeLeetify(Transformer):
             }, l) for l in range(1, 4)
         )
     )
+ 
 
-    # REs to test if we have leetspeak. The REs are based on the assumption that
-    # we never have words with more than three subsequent vowles and that the
-    # numbers 0,3,4,1 are the only relevant ones.
-    # (In reality such words exists; e.g. Aioli !)
-    _re_has_at_least_one_seq_with_at_most_three_numbers = \
-        re.compile("[^0-9]*[0134]{1,3}([^0-9]|$)")
-    _re_has_leetspeak = \
-        re.compile(".*[a-zA-Z]")
-
-    def process(self, entry: str) -> List[str]:
+    def process(self, entry: str) -> list[str]:
         # (See Wikipedia for more details!) We currently only consider
         # the basic visual transliterations related to numbers and
         # we assume that a user only uses one specific transliteration
@@ -77,7 +78,7 @@ class DeLeetify(Transformer):
 
         # TODO [IMPROVEMENT] First scan for all numbers in the entry and then perform the relevant transformations instead of testing all combinations of transformations.
 
-        deleetified_entries: Set[str] = set()
+        deleetified_entries: set[str] = set()
         for rs in DeLeetify.replacements:
             deleetified_entry = entry
             for (n, c) in rs:

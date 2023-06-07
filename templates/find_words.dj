@@ -19,6 +19,7 @@ set NO_SEQUENCE
 set NO_PATTERN
 set NO_SEQ_NO_PATTERN_NO_WALK
 set NO_WORD
+set NO_WORD_SEQ
 set UNKNOWN_1
 set UNKNOWN_2
 set CROPPED
@@ -51,28 +52,28 @@ use STRIPPED_MINIMIZED \
         is_part_of "abcdefghijklmnopqrstuvwxyz",
         is_part_of "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
         ) \
-    }!> NO_SEQUENCE                                         write "find_words/sequences.txt" 
+    }[]> NO_SEQUENCE                                         write "find_words/sequences.txt" 
 
 use NO_SEQUENCE \
-    { is_pattern }!> NO_PATTERN                             write "find_words/patterns.txt"
+    { is_pattern }[]> NO_PATTERN                             write "find_words/patterns.txt"
 
 use NO_PATTERN \
     { or (
         is_walk "KEYBOARD_DE" , 
         is_walk "KEYBOARD_EN" ) \
-    }!> NO_SEQ_NO_PATTERN_NO_WALK                           write "find_words/walks.txt"
+    }[]> NO_SEQ_NO_PATTERN_NO_WALK                           write "find_words/walks.txt"
 
 use NO_SEQ_NO_PATTERN_NO_WALK \
-    { do IS_WORD }!> NO_WORD                                write "find_words/simple_words.txt"
+    { do IS_WORD }[]> NO_WORD                                write "find_words/simple_words.txt"
 
 use NO_WORD \
     do ADVANCED_TRANSFORMATIONS \
     min length 4 \
     { +find_all "[A-Z][a-z]*" \
-      do IS_WORD }!> UNKNOWN_1                              write "find_words/no_simple_words.txt"
+      do IS_WORD }[]> UNKNOWN_1                              write "find_words/no_simple_words.txt"
 
 # ATTENTION: using "correct_spelling" may lead to many new words which
-#            is undesirable if we just want to find "original" words!  
+#            is undesirable if we just want to find the "original" words!  
 # use NO_WORD { correct_spelling *strip_no_and_sc }/> UNKNOWN write "find_words/words.txt"  
 
 # When we reach this point, the initial entry was no direct pattern,
@@ -82,18 +83,14 @@ use UNKNOWN_1 { cut r 1 2 }> CROPPED
 use UNKNOWN_1 { cut l 1 1 cut r 1 1 }> CROPPED                 
 
 use CROPPED \
+    { break_up(max numeric 0 is_regular_word) iset_max length 4 }/> NO_WORD_SEQ \         
+                                                            write "find_words/sub_words.txt"
+
+use NO_WORD_SEQ \
     iset_foreach( do ADVANCED_TRANSFORMATIONS )\
     min length 4 \
-    { +find_all "[A-Z][a-z]*" do IS_WORD }!> UNKNOWN_2 \ 
+    { +find_all "[A-Z][a-z]*" do IS_WORD }[]> GARBAGE \ 
     min length 4                                           write "find_words/cropped_words.txt"
-
-
-# Now, let's do some splitting up of the entry to find subwords; 
-# we no longer check for typos or something similar, because from
-# our experience passwords made up out of multiple words contain
-# no significant typos.
-
-use UNKNOWN_2 { find_all "[A-Z][a-z]*" }!> GARBAGE         write "find_words/sub_words.txt"
 
 use GARBAGE                                                write "find_words/garbage.txt"
 

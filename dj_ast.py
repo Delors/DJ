@@ -1,5 +1,5 @@
-from abc import ABC, abstractmethod
-from typing import List, Tuple, Iterable
+from abc import ABC, abstractmethod, abstractstaticmethod
+from typing import Iterable, final
 from importlib import import_module
 from itertools import chain
 from sys import stderr, exit
@@ -11,19 +11,23 @@ from common import InitializationFailed, read_utf8file, escape, open_file
 class ASTNode(ABC):
 
     def init(self, td_unit: 'TDUnit', parent: 'ASTNode'):
-        """ Performs a semantic validation and initialization 
+        """ Performs semantic validation and initialization 
             of this node and then calls the method on child nodes. 
 
-            In case of an error an InitializationFailed exception is raised. 
+            I.e., the class' __init__ method is not expected to
+            raise any exceptions/errors; this should always be done
+            by this method.
+
+            In case of an error an InitializationFailed exception has 
+            to be raised. 
             An example of a semantic validation is to check
             if a child node of a logical not operator ("!") is a 
             filter node.
-
-            Validate only checks for conceptual errors. 
         """
         self.td_unit = td_unit
         self.parent = parent
         return self
+
 
 class Comment(ASTNode):
 
@@ -39,7 +43,7 @@ class Operation(ASTNode):
         entries and produces zero (`[]`) to many entries. An operation which 
         does not apply to an entry/a set of entries returns `None`. 
         For a precise definition of "does not apply" see the documentation 
-        of the respective classes of operations.
+        of the respective operations.
 
         An operation is either:
         - a transformation which takes an entry and returns None or between
@@ -51,7 +55,7 @@ class Operation(ASTNode):
             and the operation removes all special characters, a empty 
             list (not None) will be returned. But, if the entry contains
             no special characters and, therefore, nothing would be removed
-            None would be returned.
+            None needs to be returned.
         - an extractor which extracts one to multiple parts of an entry. 
             An extractor might "extract" the original entry. For example,
             an extractor for numbers might return the original entry if 
@@ -59,14 +63,17 @@ class Operation(ASTNode):
             An extractor which does not extract a single entry is not
             considered to be applicable and None is returned. Hence,
             an extractor never returns an empty list.
-        - a meta operation ("+","*","!") which manipulates the behavior 
-            of a filter, an extractor or a transformation.
         - a filter operation which takes an entry and either returns
-            the entry (`[entry]`) or the empty list (`[]`). Hence, a filter
-            is considered to be always applicable.
-        - a report operation which either collects some statistics or
-            which prints out an entry but always just returns the entry
-            as is.
+            the entry (`[entry]`) or the empty list.
+        - a meta operation ("+","*","!") which manipulates the behavior 
+            of a filter, an extractor or a transformation. A meta operation
+            that manipulates a filter is also considered a filter and a
+            meta operation that manipulates an extractor or transformer
+            is considered to be of the respective type.        
+        - a report operation which may collect some statistics or
+            prints out an entry, but always just returns the entry/entries
+            as is; with respect to the processing pipeline it is a 
+            nop.
         - a macro which combines one to many operations and which basically
             provides a convenience method to facilitate the definition of
             a set of operations which should be carried out in a specific order
@@ -75,30 +82,30 @@ class Operation(ASTNode):
         Lifecycle:
         During parsing an operation is created. After parsing has completed
         the initialization is performed in a second step ("init(...)"). After
-        that each entry in a dictionary will be processed. Before a
+        that, each entry in a dictionary will be processed. Before a
         new entry is processed "new_entry()" is called to inform the 
         operation that a new dictionary entry will be processed.
         1. __init__ (should not throw errors/exception that may be related to user input)
         2. init (should validate the configuration/setup and throw InitializationFailedExceptions in case of configuration/setup issues!)
         3. <for each entry of a dictionary>:
             3.1 next_entry
-            3.1 process_entries (which calls process_entry)
-        5. close
+            3.1 process_entries
+        4. close
     """
 
-    @staticmethod
-    @abstractmethod
+    @abstractstaticmethod
     def op_name() -> str:
         """ The operation's name or mnemonic."""
         raise NotImplementedError("subclasses must override this method")
 
-    def init(self, td_unit: 'TDUnit', parent: 'ASTNode'):
-        return super().init(td_unit, parent)
-        
+    def __str__(self):
+        return self.__class__.op_name()
+
     def next_entry(self):
         pass
 
-    def process_entries(self, entries: List[str]) -> List[str]:
+    @abstractmethod
+    def process_entries(self, entries: list[str]) -> list[str]:
         """
         Processes each entry of the list and applies the respective operation.
 
@@ -117,50 +124,10 @@ class Operation(ASTNode):
         Returns None if the operation could not be applied. If the operation
         returns new entries, then the list does not contain duplicates and
         none of the entries is ignored.
-        
+
         Weekly maintains the order of intermediate results. 
         """
-        td_unit = self.td_unit
-        all_none = True
-        all_new_entries_set = set()
-        all_new_entries_count = 0
-        all_new_entries = []
-        for entry in entries:
-            new_entries = self.process(entry)
-            if new_entries is not None:
-                all_none = False
-                for new_entry in new_entries:
-                    if not new_entry in td_unit.ignored_entries and len(new_entry) > 0:
-                        all_new_entries_set.add(new_entry)
-                        if len(all_new_entries_set) > all_new_entries_count:
-                            all_new_entries_count += 1
-                            all_new_entries.append(new_entry)
-        if all_none:
-            return None
-        else:
-            return all_new_entries
-        
-
-    def process(self, entry: str) -> List[str]:
-        """
-        Processes the given entry and returns the list of new entries.
-        If an operation applies, i.e. the operation has some effect, 
-        a list of new entries (possibly empty) will be returned.
-        If an operation does not apply at all, None should be returned.
-        Each operation has to clearly define when it applies and when not.
-
-        For example, an operation to remove special chars would apply to
-        an entry consisting only of special chars and would return
-        the empty list in that case. If, however, the entry does not 
-        contain any special characters, None would be returned.
-
-        E.g., an operation that just extracts certain characters or which 
-        replaces certain characters will always either return a 
-        non-empty list (`[...]`) or `None` (didn't apply).
-
-        A filter will either return [entry] or []. 
-        """
-        pass
+        raise NotImplementedError()
 
     def close(self):
         """
@@ -184,19 +151,19 @@ class Operation(ASTNode):
 
     def is_filter(self) -> bool: return False
 
-    def __str__(self):
-        return self.__class__.op_name()
-
 
 class Transformer(Operation):
+    @final
     def is_transformer(self) -> bool: return True
 
 
 class Filter(Operation):
+    @final
     def is_filter(self) -> bool: return True
 
 
 class Extractor(Operation):
+    @final
     def is_extractor(self) -> bool: return True
 
 
@@ -209,10 +176,10 @@ class ComplexOperation(ASTNode):
         an entry and (potentially) every subsequently created entry.
     """
 
-    def __init__(self, ops: List[Operation]):
+    def __init__(self, ops: list[Operation]):
         if not ops or len(ops) == 0:
             # The following exception is related to a programming
-            # error, because the grammar enforces that a complex
+            # error! The grammar enforces that a complex
             # operation is never empty. I.e., in that case a
             # syntax error would be signaled and that one would need
             # to be handled by the user.
@@ -223,16 +190,36 @@ class ComplexOperation(ASTNode):
         return " ".join(map(str, self.ops))
 
     def is_filter(self) -> bool:
-        return all(op.is_filter() for op in self.ops)
+        return \
+            any(op.is_filter() for op in self.ops) and \
+            all(op.is_filter() or op.is_reporter() for op in self.ops)
 
     def is_transformer(self) -> bool:
-        return all(op.is_transformer() for op in self.ops)
+        # is_transformer = False
+        # for op in self.ops:
+        #    if op.is_transformer():
+        #        is_transformer = True
+        #    elif op.is_reporter():
+        #        pass
+        #    else:
+        #        return False
+        # return is_transformer
+        return any(op.is_transformer() for op in self.ops)
 
     def is_extractor(self) -> bool:
-        return all(op.is_extractor() for op in self.ops)
-
+        # is_extractor = False
+        # for op in self.ops:
+        #    if op.is_extractor():
+        #        is_extractor = True
+        #    elif op.is_reporter():
+        #        pass
+        #    else:
+        #        return False
+        # return is_extractor
+        return any(op.is_extractor() for op in self.ops)
+    
     def is_transformer_or_extractor(self) -> bool:
-        return all(op.is_extractor() or op.is_transformer() for op in self.ops)
+        return self.is_transformer() or self.is_extractor()
 
     def is_reporter(self) -> bool:
         return all(op.is_reporter() for op in self.ops)
@@ -241,6 +228,7 @@ class ComplexOperation(ASTNode):
         super().init(td_unit, parent)
         for op in self.ops:
             op.init(td_unit, self)
+        return self
 
     def next_entry(self):
         for op in self.ops:
@@ -293,10 +281,51 @@ class SetDefinition(ASTNode):
 
     def init(self, td_unit: 'TDUnit', parent: ASTNode):
         super().init(td_unit, parent)
-        td_unit.entry_sets[self.name] = set()
+        td_unit.entry_sets[self.name] = []
+        return self
+
+
+class GlobalSetDefinition(ASTNode):
+    """
+    Represents a named set that will be initialized from the given file.
+    Used by special operations that transform entries based on 
+    the global set.
+    """
+
+    def __init__(self, name, filename, cop) -> None:
+        self.name = name
+        self.filename = filename
+        self.cop = cop
+
+    def __str__(self) -> str:
+        cmd = f'global_set {self.name} "{self.filename}"'
+        if self.cop is not None:
+            cmd += "( "+str(self.cop)+" )"
+        return cmd
+
+    def init(self, td_unit: 'TDUnit', parent: 'ASTNode'):
+        super().init(td_unit, parent)
+        self.td_unit.global_entry_sets[self.name] = []
+        if self.cop is not None:
+            self.cop.init(td_unit, self)
+        return self
+
+    def instantiate_global_set(self):
+        # we have to read the entries now, because we want to apply
+        # the specific rules only to the entries of this file (even
+        # if we later join the transformed elements with some other
+        # elements)
+        entries = read_utf8file(self.filename)
+        if self.cop:
+            entries = self.cop.process_entries(entries)
+        self.td_unit.global_entry_sets[self.name].extend(entries)
+        if self.td_unit.verbose:
+            msg = f"[debug] global set {self.name}: {self.filename} (#{len(entries)})"
+            print(msg, file=stderr)
 
 
 class IgnoreEntries(ASTNode):
+
     def __init__(self, filename):
         self.filename = filename
 
@@ -312,18 +341,19 @@ class IgnoreEntries(ASTNode):
         if td_unit.verbose:
             msg = f"[debug] ignoring: {self.filename} (#{len(to_be_ignored)})"
             print(msg, file=stderr)
+        return self
 
 
 class Generate(ASTNode):
-    
+
     def __init__(self, mode, raw_config_value):
         self.mode = mode
         self.raw_config_value = raw_config_value
-        self.config = None # will be initialized by init
+        self.config = None  # will be initialized by init
 
     def __str__(self) -> str:
         return f"gen {self.mode} {self.raw_config_value}"
-    
+
     def init(self, td_unit: 'TDUnit', parent: ASTNode):
         super().init(td_unit, parent)
 
@@ -333,20 +363,21 @@ class Generate(ASTNode):
             raise InitializationFailed(f"{self}: unknown generator")
 
         return self
-    
-    def instantiate(self) -> Iterable[str]:
+
+    def evaluate_generator(self) -> Iterable[str]:
         if self.mode == "alt":
-            def gen_alt(s,l_of_l_of_strs):
+            def gen_alt(s, l_of_l_of_strs):
                 if len(l_of_l_of_strs) == 0:
                     yield s
                 else:
                     for n in l_of_l_of_strs[0]:
-                       yield from gen_alt(s+n,l_of_l_of_strs[1:])
-            g = gen_alt("",self.config)
+                        yield from gen_alt(s+n, l_of_l_of_strs[1:])
+            g = gen_alt("", self.config)
             return g
         else:
             # this code should never be reached!
             raise NotImplementedError
+
 
 class CreateFile(ASTNode):
 
@@ -370,6 +401,7 @@ class CreateFile(ASTNode):
             file.close()
         except Exception as e:
             raise InitializationFailed(f"{self}: failed creating file - {e}")
+        return self
 
 
 class ConfigureOperation(ASTNode):
@@ -421,10 +453,10 @@ class ConfigureOperation(ASTNode):
             value = float(self.field_value)
         elif value_type == str:
             value = self.field_value
-        elif value_type == list: # this also handles lists of lists...
+        elif value_type == list:  # this also handles lists of lists...
             value = eval(self.field_value)
         else:
-            msg = f"{self} unsupported type {value_type}; supported int, bool, float, str, list of <one of the previous>"
+            msg = f"{self} unsupported {value_type}; supported int, bool, float, str, list of <one of the previous>"
             raise InitializationFailed(msg)
 
         setattr(op_class, self.field_name, value)
@@ -446,6 +478,7 @@ class MacroDefinition(ASTNode):
         #    be ignored in the TDUnit object.
         td_unit.macros[self.name] = self.cop
         self.cop.init(td_unit, self)
+        return self
 
     def close(self):
         self.cop.close()
@@ -453,7 +486,7 @@ class MacroDefinition(ASTNode):
 
 class Header(ASTNode):
 
-    def __init__(self, setup_ops: List[ASTNode]):
+    def __init__(self, setup_ops: list[ASTNode]):
         self.setup_ops = setup_ops
 
     def __str__(self):
@@ -463,13 +496,21 @@ class Header(ASTNode):
         super().init(td_unit, parent)
         for o in self.setup_ops:
             o.init(td_unit, self)
+        return self
 
-    def instantiate_generators(self) -> Iterable[str]:
+    def instantiate_global_sets(self):
+        for gs in self.setup_ops:
+            try:
+                gs.instantiate_global_set()
+            except:
+                pass
+
+    def evaluate_generators(self) -> Iterable[str]:
         its = []
         for o in self.setup_ops:
             try:
                 # "only generators support instantiate()"
-                g = o.instantiate()
+                g = o.evaluate_generator()
                 its.append(g)
             except:
                 pass
@@ -481,14 +522,13 @@ class Header(ASTNode):
                 setup_op.close()
 
 
-
-
 class Body(ASTNode):
 
-    def __init__(self, cops: List[ComplexOperation]):
+    def __init__(self, cops: list[ComplexOperation]):
         self.cops = cops
         # the initialization will be completed by "init"
         self.td_unit = None
+        self.parent = None
 
     def __str__(self):
         return "\n".join(map(str, self.cops))
@@ -498,6 +538,7 @@ class Body(ASTNode):
         self.td_unit = td_unit
         for cop in self.cops:
             cop.init(td_unit, self)
+        return self
 
     def process(self, entry: str):
         # -1. The ignored check for the entry is done by TDUnit
@@ -544,17 +585,17 @@ class TDUnit(ASTNode):
         self.ignored_entries: set[str] = set()
 
         # A map from str (set name) to current entries.
-        self.entry_sets: Tuple[str, set[str]] = {}
+        self.entry_sets: dict[str, list[str]] = {}
+        self.global_entry_sets: dict[str, list[str]] = {}
+        # A map from str to complex operation objects
+        self.macros: dict[str, ComplexOperation] = {}
 
-        self.macros = {}  # A map from str to complex operation objects
-
+        self.print_global_sets = False  # detailed information about global sets is printed
         self.report_progress = False  # report progress w.r.t. the processed entries
-
         self.trace_ops = False  # provide detailed information about an operation's effect
-
         self.verbose = False  # provide configuration and initialization related information
-
-        self.unique = False # controls if a result is only reported once
+        self.unique = False  # controls if a result is only reported once
+        self.warn = False
 
     def __str__(self):
         return str(self.header)+"\n\n"+str(self.body)
@@ -563,14 +604,18 @@ class TDUnit(ASTNode):
         super().init(td_unit, parent)
         self.header.init(td_unit, self)
         self.body.init(td_unit, self)
+        return self
 
-    def instantiate_generators(self) -> Iterable[str]:        
-        return self.header.instantiate_generators()
+    def instantiate_global_sets(self):
+        self.header.instantiate_global_sets()
+
+    def evaluate_generators(self) -> Iterable[str]:
+        return self.header.evaluate_generators()
 
     def process(self, no: int, entry: str):
         if len(entry) == 0:
             return
-            
+
         if entry not in self.ignored_entries:
             if self.report_progress:
                 print(f"[progress] processing #{no}: {entry}", file=stderr)

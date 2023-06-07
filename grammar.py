@@ -8,7 +8,6 @@ import sys
 from parsimonious.grammar import Grammar
 from parsimonious import NodeVisitor
 from parsimonious.nodes import Node
-from typing import List
 # from abc import ABC, abstractmethod
 # from importlib import import_module
 
@@ -16,13 +15,16 @@ from common import unescape
 
 from dj_ast import ComplexOperation
 from dj_ast import TDUnit, Body, Header, Comment
-from dj_ast import Generate, IgnoreEntries, SetDefinition, MacroDefinition, ConfigureOperation, CreateFile
-from dj_ops import NOP, REPORT, Write, MacroCall, Or, All, NonEmpty, BreakUp
-from dj_ops import UseSet, StoreInSet, StoreFilteredInSet, StoreNotApplicableInSet
-from dj_ops import NegateFilterModifier, KeepAlwaysModifier, KeepOnlyIfFilteredModifier
+from dj_ast import Generate, IgnoreEntries, SetDefinition, GlobalSetDefinition
+from dj_ast import MacroDefinition, ConfigureOperation, CreateFile
+from dj_ops import NOP, REPORT, Write, MacroCall, Or, BreakUp
+from dj_ops import ISetIfAll, ISetForeach, ISetIfAny
+from dj_ops import UseSet, StoreInSet, StoreFilteredInSet, StoreNotApplicableInSet, StoreFilteredAndNotApplicableInSet
+from dj_ops import NegateFilterModifier, KeepAlwaysModifier, KeepOnlyIfNotApplicableModifier, KeepIfRejectedModifier
 from operations.capitalize import CAPITALIZE
 from operations.correct_spelling import CorrectSpelling
 from operations.cut import Cut
+from operations.dehex import DEHEX
 from operations.deduplicate_reversed import DEDUPLICATE_REVERSED
 from operations.deduplicate import DEDUPLICATE
 from operations.deleetify import DELEETIFY
@@ -30,28 +32,30 @@ from operations.detriplicate import DETRIPLICATE
 from operations.discard_endings import DiscardEndings
 from operations.fold_ws import FOLD_WS
 from operations.get_no import GET_NO
-from operations.get_sc import GET_SC
+from operations.get_sc import GetSC
 from operations.is_part_of import IsPartOf
 from operations.is_pattern import IS_PATTERN
 from operations.is_popular_word import IS_POPULAR_WORD
 from operations.is_regular_word import IsRegularWord
-from operations.is_sc import IS_SC
+from operations.is_sc import IsSC
 from operations.is_walk import IsWalk
-from operations.select_longest import SELECT_LONGEST
+from operations.iset_select_longest import ISET_SELECT_LONGEST
+from operations.iset_unique import ISET_UNIQUE
 from operations.lower import Lower
 from operations.upper import Upper
 from operations.rotate import Rotate
-from operations.mangle_dates import MANGLE_DATES
+from operations.mangle_dates import MangleDates
 from operations.map import Map
 from operations.max import Max
+from operations.iset_max import ISetMax
 from operations.min import Min
 from operations.has import Has
 from operations.number import Number
 from operations.pos_map import PosMap
 from operations.related import Related
 from operations.remove_ws import REMOVE_WS
-from operations.remove_no import REMOVE_NO
-from operations.remove_sc import REMOVE_SC
+from operations.remove_no import RemoveNO
+from operations.remove_sc import RemoveSC
 from operations.remove import Remove
 from operations.replace import Replace
 from operations.multi_replace import MultiReplace
@@ -61,16 +65,18 @@ from operations.sieve import Sieve
 from operations.strip_ws import STRIP_WS
 from operations.strip import Strip
 from operations.split import Split
-from operations.strip_no_and_sc import STRIP_NO_AND_SC
+from operations.strip_no_and_sc import StripNOAndSC
 from operations.strip_ws import STRIP_WS
 from operations.sub_split import SubSplit
 from operations.title import TITLE
+from operations.swapcase import SWAPCASE
 from operations.prepend import Prepend
 from operations.append import Append
 from operations.find_all import FindAll
 from operations.omit import Omit
 from operations.multiply import Multiply
-from operations.iset_concat import ISetConcat,I_SET_CONCAT
+from operations.gset_drop import GSetDrop
+from operations.iset_concat import ISetConcat
 
 
 """
@@ -84,13 +90,13 @@ and "_reversed" would then remain unmatched.
 DJ_GRAMMAR = Grammar(
     r"""    
     file            = header body 
-    header          = ( ignore / set / config / def / gen / comment / create / _meaningless ) *
+    header          = ( ignore / set / global_set / config / def / gen / comment / create / _meaningless ) *
     body            = ( op_defs / comment / _meaningless ) +
     
     nl              = ~r"[\r\n]"m
     ws              = ~r"[ \t]"
     _meaningless    = ws* nl?
-    continuation    = ( ~r"\s*\\[\r\n]\s+"m ) / ws+ # In some cases it is possible to split a definition/sequence over multiple lines using "\" at the end.
+    continuation    = ( ~r"\s*\\\s*[\r\n]\s*"m ) / ws+ # In some cases it is possible to split a definition/sequence over multiple lines using "\" at the end.
     comment         = ~r"#[^\r\n]*"    
     #quoted_string   = ~'"[^"]*"' # does not support escapes
     quoted_string   = ~r'"(?:(?:(?!(?<!\\)").)*)"' # supports nested escaped "
@@ -106,6 +112,7 @@ DJ_GRAMMAR = Grammar(
 
     ignore          = "ignore" ws+ file_name
     set             = "set" ws+ identifier
+    global_set      = "global_set" ws+ identifier ws+ file_name( ~r"\(\s*" op_defs ~r"\s*\)"s )?
     config          = "config" ws+ python_identifier ws+ python_identifier ws+ python_value
     def             = "def" ws+ identifier continuation op_defs
     gen             = "gen" ws+ ("alt") ws+ python_value
@@ -114,22 +121,26 @@ DJ_GRAMMAR = Grammar(
     op_defs         = op_modifier? op_def (continuation op_defs)* 
 
     # the op_modifier "!" can only be used with filters;
-    # the op_modifiers "+" and "x" can only be used with transformers/extractors
-    op_modifier     = "+" / "*" / "!"
+    # the op_modifiers "+", "*" and "~" can only be used with transformers/extractors
+    op_modifier     = "+" / "*" / "!" / "~"
     
     # IN THE FOLLOWING THE ORDER OF OP DEFINITION MAY MATTER!
     op_def          = macro_call /
                       set_store /
                       set_use /
                       or /
-                      all /
-                      non_empty /
+                      iset_if_all /
+                      iset_foreach /
+                      iset_if_any /
+                      iset_select_longest /
+                      iset_unique /
                       break_up /
                       nop /
                       report /
                       write /
                       min /
                       max /
+                      iset_max /
                       has /
                       is_sc /
                       is_pattern /
@@ -138,11 +149,11 @@ DJ_GRAMMAR = Grammar(
                       is_regular_word /
                       is_popular_word /
                       sieve /
-                      select_longest /
                       find_all /
                       get_no /
                       get_sc /
                       cut /
+                      dehex /
                       deduplicate_reversed /
                       deduplicate /                      
                       detriplicate /
@@ -153,6 +164,7 @@ DJ_GRAMMAR = Grammar(
                       lower /
                       upper /
                       title /
+                      swapcase /
                       capitalize /
                       remove_ws /
                       remove_no /
@@ -178,18 +190,19 @@ DJ_GRAMMAR = Grammar(
                       related /
                       correct_spelling /
                       iset_concat /
+                      gset_drop
 
     # Core operators                  
     # ======================================
     nop             = "_"
     macro_call      = "do" ws+ identifier
     # Handling of (intermediate) sets
-    set_store       = "{" continuation? op_defs continuation? ( "}>" / "}!>" / "}/>") ws* identifier
-    set_use         = "use" ws+ identifier # a set use always has to be the first op in an op_defs
+    set_store       = "{" continuation? op_defs continuation? ( "}>" / "}[]>" / "}/>" / "}/[]>" ) ws* identifier
+    set_use         = "use" (ws+ identifier)+ # a set use always has to be the first op in an op_defs
     # Meta operators that are set related
-    all             = ~r"all\s*\(\s*N/A\s*=\s*" boolean_value ~r"\s*,\s*\[\]\s*=\s*" boolean_value ~r"\s*,\s*" op_defs ~r"\s*,\s*" op_defs ~r"\s*\)"s
-    non_empty       = ~r"non_empty\s*\(\s*N/A\s*=\s*"s boolean_value ~r"\s*,\s*\[\]\s*=\s*"s boolean_value ~r"\s*,\s*"s op_defs ~r"\s*\)"s
-    #or              = "or(" ws* op_defs (ws* "," ws* op_defs)+ ws* ")"
+    iset_if_all     = ~r"iset_if_all\s*\(\s*" (~r"N/A\s*=\s*" boolean_value ~r"\s*,\s*\[\]\s*=\s*" boolean_value ~r"\s*,\s*")? op_defs ~r"\s*,\s*" op_defs ~r"\s*\)"s
+    iset_if_any     = ~r"iset_if_any\s*\(\s*" (~r"N/A\s*=\s*"s boolean_value ~r"\s*,\s*\[\]\s*=\s*"s boolean_value ~r"\s*,\s*"s)? op_defs ~r"\s*\)"s
+    iset_foreach    = ~r"iset_foreach\s*\(\s*" op_defs ~r"\s*\)"s    
     or              = ~r"or\s*\(\s*" op_defs ( ~r"\s*,\s*" op_defs )+ ~r"\s*\)"s
     break_up        = ~r"break_up\s*\(\s*" op_defs ~r"\s*\)"s
     # Reporting operators   
@@ -201,6 +214,7 @@ DJ_GRAMMAR = Grammar(
     # 1. FILTERS    
     min             = "min" ws+ op_operator ws+ int_value
     max             = "max" ws+ op_operator ws+ int_value
+    iset_max        = "iset_max" ws+ op_operator ws+ int_value
     has             = "has" ws+ op_operator ws+ int_value
     is_sc           = "is_sc"    
     is_pattern      = "is_pattern"
@@ -209,12 +223,14 @@ DJ_GRAMMAR = Grammar(
     is_regular_word = "is_regular_word"
     is_popular_word = "is_popular_word"
     sieve           = "sieve" ws+ file_name
-    select_longest  = "select_longest"
+    iset_select_longest  = "iset_select_longest"
+    iset_unique     = "iset_unique"
     # 2. EXTRACTORS
     find_all        = "find_all" (ws+ "join")? ws+ quoted_string
     get_no          = "get_no"
     get_sc          = "get_sc"
     cut             = "cut" ws+ ("l" / "r") ws+ int_value ws+ int_value
+    dehex           = "dehex"
     deduplicate_reversed = "deduplicate_reversed"
     deduplicate     = "deduplicate"    
     detriplicate    = "detriplicate"
@@ -226,6 +242,7 @@ DJ_GRAMMAR = Grammar(
     lower           = "lower" (ws+ int_value)?
     upper           = "upper" (ws+ "l"? int_value)?
     title           = "title"
+    swapcase        = "swapcase"
     capitalize      = "capitalize"
     remove_ws       = "remove_ws"
     remove_no       = "remove_no"
@@ -251,6 +268,7 @@ DJ_GRAMMAR = Grammar(
     related         = "related" ws+ float_value    
     correct_spelling = "correct_spelling"
     iset_concat     = "iset_concat" (ws+ quoted_string)?
+    gset_drop       = "gset_drop" ws+ identifier
     """
 )
 
@@ -300,17 +318,25 @@ class DJTreeVisitor (NodeVisitor):
         (_ignore, _ws, filename) = children
         return IgnoreEntries(filename)
 
+    def visit_global_set(self, node, children):
+        (_global_set, _ws, name, _ws, filename, op_defs_opt) = children
+        op_defs = None
+        print(op_defs)
+        if isinstance(op_defs_opt, list):
+            (_ws, op_defs, _ws) = op_defs_opt[0]
+        return GlobalSetDefinition(name, filename, op_defs)
+
     def visit_set(self, node, children):
         (_set, _ws, name) = children
         return SetDefinition(name)
 
     def visit_create(self, node, children):
-        (_create,_ws,filename,initial_value) = children
-        if isinstance(initial_value,List):
-            (_ws,_,_ws,v) = initial_value[0]
-            return CreateFile(filename,unescape(v))
+        (_create, _ws, filename, initial_value) = children
+        if isinstance(initial_value, list):
+            (_ws, _, _ws, v) = initial_value[0]
+            return CreateFile(filename, unescape(v))
         else:
-            return CreateFile(filename,"")
+            return CreateFile(filename, "")
 
     def visit_config(self, node, children):
         (_config, _ws, module_name, _ws, field_name, _ws, value) = children
@@ -332,9 +358,11 @@ class DJTreeVisitor (NodeVisitor):
             if op_modifier == "+":
                 op_def = KeepAlwaysModifier(op_def)
             elif op_modifier == "*":
-                op_def = KeepOnlyIfFilteredModifier(op_def)
+                op_def = KeepOnlyIfNotApplicableModifier(op_def)
             elif op_modifier == "!":
                 op_def = NegateFilterModifier(op_def)
+            elif op_modifier == "~":
+                op_def = KeepIfRejectedModifier(op_def)
 
         op_defs = [op_def]
         # lift the subsequent nodes/operations to a list
@@ -358,14 +386,17 @@ class DJTreeVisitor (NodeVisitor):
         op = store_op.text
         if op == "}>":
             return StoreInSet(identifier, op_defs)
-        elif op == "}!>":
+        elif op == "}[]>":
             return StoreFilteredInSet(identifier, op_defs)
-        else:  # op == "}/>":
+        elif op == "}/>":
             return StoreNotApplicableInSet(identifier, op_defs)
+        else: # op == "}/[]>"
+            return StoreFilteredAndNotApplicableInSet(identifier, op_defs)
 
     def visit_set_use(self, node, visited_children):
-        (_use, _ws, identifier) = visited_children
-        return UseSet(identifier)
+        (_use, raw_identifiers) = visited_children
+        identifiers = list(map(lambda x: x[1], raw_identifiers))
+        return UseSet(identifiers)
 
     def visit_or(self, node, visited_children):
         (_or_ws, cop, more_cops, _ws) = visited_children
@@ -376,17 +407,29 @@ class DJTreeVisitor (NodeVisitor):
         all_cops.extend(cops)
         return Or(all_cops)
 
-    def visit_non_empty(self, node, visited_children):
-        (_,on_none,_,on_empty,_,cop,_) = visited_children
-        return NonEmpty(on_none,on_empty, cop)
+    def visit_iset_foreach(self, n, visited_children):
+        (_, cop, _) = visited_children
+        return ISetForeach(cop)
+
+    def visit_iset_if_all(self, n, visited_children):
+        (_, on_none_and_on_empty, cop, _, test, _) = visited_children
+        try:            
+            [(_,on_none,_,on_empty,_)] = on_none_and_on_empty
+            return ISetIfAll(on_none,on_empty,cop,test)
+        except Exception as e:
+            return ISetIfAll(False, False, cop, test)
+
+    def visit_iset_if_any(self, node, visited_children):
+        (_, on_none_and_on_empty, cop, _) = visited_children
+        try:            
+            [(_,on_none,_,on_empty,_)] = on_none_and_on_empty
+            return ISetIfAny(on_none, on_empty, cop)
+        except Exception as e:
+            return ISetIfAny(on_none, on_empty, cop)
 
     def visit_break_up(self, n, visited_children):
         (_, test, _) = visited_children
         return BreakUp(test)
-
-    def visit_all(self, n, visited_children):
-        (_, n_a, _, empty, _, cop, _, test, _) = visited_children
-        return All(n_a, empty, cop, test)
 
     def visit_nop(self, node, _children): return NOP
     def visit_report(self, node, _children): return REPORT
@@ -401,8 +444,9 @@ class DJTreeVisitor (NodeVisitor):
     #       "_" is used for things that are not relevant
     def visit_min(self, _n, c): (_, _, op, _, v) = c; return Min(op, v)
     def visit_max(self, _n, c): (_, _, op, _, v) = c; return Max(op, v)
+    def visit_iset_max(self, _n, c): (_, _, op, _, v) = c; return ISetMax(op, v)
     def visit_has(self, _n, c): (_, _, op, _, v) = c; return Has(op, v)
-    def visit_is_sc(self, _n, _c): return IS_SC
+    def visit_is_sc(self, _n, _c): return IsSC()
     def visit_is_part_of(self, _n, c): (_, _, seq) = c; return IsPartOf(seq)
     def visit_is_pattern(self, _n, _c): return IS_PATTERN
     def visit_is_walk(self, _n, c): (_, _, k) = c; return IsWalk(k)
@@ -410,23 +454,27 @@ class DJTreeVisitor (NodeVisitor):
     def visit_is_regular_word(self, _n, _c): return IsRegularWord()
     def visit_is_popular_word(self, _n, _c): return IS_POPULAR_WORD
     def visit_sieve(self, _n, c): (_, _, f) = c; return Sieve(f)
-    def visit_select_longest(self, _n, _c): return SELECT_LONGEST
-    def visit_find_all(self, _n, c): 
-        # The following test is really awkward, but I didn't find a 
+    def visit_iset_select_longest(self, _n, _c): return ISET_SELECT_LONGEST
+    def visit_iset_unique(self, _n, _c): return ISET_UNIQUE
+
+    def visit_find_all(self, _n, c):
+        # The following test is really awkward, but I didn't find a
         # simpler solution to just test for the presence of this flag...
-        (_, join , _, r) = c;         
-        if isinstance(join, List):
-            return FindAll(True,r)
+        (_, join, _, r) = c
+        if isinstance(join, list):
+            return FindAll(True, r)
         else:
-            return FindAll(False,r)
+            return FindAll(False, r)
+
     def visit_get_no(self, _n, _c): return GET_NO
-    def visit_get_sc(self, _n, _c): return GET_SC
+    def visit_get_sc(self, _n, _c): return GetSC()
 
     def visit_cut(self, _n, c):
         # "cut" ws "l|r" ws <min> ws <max>
         (_, _, [op], _, min, _, max) = c
         return Cut(op.text, min, max)
 
+    def visit_dehex(self, _n, _c): return DEHEX
     def visit_deduplicate_reversed(self, _n, _c): return DEDUPLICATE_REVERSED
     def visit_deduplicate(self, _n, _c): return DEDUPLICATE
     def visit_detriplicate(self, _n, _c): return DETRIPLICATE
@@ -443,33 +491,36 @@ class DJTreeVisitor (NodeVisitor):
             return Lower(pos)
         except:
             return Lower()
-    def visit_upper(self,_n,c): 
-        try:            
-            (_,[(_,l_opt,pos)]) = c
-            if isinstance(l_opt,list):
-                return Upper(pos,letter_with_index=True)
+
+    def visit_upper(self, _n, c):
+        try:
+            (_, [(_, l_opt, pos)]) = c
+            if isinstance(l_opt, list):
+                return Upper(pos, letter_with_index=True)
             else:
                 return Upper(pos)
         except:
             return Upper()
-    def visit_title(self,_n,_c): return TITLE
-    def visit_capitalize(self,_n,_c): return CAPITALIZE
-    def visit_remove_ws(self,_n,_c): return REMOVE_WS
-    def visit_remove_no(self,_n,_c): return REMOVE_NO
-    def visit_remove_sc(self,_n,_c): return REMOVE_SC
-    def visit_remove(self,_n,c): (_,_,cs) = c; return Remove(cs)
-    def visit_strip(self,_n,c): (_,_,cs) = c; return Strip(cs)
-    def visit_strip_no_and_sc(self,_n,_c): return STRIP_NO_AND_SC
-    def visit_reverse(self,_n,_c): return REVERSE
-    def visit_replace(self,_n,c): (_,_,f)=c ; return Replace(f)
-    def visit_multi_replace(self,_n,c): (_,_,f)=c ; return MultiReplace(f)
-    def visit_omit(self,_n,c): (_,_,v)=c ; return Omit(v)
-    def visit_map(self,_n,c): (_,_,s,_,ts)=c ; return Map(s,ts)
-    def visit_pos_map(self,_n,c): (_,_,pm)=c ; return PosMap(pm)
 
-    def visit_append(self,_n,c): 
-        (_,m,_,s) = c
-        # The following test is really awkward, but I didn't find a 
+    def visit_title(self, _n, _c): return TITLE
+    def visit_swapcase(self, _n, _c): return SWAPCASE
+    def visit_capitalize(self, _n, _c): return CAPITALIZE
+    def visit_remove_ws(self, _n, _c): return REMOVE_WS
+    def visit_remove_no(self, _n, _c): return RemoveNO()
+    def visit_remove_sc(self, _n, _c): return RemoveSC()
+    def visit_remove(self, _n, c): (_, _, cs) = c; return Remove(cs)
+    def visit_strip(self, _n, c): (_, _, cs) = c; return Strip(cs)
+    def visit_strip_no_and_sc(self, _n, _c): return StripNOAndSC()
+    def visit_reverse(self, _n, _c): return REVERSE
+    def visit_replace(self, _n, c): (_, _, f) = c; return Replace(f)
+    def visit_multi_replace(self, _n, c): (_, _, f) = c; return MultiReplace(f)
+    def visit_omit(self, _n, c): (_, _, v) = c; return Omit(v)
+    def visit_map(self, _n, c): (_, _, s, _, ts) = c; return Map(s, ts)
+    def visit_pos_map(self, _n, c): (_, _, pm) = c; return PosMap(pm)
+
+    def visit_append(self, _n, c):
+        (_, m, _, s) = c
+        # The following test is really awkward, but I didn't find a
         # simpler solution to just test for the presence of this flag...
         if isinstance(m, list):
             return Append(True, s)
@@ -485,12 +536,12 @@ class DJTreeVisitor (NodeVisitor):
         else:
             return Prepend(False, s)
 
-    def visit_iset_concat(self,_n,c):
-        (_,s_opt) = c
-        if isinstance(s_opt,list):
+    def visit_iset_concat(self, _n, c):
+        (_, s_opt) = c
+        if isinstance(s_opt, list):
             return ISetConcat(s_opt[0][1])
         else:
-            return I_SET_CONCAT
+            return ISetConcat("")
 
     def visit_multiply(self, _n, c): (_, _, f) = c; return Multiply(f)
     def visit_split(self, _n, c): (_, _, s) = c; return Split(s)
@@ -499,10 +550,14 @@ class DJTreeVisitor (NodeVisitor):
     def visit_discard_endings(self, _n, c): (
         _, _, f) = c; return DiscardEndings(f)
 
-    def visit_mangle_dates(self, _n, _c): return MANGLE_DATES
+    def visit_mangle_dates(self, _n, _c): return MangleDates()
     def visit_deleetify(self, _n, _c): return DELEETIFY
     def visit_related(self, _n, c): (_, _, r) = c; return Related(r)
     def visit_correct_spelling(self, _n, _c): return CorrectSpelling()
+
+    def visit_gset_drop(_, node, children):
+        (_gset_drop, _ws, gs_name) = children
+        return GSetDrop(gs_name)
 
 
 DJ_EXAMPLE_FILE = """
@@ -534,17 +589,18 @@ def BASE_TRANSFORMATIONS \
 +related 0.5 min length 3 
 do BASE_TRANSFORMATIONS 
 
-{ is_walk }> WALK
-{ is_pattern }!> NO_PATTERN 
+{ is_walk "PIN_PAD" }> WALK
+{ is_pattern }[]> NO_PATTERN 
 
-{ or(is_walk, is_pattern, is_sc) }> NO_WORD
+{ or(is_walk "KEYBOARD_DE" , is_pattern, is_sc) }> NO_WORD
 
 { *split "\\"" \
- *strip_ws \
- *fold_ws \
- related 0.5 }> RELATED
+    iset_foreach( 
+        *strip_ws \
+        *fold_ws \
+        related 0.5 ) }> RELATED
 
-use NO_PATTERNS map "s" "abc\\n\\r\\t" report
+use NO_PATTERN WALK map "s" "abc\\n\\r\\t" report
 """
 
 DJ_SIMPLE_EXAMPLE_FILE = """
@@ -554,24 +610,24 @@ DJ_SIMPLE_EXAMPLE_FILE = """
 
 def main():
     parser = argparse.ArgumentParser(
-        description="""Reads and prints a TD file - primarily useful for debugging purposes."""
+        description="""Reads and prints a DJ file - intended for debugging purposes."""
     )
     parser.add_argument(
         '-o',
         '--operations',
-        help="a .td file with the specified operations"
+        help="a .dj file with the specified operations"
     )
     args = parser.parse_args()
     if args.operations:
         with open(args.operations, mode="r") as f:
-            td_file = f.read()
+            dj_file = f.read()
     else:
-        # td_file = DJ_SIMPLE_EXAMPLE_FILE
-        td_file = DJ_EXAMPLE_FILE
+        # dj_file = DJ_SIMPLE_EXAMPLE_FILE
+        dj_file = DJ_EXAMPLE_FILE
 
     print("\nSource:")
     print("=====================================================================")
-    tree = DJ_GRAMMAR.parse(td_file)
+    tree = DJ_GRAMMAR.parse(dj_file)
 
     print("\nSyntaxtree:")
     print("=====================================================================")

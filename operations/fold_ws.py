@@ -1,14 +1,12 @@
-from typing import List
-
-from dj_ast import Transformer
+from dj_ops import PerEntryTransformer
 
 
-class FoldWS(Transformer):
+class FoldWS(PerEntryTransformer):
     """Folds multiple whitespace (spaces and tabs) to one space."""
 
     def op_name() -> str: return "fold_ws"
 
-    def process(self, entry: str) -> List[str]:
+    def process(self, entry: str) -> list[str]:
         last_entry = ""
         folded_entry = entry
         while folded_entry != last_entry:

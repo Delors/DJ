@@ -1,16 +1,23 @@
 import re
-from typing import List
 
-from dj_ast import Transformer, TDUnit, ASTNode
+
+from dj_ops import PerEntryTransformer, TDUnit, ASTNode
 from common import InitializationFailed
 
 
-class MangleDates(Transformer):
+class MangleDates(PerEntryTransformer):
     """ Tries to identify numbers which are dates and then creates various
         representations for the respective date.
 
         Currently, we try to identify 1st german and then 2nd english dates.
     """
+
+    _re_german_date = \
+        re.compile("[^0-9]*([0-9]{1,2})\.?([0-9]{1,2})\.?(19|20)?([0-9]{2})")
+    
+    _re_english_date = \
+        re.compile(
+            "[^0-9]*([0-9]{1,2})[/-]?([0-9]{1,2})[/-]?(19|20)?([0-9]{2})")
 
     def op_name() -> str: return "mangle_dates"
 
@@ -22,12 +29,6 @@ class MangleDates(Transformer):
 
     PRINT_SINGLE_DIGIT_DAYS = True
 
-    _re_german_date = \
-        re.compile("[^0-9]*([0-9]{1,2})\.?([0-9]{1,2})\.?(19|20)?([0-9]{2})")
-    _re_english_date = \
-        re.compile(
-            "[^0-9]*([0-9]{1,2})[/-]?([0-9]{1,2})[/-]?(19|20)?([0-9]{2})")
-
     def init(self, td_unit: TDUnit, parent: ASTNode):
         super().init(td_unit, parent)
         if self.END_YEAR_21ST >= self.START_YEAR_20TH:
@@ -35,7 +36,7 @@ class MangleDates(Transformer):
                 f"{self}: 19{self.START_YEAR_20TH} has to be < 20{self.END_YEAR_21ST}"
             )
 
-    def process(self, entry: str) -> List[str]:
+    def process(self, entry: str) -> list[str]:
         r = MangleDates._re_german_date.match(entry)
         if r:
             (d, m, c, y) = r.groups()
@@ -93,5 +94,3 @@ class MangleDates(Transformer):
 
         return mangled_dates
 
-
-MANGLE_DATES = MangleDates()

@@ -1,8 +1,9 @@
 # This script demonstrates how to find words related to the words of a dictionary.
 #
-# This script assumes that the words are already real world words found on 
-# webpages such as Facebook, Twitter etc..
-# In other words, this script assumes that the respective preprocessing has already occured.
+# This script assumes that the words are already real world words found 
+# on webpages such as Facebook, Twitter etc..
+# In other words, this script assumes that the respective preprocessing
+# has already occured.
 
 # GENERAL FILTER
 ignore "ignore/de.txt"

@@ -1,10 +1,9 @@
-from typing import List, Set
-
-from dj_ast import Transformer, ASTNode, TDUnit
+from dj_ast import ASTNode, TDUnit
+from dj_ops import PerEntryTransformer
 from common import read_utf8file, escape
 
 
-class DiscardEndings(Transformer):
+class DiscardEndings(PerEntryTransformer):
     """
     Discards the last term - recursively - of a string with multiple 
     elements if the term is defined in the given file. The preceding 
@@ -24,13 +23,17 @@ class DiscardEndings(Transformer):
 
     def __init__(self, endings_filename):
         self.endings_filename = endings_filename
-        self.endings: Set[str] = set()
+        self.endings: set[str] = set()
+
+    def __str__(self):
+        return f'{DiscardEndings.op_name()} "{escape(self.endings_filename)}"'
 
     def init(self, td_unit: TDUnit, parent: ASTNode):
         super().init(td_unit, parent)
         self.endings = set(read_utf8file(self.endings_filename))
+        return self
 
-    def process(self, entry: str) -> List[str]:
+    def process(self, entry: str) -> list[str]:
         all_terms = entry.split()
         count = 0
         while len(all_terms) > (-count) and \
@@ -41,6 +44,3 @@ class DiscardEndings(Transformer):
             return [" ".join(all_terms[0:count])]
         else:
             return None
-
-    def __str__(self):
-        return f'{DiscardEndings.op_name()} "{escape(self.endings_filename)}"'

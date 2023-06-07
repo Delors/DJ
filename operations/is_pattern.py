@@ -1,9 +1,7 @@
-from typing import List
-
-from dj_ast import Filter
+from dj_ops import PerEntryFilter
 
 
-class IsPattern(Filter):
+class IsPattern(PerEntryFilter):
     """ Identifies repetitions of 
          - a single character 
          - a pair of characters
@@ -13,7 +11,7 @@ class IsPattern(Filter):
 
     def op_name() -> str: return "is_pattern"
 
-    def process(self, entry: str) -> List[str]:
+    def process(self, entry: str) -> list[str]:
         length = len(entry)
         if length < 2:
             return []

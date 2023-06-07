@@ -1,20 +1,20 @@
 import re
-from typing import List
 
-from dj_ast import Transformer
+from dj_ops import PerEntryTransformer
 
 
-class RemoveNO(Transformer):
-    """Removes all numbers from an entry."""
+class RemoveNO(PerEntryTransformer):
+    """ Removes all numbers from an entry. 
+    """
 
-    def op_name() -> str: return "remove_numbers"
+    def op_name() -> str: return "remove_no"
 
     NO_NUMBERS_REGEXP = "[^0-9]+"
 
     def __init__(self):
         self._re_no_numbers = re.compile(self.NO_NUMBERS_REGEXP)
 
-    def process(self, entry: str) -> List[str]:
+    def process(self, entry: str) -> list[str]:
         entries = [
             i.group(0)
             for i in self._re_no_numbers.finditer(entry)
@@ -25,6 +25,3 @@ class RemoveNO(Transformer):
             return ["".join(entries)]
         else:
             return None
-
-
-REMOVE_NO = RemoveNO()

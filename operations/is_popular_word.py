@@ -1,10 +1,8 @@
-from typing import List
-
-from dj_ast import Filter
+from dj_ops import PerEntryFilter
 from common import get_nlp_vocab
 
 
-class IsPopularWord(Filter):
+class IsPopularWord(PerEntryFilter):
     """ Checks if a word is a word that is used on twitter or in 
         google news. In case of twitter, the given term is always lowered
         and then tested, because the twitter model only uses lower case
@@ -22,7 +20,7 @@ class IsPopularWord(Filter):
         self._google_vocab = None
         return
 
-    def process(self, entry: str) -> List[str]:
+    def process(self, entry: str) -> list[str]:
         if not self._twitter_vocab:
             self._twitter_vocab = get_nlp_vocab(
                 "twitter", self.td_unit.verbose)

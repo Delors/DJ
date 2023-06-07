@@ -1,15 +1,12 @@
-from typing import List
-
-from dj_ast import ASTNode, TDUnit, Filter
+from dj_ast import ASTNode, TDUnit
+from dj_ops import PerEntryFilter
 from common import InitializationFailed
 
 
-class Max(Filter):
+class Max(PerEntryFilter):
     """Only accepts entries with a given maximum number of characters
        of the specified character class.
     """
-
-    def op_name() -> str: return "max"
 
     def _test_length(c: str) -> bool: return True
     def _test_lower(c: str) -> bool: return c.islower()
@@ -29,10 +26,15 @@ class Max(Filter):
         "non_letter": _test_not_alpha
     }
 
+    def op_name() -> str: return "max"
+
     def __init__(self, operator: str, max_count: int):
         self.operator = operator
         self.test = None
         self.max_count = max_count
+
+    def __str__(self):
+        return f"{Max.op_name()} {self.operator} {self.max_count}"        
 
     def init(self, td_unit: TDUnit, parent: ASTNode):
         super().init(td_unit, parent)
@@ -46,7 +48,7 @@ class Max(Filter):
             raise InitializationFailed(msg)
         return self
 
-    def process(self, entry: str) -> List[str]:
+    def process(self, entry: str) -> list[str]:
         count = 0
         for c in entry:
             if self.test(c):
@@ -55,5 +57,4 @@ class Max(Filter):
                     return []
         return [entry]
 
-    def __str__(self):
-        return f"{Max.op_name()} {self.operator} {self.max_count}"
+

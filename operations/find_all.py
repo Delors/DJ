@@ -1,11 +1,11 @@
 import re
-from typing import List
 
-from dj_ast import Extractor, TDUnit, ASTNode
+from dj_ast import TDUnit, ASTNode
+from dj_ops import PerEntryExtractor
 from common import escape, InitializationFailed
 
 
-class FindAll(Extractor):
+class FindAll(PerEntryExtractor):
     """ Uses the given regular expressions to find all corresponding words.
         E.g. to extract subwords, the regular expression 
         "'[A-Z][a-z]*'" could be used.
@@ -22,6 +22,10 @@ class FindAll(Extractor):
         self.join = join
         self.m = None # the matcher that will be derived from the regexp at "init" time
 
+    def __str__(self):
+        join_str = ' join ' if self.join else ' '
+        return f"{FindAll.op_name()}{join_str}\"{escape(self.regexp)}\""
+
     def init(self, td_unit: TDUnit, parent: ASTNode):
         super().init(td_unit, parent)
         try:
@@ -29,8 +33,9 @@ class FindAll(Extractor):
         except Exception as e:
             raise InitializationFailed(
                 f"{self}: {e} is an invalid regular expression")
+        return self
 
-    def process(self, entry: str) -> List[str]:
+    def process(self, entry: str) -> list[str]:
         entries = self.m.findall(entry)
         if len(entries) >= 1:
             if isinstance(entries[0],str):
@@ -46,8 +51,6 @@ class FindAll(Extractor):
         else:
             return None
 
-    def __str__(self):
-        join_str = ' join ' if self.join else ' '
-        return f"{FindAll.op_name()}{join_str}\"{escape(self.regexp)}\""
+
 
 

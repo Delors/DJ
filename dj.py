@@ -8,7 +8,7 @@ import argparse
 from itertools import chain
 
 from abc import ABC, abstractmethod
-from typing import List, Set, Tuple, Callable
+from typing import Callable
 from time import time
 
 from parsimonious.exceptions import IncompleteParseError
@@ -29,7 +29,17 @@ def transform_entries(td_unit: TDUnit, dictionary_filename: str, report_pace: bo
         1) a generator
         2) a file or stdin
     """
-    generators = td_unit.instantiate_generators()
+    # 1. transform global_sets (if any)
+    td_unit.instantiate_global_sets()
+
+    if td_unit.print_global_sets:
+        for (name, entries) in td_unit.global_entry_sets.items():
+            print(f"[info] global set {name}:")
+            for e in entries:
+                print(f"[info]\t{e}")
+
+    # 2. run generators
+    generators = td_unit.evaluate_generators()
 
     d_in = None
     if dictionary_filename:
@@ -40,15 +50,22 @@ def transform_entries(td_unit: TDUnit, dictionary_filename: str, report_pace: bo
     count = 0
     start = time()
     last_count = 0
-    for entry in chain(generators, d_in):
-        count = count + 1
-        sentry = entry.rstrip("\r\n")
-        td_unit.process(count, sentry)
-        if report_pace and time()-start > 5:
-            print(
-                f"[info] processed: {count}; speed: {(count-last_count)//(time()-start)} entries per second", file=stderr)
-            last_count = count
-            start = time()
+    it = chain(generators, d_in)
+    while (True):
+        try:
+            count = count + 1
+            entry = it.__next__()
+            sentry = entry.rstrip("\r\n")
+            td_unit.process(count, sentry)
+            if report_pace and time()-start > 5:
+                print(
+                    f"[info] processed: {count}; speed: {(count-last_count)//(time()-start)} entries per second", file=stderr)
+                last_count = count
+                start = time()
+        except StopIteration:
+            break
+        except Exception as e:
+            print(f"[warn] Exception [{count}]: {e}", file=stderr)
 
     if dictionary_filename:  # test that we don't close stdin
         d_in.close()
@@ -70,9 +87,21 @@ def main() -> int:
         help="the input dictionary (if not specified stdin is used)"
     )
     parser.add_argument(
+        '-w',
+        '--warn',
+        help="helps to debug frequent issues",
+        action="store_true"
+    )
+    parser.add_argument(
         '-v',
         '--verbose',
         help="prints general trace information",
+        action="store_true"
+    )
+    parser.add_argument(
+        '-s',
+        '--print_global_sets',
+        help="prints the global sets after transformation",
         action="store_true"
     )
     parser.add_argument(
@@ -109,6 +138,7 @@ def main() -> int:
     verbose = args.verbose
     trace_ops = args.trace_ops
     unique = args.unique
+    warn = args.warn
 
     # 1. parse spec to get TDUnit
     raw_td_file = ""
@@ -129,10 +159,12 @@ def main() -> int:
         return -2
 
     td_unit: TDUnit = DJTreeVisitor().visit(dj_source_tree)
+    td_unit.print_global_sets = args.print_global_sets
     td_unit.report_progress = args.progress
     td_unit.verbose = verbose
     td_unit.trace_ops = trace_ops
     td_unit.unique = unique
+    td_unit.warn = warn
     if verbose:
         ast = "\n".join(
             map(lambda l: "[debug] " + l, str(td_unit).splitlines()))

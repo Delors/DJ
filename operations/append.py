@@ -1,11 +1,9 @@
-from typing import List
-
 from dj_ast import TDUnit, ASTNode
-from dj_ast import Transformer
-from common import InitializationFailed,escape
+from dj_ops import PerEntryTransformer
+from common import InitializationFailed, escape
 
 
-class Append(Transformer):
+class Append(PerEntryTransformer):
     """ Appends a given string to (each character of) an entry.
 
         Please note that the append operation cannot be used
@@ -19,25 +17,25 @@ class Append(Transformer):
         self.append_each = append_each
         self.s = s
 
-    def init(self, td_unit: TDUnit, parent: ASTNode):
-        super().init(td_unit, parent)
-        if len(self.s) == 0 :
-            msg = f"{self}: useless append operation"
-            raise InitializationFailed(msg)
-        return self
-
-    def process(self, entry: str) -> List[str]:
-        if len(entry) > 0:
-            if self.append_each:
-                return [(self.s.join(entry))+ self.s ]
-            else:
-                return [entry + self.s]
-        else: 
-            return [entry]
-
-
     def __str__(self):
         m = ""
         if self.append_each:
             m = " each"
         return f'{Append.op_name()}{m} "{escape(self.s)}"'
+
+    def init(self, td_unit: TDUnit, parent: ASTNode):
+        super().init(td_unit, parent)
+
+        if len(self.s) == 0:
+            msg = f"{self}: useless append operation"
+            raise InitializationFailed(msg)
+        return self
+
+    def process(self, entry: str) -> list[str]:
+        if len(entry) > 0:
+            if self.append_each:
+                return [(self.s.join(entry)) + self.s]
+            else:
+                return [entry + self.s]
+        else:
+            return [entry]

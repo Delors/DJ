@@ -1,10 +1,9 @@
-from typing import List
-
 from common import InitializationFailed
-from dj_ast import Extractor, TDUnit, ASTNode
+from dj_ast import TDUnit, ASTNode
+from dj_ops import PerEntryExtractor
 
 
-class Segments(Extractor):
+class Segments(PerEntryExtractor):
     """ Returns all segments of a given minimum und maximum length.
 
         Example: 
@@ -30,19 +29,20 @@ class Segments(Extractor):
         self.min_length = min_length
         self.max_length = max_length
 
+    def __str__(self):
+        return f"{Segments.op_name()} {self.min_length} {self.max_length}"
+
     def init(self, td_unit: TDUnit, parent: ASTNode):
         super().init(td_unit, parent)
         if self.max_length < self.min_length:
             msg = f"{self}: MAX_LENGTH < MIN_LENGTH"
             raise InitializationFailed(msg)
-
         if self.min_length < 1:
             msg = f"{self}: MIN_LENGTH has to be equal or larger than 1"
             raise InitializationFailed(msg)
-
         return self
 
-    def process(self, entry: str) -> List[str]:
+    def process(self, entry: str) -> list[str]:
         if len(entry) < self.min_length:
             return None
 
@@ -52,6 +52,3 @@ class Segments(Extractor):
                 segments.append(entry[i:i+l])
 
         return segments
-
-    def __str__(self):
-        return f"{Segments.op_name()} {self.min_length} {self.max_length}"

@@ -1,9 +1,7 @@
-from typing import List
-
-from dj_ast import Transformer
+from dj_ops import PerEntryTransformer
 
 
-class Capitalize(Transformer):
+class Capitalize(PerEntryTransformer):
     """Capitalizes a given entry. 
     
         I.e., the first character of a string is converted to a capital letter.
@@ -11,7 +9,7 @@ class Capitalize(Transformer):
 
     def op_name() -> str: return "capitalize"
 
-    def process(self, entry: str) -> List[str]:
+    def process(self, entry: str) -> list[str]:
         capitalized = entry.capitalize()
         if entry != capitalized:
             return [capitalized]

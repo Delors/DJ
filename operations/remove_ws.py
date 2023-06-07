@@ -1,14 +1,15 @@
-from typing import List
-
-from dj_ast import Transformer
+from dj_ops import PerEntryTransformer
 
 
-class RemoveWS(Transformer):
-    """Removes all whitespace."""
+class RemoveWS(PerEntryTransformer):
+    """ Removes all whitespace.
+
+        See `remove` for a more general variant.
+    """
 
     def op_name() -> str: return "remove_ws"
 
-    def process(self, entry: str) -> List[str]:
+    def process(self, entry: str) -> list[str]:
         split_entries = entry.split()
         if len(split_entries) == 0:
             # The entry consisted only of WS

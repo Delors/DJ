@@ -1,9 +1,7 @@
-from typing import List
-
-from dj_ast import Transformer
+from dj_ops import PerEntryTransformer
 
 
-class Title(Transformer):
+class Title(PerEntryTransformer):
     """ Converts an entry to title case.
 
         E.g. "this is a test" is converted to "This Is A Test"
@@ -14,7 +12,7 @@ class Title(Transformer):
 
     def op_name() -> str: return "title"
 
-    def process(self, entry: str) -> List[str]:
+    def process(self, entry: str) -> list[str]:
         title = entry.title()
         if title != entry:
             return [title]

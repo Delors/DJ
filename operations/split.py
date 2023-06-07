@@ -1,10 +1,8 @@
-from typing import List
-
-from dj_ast import Transformer
+from dj_ops import PerEntryTransformer
 from common import escape
 
 
-class Split(Transformer):
+class Split(PerEntryTransformer):
     """ Splits up an entry using the given split_char as a separator.
     """
 
@@ -13,7 +11,10 @@ class Split(Transformer):
     def __init__(self, split_char: str):
         self.split_char = split_char
 
-    def process(self, entry: str) -> List[str]:
+    def __str__(self):
+        return f'{Split.op_name()} "{escape(self.split_char)}"'
+
+    def process(self, entry: str) -> list[str]:
         if len(entry) == 0:
             return None
 
@@ -25,6 +26,3 @@ class Split(Transformer):
 
         segments = list(filter(lambda e: len(e) > 0, all_segments))
         return segments
-
-    def __str__(self):
-        return f'{Split.op_name()} "{escape(self.split_char)}"'

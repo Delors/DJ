@@ -1,13 +1,12 @@
-from typing import List
-
 from Levenshtein import distance as levenshtein_distance
 from jellyfish import damerau_levenshtein_distance
 
-from dj_ast import TDUnit, ASTNode, Transformer
+from dj_ast import TDUnit, ASTNode
+from dj_ops import PerEntryTransformer
 from common import dictionaries as all_dictionaries
 
 
-class CorrectSpelling(Transformer):
+class CorrectSpelling(PerEntryTransformer):
     """
     Tries to correct the spelling of an entry by using Nuspell.
     Here, we only consider misspellings with at most one typing
@@ -41,7 +40,7 @@ class CorrectSpelling(Transformer):
             self.dictionaries.append(all_dictionaries[d])
         return self
 
-    def process(self, entry: str) -> List[str]:
+    def process(self, entry: str) -> list[str]:
         """
         Processes a given entry and tries to fix spelling mistakes.
         Compared to classical spell-checking we implement a more

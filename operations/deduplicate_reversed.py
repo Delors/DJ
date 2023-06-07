@@ -1,9 +1,7 @@
-from typing import List
-
-from dj_ast import Transformer
+from dj_ops import PerEntryTransformer
 
 
-class DeduplicateReversed(Transformer):
+class DeduplicateReversed(PerEntryTransformer):
     """
     Identifies entries where the second part of an entry is the 
     duplication of the first part, but reversed. E.g., "testtset".
@@ -11,7 +9,7 @@ class DeduplicateReversed(Transformer):
 
     def op_name() -> str: return "deduplicate_reversed"
 
-    def process(self, entry: str) -> List[str]:
+    def process(self, entry: str) -> list[str]:
         length = len(entry)
         if length % 2 == 1:
             return None

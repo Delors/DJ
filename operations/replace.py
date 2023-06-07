@@ -1,11 +1,10 @@
-from typing import List
-
-from dj_ast import TDUnit, ASTNode, Transformer
+from dj_ast import TDUnit, ASTNode
+from dj_ops import PerEntryTransformer
 from common import InitializationFailed, read_utf8file, escape
 
 
-class Replace(Transformer):
-    """ Replaces a character by another character.
+class Replace(PerEntryTransformer):
+    """ Replaces a character (sequence) by another character (sequence).
 
         (If you want to replace a single character by multiple other 
         characters use the "map" operation.)
@@ -17,6 +16,9 @@ class Replace(Transformer):
         self.replacements_filename = replacements_filename
         self.replacement_table: dict[str, str] = {}
 
+    def __str__(self):
+        return f'{Replace.op_name()} "{escape(self.replacements_filename)}"'
+
     def init(self, td_unit: TDUnit, parent: ASTNode):
         super().init(td_unit, parent)
         entries = read_utf8file(self.replacements_filename)
@@ -27,29 +29,31 @@ class Replace(Transformer):
             try:
                 (raw_key, raw_value) = sline.split()
             except:
-                raise InitializationFailed(f"{self} contains invalid entry: {sline}")
+                raise InitializationFailed(
+                    f"{self} contains invalid entry: {sline}")
             key = "\\".join(
-                list(map(lambda s : s.replace("\\s", " ")\
-                    .replace("\\#", "#") ,
+                list(map(lambda s: s.replace("\\s", " ")
+                         .replace("\\#", "#"),
                      raw_key.split("\\\\"))
-                    ))
+                     ))
             value = "\\".join(
-                list(map(lambda s : s.replace("\\s", " ")\
-                    .replace("\\#", "#") ,
+                list(map(lambda s: s.replace("\\s", " ")
+                         .replace("\\#", "#"),
                      raw_value.split("\\\\"))
-                    ))               
-            
+                     ))
+
             if self.replacement_table.get(key):
                 msg = f"{self}: {key} is already used"
                 raise InitializationFailed(msg)
-            
+
             if self.replacement_table.get(value):
                 msg = f"{self}: the value {value} is later used as a key"
                 raise InitializationFailed(msg)
-             
-            self.replacement_table[key] = value
 
-    def process(self, entry: str) -> List[str]:
+            self.replacement_table[key] = value
+        return self
+
+    def process(self, entry: str) -> list[str]:
         e = entry
         for k, v in self.replacement_table.items():
             # RECALL:   Replace maintains object identity if there is
@@ -59,6 +63,3 @@ class Replace(Transformer):
             return None
         else:
             return [e]
-
-    def __str__(self):
-        return f'{Replace.op_name()} "{escape(self.replacements_filename)}"'

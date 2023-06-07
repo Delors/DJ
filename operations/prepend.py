@@ -1,11 +1,9 @@
-from typing import List
-
 from dj_ast import TDUnit, ASTNode
-from dj_ast import Transformer
+from dj_ops import PerEntryTransformer
 from common import InitializationFailed,escape
 
 
-class Prepend(Transformer):
+class Prepend(PerEntryTransformer):
     """ Prepends a given string to (each character of) an entry.
 
         E.g., to convert an entry such that it can be prepended to a 
@@ -27,6 +25,12 @@ class Prepend(Transformer):
         self.prepend_each = prepend_each
         self.s = s
 
+    def __str__(self):
+        m = ""
+        if self.prepend_each:
+            m = " each"
+        return f'{Prepend.op_name()}{m} "{escape(self.s)}"'
+
     def init(self, td_unit: TDUnit, parent: ASTNode):
         super().init(td_unit, parent)
         if len(self.s) == 0 :
@@ -34,7 +38,7 @@ class Prepend(Transformer):
             raise InitializationFailed(msg)
         return self
 
-    def process(self, entry: str) -> List[str]:
+    def process(self, entry: str) -> list[str]:
         if len(entry) > 0:
             if self.prepend_each:
                 return [self.s + (self.s.join(entry))]
@@ -44,8 +48,4 @@ class Prepend(Transformer):
             return [entry]
 
 
-    def __str__(self):
-        m = ""
-        if self.prepend_each:
-            m = " each"
-        return f'{Prepend.op_name()}{m} "{escape(self.s)}"'
+

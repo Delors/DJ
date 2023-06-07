@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
-from typing import List
-
-from dj_ast import ASTNode, TDUnit, Filter
+from dj_ast import ASTNode, TDUnit
+from dj_ops import PerEntryFilter
 from common import InitializationFailed
 
 KEYBOARDS = {
@@ -221,12 +220,13 @@ KEYBOARDS = {
             "0": ["7", "8", "9"],
         }
     }
+    # TODO Add definitions for Smartphones (iPhone, Android...)
 }
 
 # IMPROVE Make keyboard configuration configurable by putting it into a python file which - when specified - registers itself with the set of keyboards...
 
 
-class IsWalk(Filter):
+class IsWalk(PerEntryFilter):
     """ Identifies so-called keyboard/pin-pad walks which have at least MIN_WALK_LENGTH
         characters.
 
@@ -244,6 +244,9 @@ class IsWalk(Filter):
     def __init__(self,keyboard) -> None:
         self.keyboard = keyboard
 
+    def __str__(self):
+        return f'{IsWalk.op_name()} "{self.keyboard}"'        
+
     def init(self, td_unit: TDUnit, parent: ASTNode):
         super().init(td_unit, parent)
         try:
@@ -254,9 +257,7 @@ class IsWalk(Filter):
         self._min_walk_length = IsWalk.MIN_WALK_LENGTH
         self._min_sub_walk_length = IsWalk.MIN_SUB_WALK_LENGTH
 
-    def is_filter(self) -> bool: return True
-
-    def process(self, entry: str) -> List[str]:
+    def process(self, entry: str) -> list[str]:
         if len(entry) < self._min_walk_length:
             return []
         last_e = entry[0]
@@ -285,5 +286,4 @@ class IsWalk(Filter):
         else:
             return [entry]
 
-    def __str__(self):
-        return f'{IsWalk.op_name()} "{self.keyboard}"'
+

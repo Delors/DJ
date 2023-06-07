@@ -1,9 +1,7 @@
-from typing import List
-
-from dj_ast import Transformer
+from dj_ops import PerEntryTransformer
 
 
-class Number(Transformer):
+class Number(PerEntryTransformer):
     """ Replaces every matched character by the number 
         of previous occurrences of matched characters.
 
@@ -16,9 +14,12 @@ class Number(Transformer):
 
     def __init__(self, chars_to_number: str):
         self.chars_to_number = set(chars_to_number)
-        return
+        
+    def __str__(self):
+        chars = "".join(self.chars_to_number)
+        return f"{Number.op_name()} [{chars}]"    
 
-    def process(self, entry: str) -> List[str]:
+    def process(self, entry: str) -> list[str]:
         count = 0
         new_e = ""
         for e in entry:
@@ -33,6 +34,3 @@ class Number(Transformer):
         else:
             return [new_e]
 
-    def __str__(self):
-        chars = "".join(self.chars_to_number)
-        return f"{Number.op_name()} [{chars}]"

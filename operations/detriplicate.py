@@ -1,9 +1,7 @@
-from typing import List
-
-from dj_ast import Extractor
+from dj_ops import PerEntryExtractor
 
 
-class Detriplicate(Extractor):
+class Detriplicate(PerEntryExtractor):
     """
     Transforms entries where the second and third thirds are a 
     repetition of the first third.
@@ -13,7 +11,7 @@ class Detriplicate(Extractor):
 
     def op_name() -> str: return "detriplicate"
 
-    def process(self, entry: str) -> List[str]:
+    def process(self, entry: str) -> list[str]:
         length = len(entry)
         if length % 3 != 0:
             return None
@@ -25,6 +23,17 @@ class Detriplicate(Extractor):
             return [first_third]
         else:
             return None
+        
+    def derive_rules(self, entry: str) -> list[tuple[str,str]]:
+        # Returned value: the first string is the result of the 
+        #                 operation; the second is the operation
+        #                 to regenerate the original string.
+        r = self.process(entry)
+        if r is not None:
+            return [(r[0],"multiply 3")]
+                
+        return r
+    
 
 
 DETRIPLICATE = Detriplicate()

@@ -1,10 +1,10 @@
-from typing import List
 
-from dj_ast import Transformer, TDUnit, ASTNode
+from dj_ast import TDUnit, ASTNode
+from dj_ops import PerEntryTransformer
 from common import InitializationFailed, escape
 
 
-class Map(Transformer):
+class Map(PerEntryTransformer):
     """ Maps a given character to one to several alternatives.
     """
 
@@ -14,6 +14,11 @@ class Map(Transformer):
         self.source_char = source_char
         self.raw_target_chars = target_chars
         self.target_chars = set(target_chars)
+
+    def __str__(self):
+        source_char = escape(self.source_char)
+        target_chars = escape(self.raw_target_chars)
+        return f'{Map.op_name()} "{source_char}" "{target_chars}"'
 
     def init(self, td_unit: TDUnit, parent: ASTNode):
         super().init(td_unit, parent)
@@ -28,7 +33,7 @@ class Map(Transformer):
             raise InitializationFailed(msg)
         return self
 
-    def process(self, entry: str) -> List[str]:
+    def process(self, entry: str) -> list[str]:
         if self.source_char in entry:
             entries = []
             for c in self.target_chars:
@@ -37,7 +42,4 @@ class Map(Transformer):
         else:
             return None
 
-    def __str__(self):
-        source_char = escape(self.source_char)
-        target_chars = escape(self.raw_target_chars)
-        return f'{Map.op_name()} "{source_char}" "{target_chars}"'
+

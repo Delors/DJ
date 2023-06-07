@@ -1,10 +1,9 @@
-from typing import List
-
-from dj_ast import TDUnit, ASTNode, Extractor
+from dj_ast import TDUnit, ASTNode
+from dj_ops import PerEntryExtractor
 from common import InitializationFailed
 
 
-class Cut(Extractor):
+class Cut(PerEntryExtractor):
     """
     Cuts the left or right characters of a term.
     """
@@ -15,6 +14,9 @@ class Cut(Extractor):
         self.operator = operator  # cut left == "l" or right == "r"...
         self.min = min
         self.max = max
+
+    def __str__(self):
+        return f"{Cut.op_name()} {self.operator} {self.min} {self.max}"
 
     def init(self, td_unit: TDUnit, parent: ASTNode):
         super().init(td_unit, parent)
@@ -27,8 +29,9 @@ class Cut(Extractor):
         if self.max < self.min:
             raise InitializationFailed(
                 f"{self}: invariant not satisfied {self.min} < {self.max}")
+        return self
 
-    def process(self, entry: str) -> List[str]:
+    def process(self, entry: str) -> list[str]:
         if len(entry) < self.min:
             return None
 
@@ -41,5 +44,4 @@ class Cut(Extractor):
 
         return new_entries
 
-    def __str__(self):
-        return f"{Cut.op_name()} {self.operator} {self.min} {self.max}"
+    
