@@ -13,18 +13,18 @@ class GSetDrop(PerEntryTransformer):
 
     MIN_LENGTH = 4 # of characters of the remaining entry
 
-    def __init__(self, name):
-        self.name = name
+    def __init__(self, setname):
+        self.setname = setname
         self.entries_set = None
 
     def __str__(self):
-        return f'{GSetDrop.op_name()} {self.name}'
+        return f'{GSetDrop.op_name()} {self.setname}'
 
     def init(self, td_unit: TDUnit, parent: ASTNode):
         super().init(td_unit, parent)
-        if self.name not in td_unit.global_entry_sets:
+        if self.setname not in td_unit.global_entry_sets:
             raise InitializationFailed(f"{self}: set does not exist")
-        self.entries_set = self.td_unit.global_entry_sets[self.name]        
+        self.entries_set = self.td_unit.global_entry_sets[self.setname]        
         return self
 
     def process(self, entry: str) -> list[str]:        
