@@ -327,7 +327,6 @@ class DJTreeVisitor (NodeVisitor):
     def visit_global_set(self, node, children):
         (_global_set, _ws, name, _ws, filename, op_defs_opt) = children
         op_defs = None
-        print(op_defs)
         if isinstance(op_defs_opt, list):
             (_ws, op_defs, _ws) = op_defs_opt[0]
         return GlobalSetDefinition(name, filename, op_defs)
