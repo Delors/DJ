@@ -12,6 +12,7 @@ class Max(PerEntryFilter):
     def _test_lower(c: str) -> bool: return c.islower()
     def _test_upper(c: str) -> bool: return c.isupper()
     def _test_numeric(c: str) -> bool: return c.isnumeric()
+    def _test_non_numeric(c: str) -> bool: return not c.isnumeric()
     def _test_alpha(c: str) -> bool: return c.isalpha()
     def _test_not_alpha(c: str) -> bool: return not c.isalpha()
     def _test_symbol(c: str) -> bool: return not c.isalnum()
@@ -21,6 +22,7 @@ class Max(PerEntryFilter):
         "lower": _test_lower,
         "upper": _test_upper,
         "numeric": _test_numeric,
+        "non_numeric": _test_non_numeric,
         "letter": _test_alpha,
         "symbol": _test_symbol,
         "non_letter": _test_not_alpha
