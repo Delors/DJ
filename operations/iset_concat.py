@@ -2,13 +2,13 @@ from dj_ast import Transformer
 from common import escape
 
 
-class ISetConcat(Transformer):
+class IListConcat(Transformer):
     """ Concats all current intermediate results. 
         None is returned if the current set only consists of one 
         intermediate result.
     """
 
-    def op_name() -> str: return "iset_concat"
+    def op_name() -> str: return "ilist_concat"
 
     def __init__(self, s: str):
         """
@@ -18,9 +18,9 @@ class ISetConcat(Transformer):
 
     def __str__(self):
         if len(self.s) > 0 :
-            return f'{ISetConcat.op_name()} "{escape(self.s)}"'
+            return f'{IListConcat.op_name()} "{escape(self.s)}"'
         else:
-            return f'{ISetConcat.op_name()}'
+            return f'{IListConcat.op_name()}'
 
     def process_entries(self, entries: list[str]) -> list[str]:
         if len(entries) == 1:

@@ -83,11 +83,11 @@ use UNKNOWN_1 { cut r 1 2 }> CROPPED
 use UNKNOWN_1 { cut l 1 1 cut r 1 1 }> CROPPED                 
 
 use CROPPED \
-    { break_up(max numeric 0 is_regular_word) iset_max length 4 }/> NO_WORD_SEQ \         
+    { break_up(max numeric 0 is_regular_word) ilist_max length 4 }/> NO_WORD_SEQ \         
                                                             write "find_words/sub_words.txt"
 
 use NO_WORD_SEQ \
-    iset_foreach( do ADVANCED_TRANSFORMATIONS )\
+    ilist_foreach( do ADVANCED_TRANSFORMATIONS )\
     min length 4 \
     { +find_all "[A-Z][a-z]*" do IS_WORD }[]> GARBAGE \ 
     min length 4                                           write "find_words/cropped_words.txt"

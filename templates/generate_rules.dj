@@ -14,9 +14,9 @@ use BASE { find_all "^[^a-zA-Z]+" reverse prepend each "^" }> LEFT
 use BASE { find_all "[^a-zA-Z]+$" prepend each "$" }> RIGHT
 
 # In case we only have a prependix or an appendix, we 
-# just take the rule as is... (Recall that iset_concat reasons about
+# just take the rule as is... (Recall that ilist_concat reasons about
 # the set as a whole and the modifiers "+","*" and "~" perform
 # a per entry reasoning. I.e., combining these modifiers with 
-# iset_concat is generally not useful.)
-use LEFT RIGHT iset_max length 1 report
-use LEFT RIGHT iset_concat " " report
+# ilist_concat is generally not useful.)
+use LEFT RIGHT ilist_max length 1 report
+use LEFT RIGHT ilist_concat " " report

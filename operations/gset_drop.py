@@ -3,13 +3,13 @@ from dj_ops import PerEntryTransformer
 from common import InitializationFailed
 
 
-class GSetDrop(PerEntryTransformer):
+class GListDrop(PerEntryTransformer):
     """
     Discards the ending of an entry if it matches any of the strings
     found in the specified global set.
     """
 
-    def op_name() -> str: return "gset_drop"
+    def op_name() -> str: return "glist_drop"
 
     MIN_LENGTH = 4 # of characters of the remaining entry
 
@@ -18,7 +18,7 @@ class GSetDrop(PerEntryTransformer):
         self.entries_set = None
 
     def __str__(self):
-        return f'{GSetDrop.op_name()} {self.setname}'
+        return f'{GListDrop.op_name()} {self.setname}'
 
     def init(self, td_unit: TDUnit, parent: ASTNode):
         super().init(td_unit, parent)
@@ -30,7 +30,7 @@ class GSetDrop(PerEntryTransformer):
     def process(self, entry: str) -> list[str]:        
         all = []
         l_entry = len(entry)
-        for s in range(l_entry-1,GSetDrop.MIN_LENGTH-1,-1):
+        for s in range(l_entry-1,GListDrop.MIN_LENGTH-1,-1):
             part = entry[s:l_entry]
             if part in self.entries_set:
                 all.append(entry[0:s])

@@ -140,7 +140,7 @@ When applying an operation, DJ distinguishes two cases: An _operation is applica
 # `*` Meta-Operator (*Continue if not applicable*)
 
 - `*` (e.g,. `*remove " "`) will pass on the current entries set, if and only if, the operation was not applicable to all given entries.  
-*Often the `*` operator is combined with an `iset_foreach` operation.*
+*Often the `*` operator is combined with an `ilist_foreach` operation.*
 
 | Operation             | Input         | Output        | Remark    |
 | --------------------- | ------------- | ------------- | --------- |
@@ -207,18 +207,18 @@ is_popular_word
  
 # Sets
 
-- The implicit (current) per dictionary entry set  (___iset\_*___)
+- The implicit (current) per dictionary entry set  (___ilist\_*___)
 - Named sets per dictionary
 
 ---
 
 # Intermediate Sets
 
-Operations beginning with "iset_" operate on the current implicit, intermediate set:
-  - **Processing all current items one ofter another**: iset_foreach      
+Operations beginning with "ilist_" operate on the current implicit, intermediate set:
+  - **Processing all current items one ofter another**: ilist_foreach      
     _Often used in combination with the "+" operator._
-  - **Quantification over the intermediate set**: iset_if_all, iset_if_any
-  - **Transformations**: iset_concat
+  - **Quantification over the intermediate set**: ilist_if_all, ilist_if_any
+  - **Transformations**: ilist_concat
 
 ---
 
@@ -234,7 +234,7 @@ Example:
 set BASE
 { *strip_ws *strip_no_and_sc *split " " }> Base
 use BASE report
-use BASE iset_foreach( get_no report )
+use BASE ilist_foreach( get_no report )
 ```
 
 ---

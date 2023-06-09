@@ -3,7 +3,7 @@ from itertools import groupby
 from dj_ast import Filter
 
 
-class ISetUnique(Filter):
+class IListUnique(Filter):
     """ Reduces the list of intermedidate entries to a set; i.e.,
         duplicates are removed. The order is maintained - except of
         the removal of duplicates.
@@ -13,7 +13,7 @@ class ISetUnique(Filter):
          - semantic minimization
     """
 
-    def op_name() -> str: return "iset_unique"
+    def op_name() -> str: return "ilist_unique"
 
     def process_entries(self, entries: list[str]) -> list[str]:
         seen_entries = set()
@@ -24,4 +24,4 @@ class ISetUnique(Filter):
                 new_entries.append(e)
         return new_entries
 
-ISET_UNIQUE = ISetUnique()
+ISET_UNIQUE = IListUnique()

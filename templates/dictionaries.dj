@@ -91,6 +91,6 @@ split " " discard_endings "discard_endings/de.txt" do BASE_TRANSFORMATIONS repor
 # standard format. E.g., Vladimir PAVEL => Vladimir Pavel;
 # however, we do not want to convert entries that are seemingly not names,
 # e.g., in an entry such as "HiHo ALLE", we do not want to change the 
-# capitalization of "HiHo". Therefore, `split " " *title iset_concat report` 
+# capitalization of "HiHo". Therefore, `split " " *title ilist_concat report` 
 # wouldn't work.
-split " " ~iset_foreach( max lower 0 min upper 1 capitalize ) iset_concat " " report
+split " " ~ilist_foreach( max lower 0 min upper 1 capitalize ) ilist_concat " " report

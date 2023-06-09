@@ -18,7 +18,7 @@ from dj_ast import TDUnit, Body, Header, Comment
 from dj_ast import Generate, IgnoreEntries, SetDefinition, GlobalSetDefinition
 from dj_ast import MacroDefinition, ConfigureOperation, CreateFile
 from dj_ops import NOP, REPORT, Write, Classify, MacroCall, Or, BreakUp
-from dj_ops import ISetIfAll, ISetForeach, ISetIfAny
+from dj_ops import IListIfAll, IListForeach, IListIfAny
 from dj_ops import UseSet, StoreInSet, StoreFilteredInSet, StoreNotApplicableInSet, StoreFilteredAndNotApplicableInSet
 from dj_ops import NegateFilterModifier, KeepAlwaysModifier, KeepOnlyIfNotApplicableModifier, KeepIfRejectedModifier
 from operations.capitalize import CAPITALIZE
@@ -39,15 +39,15 @@ from operations.is_popular_word import IS_POPULAR_WORD
 from operations.is_regular_word import IsRegularWord
 from operations.is_sc import IsSC
 from operations.is_walk import IsWalk
-from operations.iset_select_longest import ISET_SELECT_LONGEST
-from operations.iset_unique import ISET_UNIQUE
+from operations.ilist_select_longest import ISET_SELECT_LONGEST
+from operations.ilist_unique import ISET_UNIQUE
 from operations.lower import Lower
 from operations.upper import Upper
 from operations.rotate import Rotate
 from operations.mangle_dates import MangleDates
 from operations.map import Map
 from operations.max import Max
-from operations.iset_max import ISetMax
+from operations.ilist_max import IListMax
 from operations.min import Min
 from operations.has import Has
 from operations.number import Number
@@ -75,9 +75,9 @@ from operations.append import Append
 from operations.find_all import FindAll
 from operations.omit import Omit
 from operations.multiply import Multiply
-from operations.gset_drop import GSetDrop
-from operations.gset_in import GSetIn
-from operations.iset_concat import ISetConcat
+from operations.glist_drop import GListDrop
+from operations.glist_in import GListIn
+from operations.ilist_concat import IListConcat
 
 
 """
@@ -131,14 +131,14 @@ DJ_GRAMMAR = Grammar(
                       set_store /
                       set_use /
                       or /
-                      iset_if_all /
-                      iset_foreach /
-                      iset_if_any /
-                      iset_select_longest /
-                      iset_unique /
-                      iset_concat /
-                      gset_drop /
-                      gset_in /
+                      ilist_if_all /
+                      ilist_foreach /
+                      ilist_if_any /
+                      ilist_select_longest /
+                      ilist_unique /
+                      ilist_concat /
+                      glist_drop /
+                      glist_in /
                       break_up /
                       nop /
                       report /
@@ -146,7 +146,7 @@ DJ_GRAMMAR = Grammar(
                       classify /
                       min /
                       max /
-                      iset_max /
+                      ilist_max /
                       has /
                       is_sc /
                       is_pattern /
@@ -204,9 +204,9 @@ DJ_GRAMMAR = Grammar(
     set_store       = "{" nl_continuation? op_defs nl_continuation? ( "}>" / "}[]>" / "}/>" / "}/[]>" ) ws* identifier
     set_use         = "use" (ws+ identifier)+ # a set use always has to be the first op in an op_defs
     # Meta operators that are set related
-    iset_if_all     = ~r"iset_if_all\s*\(\s*" (~r"N/A\s*=\s*" boolean_value ~r"\s*,\s*\[\]\s*=\s*" boolean_value ~r"\s*,\s*")? op_defs ~r"\s*,\s*" op_defs ~r"\s*\)"s
-    iset_if_any     = ~r"iset_if_any\s*\(\s*" (~r"N/A\s*=\s*"s boolean_value ~r"\s*,\s*\[\]\s*=\s*"s boolean_value ~r"\s*,\s*"s)? op_defs ~r"\s*\)"s
-    iset_foreach    = ~r"iset_foreach\s*\(\s*" op_defs ~r"\s*\)"s    
+    ilist_if_all     = ~r"ilist_if_all\s*\(\s*" (~r"N/A\s*=\s*" boolean_value ~r"\s*,\s*\[\]\s*=\s*" boolean_value ~r"\s*,\s*")? op_defs ~r"\s*,\s*" op_defs ~r"\s*\)"s
+    ilist_if_any     = ~r"ilist_if_any\s*\(\s*" (~r"N/A\s*=\s*"s boolean_value ~r"\s*,\s*\[\]\s*=\s*"s boolean_value ~r"\s*,\s*"s)? op_defs ~r"\s*\)"s
+    ilist_foreach    = ~r"ilist_foreach\s*\(\s*" op_defs ~r"\s*\)"s    
     or              = ~r"or\s*\(\s*" op_defs ( ~r"\s*,\s*" op_defs )+ ~r"\s*\)"s
     break_up        = ~r"break_up\s*\(\s*" op_defs ~r"\s*\)"s
     # Reporting operators   
@@ -219,7 +219,7 @@ DJ_GRAMMAR = Grammar(
     # 1. FILTERS    
     min             = "min" ws+ op_operator ws+ int_value
     max             = "max" ws+ op_operator ws+ int_value
-    iset_max        = "iset_max" ws+ op_operator ws+ int_value
+    ilist_max        = "ilist_max" ws+ op_operator ws+ int_value
     has             = "has" ws+ op_operator ws+ int_value
     is_sc           = "is_sc"    
     is_pattern      = "is_pattern"
@@ -228,8 +228,8 @@ DJ_GRAMMAR = Grammar(
     is_regular_word = "is_regular_word"
     is_popular_word = "is_popular_word"
     sieve           = "sieve" ws+ file_name
-    iset_select_longest  = "iset_select_longest"
-    iset_unique     = "iset_unique"
+    ilist_select_longest  = "ilist_select_longest"
+    ilist_unique     = "ilist_unique"
     # 2. EXTRACTORS
     find_all        = "find_all" (ws+ "join")? ws+ quoted_string
     get_no          = "get_no"
@@ -272,9 +272,9 @@ DJ_GRAMMAR = Grammar(
     deleetify       = "deleetify"    
     related         = "related" ws+ float_value    
     correct_spelling = "correct_spelling"
-    iset_concat     = "iset_concat" (ws+ quoted_string)?
-    gset_drop       = "gset_drop" ws+ identifier
-    gset_in         = "gset_in" ws+ identifier
+    ilist_concat     = "ilist_concat" (ws+ quoted_string)?
+    glist_drop       = "glist_drop" ws+ identifier
+    glist_in         = "glist_in" ws+ identifier
     """
 )
 
@@ -413,25 +413,25 @@ class DJTreeVisitor (NodeVisitor):
         all_cops.extend(cops)
         return Or(all_cops)
 
-    def visit_iset_foreach(self, n, visited_children):
+    def visit_ilist_foreach(self, n, visited_children):
         (_, cop, _) = visited_children
-        return ISetForeach(cop)
+        return IListForeach(cop)
 
-    def visit_iset_if_all(self, n, visited_children):
+    def visit_ilist_if_all(self, n, visited_children):
         (_, on_none_and_on_empty, cop, _, test, _) = visited_children
         try:            
             [(_,on_none,_,on_empty,_)] = on_none_and_on_empty
-            return ISetIfAll(on_none,on_empty,cop,test)
+            return IListIfAll(on_none,on_empty,cop,test)
         except Exception as e:
-            return ISetIfAll(False, False, cop, test)
+            return IListIfAll(False, False, cop, test)
 
-    def visit_iset_if_any(self, node, visited_children):
+    def visit_ilist_if_any(self, node, visited_children):
         (_, on_none_and_on_empty, cop, _) = visited_children
         try:            
             [(_,on_none,_,on_empty,_)] = on_none_and_on_empty
-            return ISetIfAny(on_none, on_empty, cop)
+            return IListIfAny(on_none, on_empty, cop)
         except Exception as e:
-            return ISetIfAny(False, False, cop)
+            return IListIfAny(False, False, cop)
 
     def visit_break_up(self, n, visited_children):
         (_, test, _) = visited_children
@@ -454,7 +454,7 @@ class DJTreeVisitor (NodeVisitor):
     #       "_" is used for things that are not relevant
     def visit_min(self, _n, c): (_, _, op, _, v) = c; return Min(op, v)
     def visit_max(self, _n, c): (_, _, op, _, v) = c; return Max(op, v)
-    def visit_iset_max(self, _n, c): (_, _, op, _, v) = c; return ISetMax(op, v)
+    def visit_ilist_max(self, _n, c): (_, _, op, _, v) = c; return IListMax(op, v)
     def visit_has(self, _n, c): (_, _, op, _, v) = c; return Has(op, v)
     def visit_is_sc(self, _n, _c): return IsSC()
     def visit_is_part_of(self, _n, c): (_, _, seq) = c; return IsPartOf(seq)
@@ -464,8 +464,8 @@ class DJTreeVisitor (NodeVisitor):
     def visit_is_regular_word(self, _n, _c): return IsRegularWord()
     def visit_is_popular_word(self, _n, _c): return IS_POPULAR_WORD
     def visit_sieve(self, _n, c): (_, _, f) = c; return Sieve(f)
-    def visit_iset_select_longest(self, _n, _c): return ISET_SELECT_LONGEST
-    def visit_iset_unique(self, _n, _c): return ISET_UNIQUE
+    def visit_ilist_select_longest(self, _n, _c): return ISET_SELECT_LONGEST
+    def visit_ilist_unique(self, _n, _c): return ISET_UNIQUE
 
     def visit_find_all(self, _n, c):
         # The following test is really awkward, but I didn't find a
@@ -546,12 +546,12 @@ class DJTreeVisitor (NodeVisitor):
         else:
             return Prepend(False, s)
 
-    def visit_iset_concat(self, _n, c):
+    def visit_ilist_concat(self, _n, c):
         (_, s_opt) = c
         if isinstance(s_opt, list):
-            return ISetConcat(s_opt[0][1])
+            return IListConcat(s_opt[0][1])
         else:
-            return ISetConcat("")
+            return IListConcat("")
 
     def visit_multiply(self, _n, c): (_, _, f) = c; return Multiply(f)
     def visit_split(self, _n, c): (_, _, s) = c; return Split(s)
@@ -565,13 +565,13 @@ class DJTreeVisitor (NodeVisitor):
     def visit_related(self, _n, c): (_, _, r) = c; return Related(r)
     def visit_correct_spelling(self, _n, _c): return CorrectSpelling()
 
-    def visit_gset_drop(_, node, children):
-        (_gset_drop, _ws, setname) = children
-        return GSetDrop(setname)
+    def visit_glist_drop(_, node, children):
+        (_glist_drop, _ws, setname) = children
+        return GListDrop(setname)
 
-    def visit_gset_in(_, node, children):
-        (_gset_in, _ws, setname) = children
-        return GSetIn(setname)
+    def visit_glist_in(_, node, children):
+        (_glist_in, _ws, setname) = children
+        return GListIn(setname)
 
 
 DJ_EXAMPLE_FILE = """
@@ -609,7 +609,7 @@ do BASE_TRANSFORMATIONS
 { or(is_walk "KEYBOARD_DE" , is_pattern, is_sc) }> NO_WORD
 
 { *split "\\"" \
-    iset_foreach( 
+    ilist_foreach( 
         *strip_ws \
         *fold_ws \
         related 0.5 ) }> RELATED

@@ -3,14 +3,14 @@ from itertools import groupby
 from dj_ast import Filter
 
 
-class ISetSelectLongest(Filter):
+class IListSelectLongest(Filter):
     """ Among the set of entries that were derived from a single dictionary
         entry (e.g., due to splitting up the entries, finding related words, 
         etc.), the set of entries is selected where each entry is not part
         of another entry.
     """
 
-    def op_name() -> str: return "iset_select_longest"
+    def op_name() -> str: return "ilist_select_longest"
 
     def process_entries(self, entries: list[str]) -> list[str]:
         # Precondition: entries is a list of unique entries!
@@ -47,4 +47,4 @@ class ISetSelectLongest(Filter):
 
 
 
-ISET_SELECT_LONGEST = ISetSelectLongest()
+ISET_SELECT_LONGEST = IListSelectLongest()

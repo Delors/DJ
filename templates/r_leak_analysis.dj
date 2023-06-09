@@ -40,12 +40,12 @@ def IS_WORD or( is_popular_word, is_regular_word )
 def SIMPLE_DELEETIFICATION replace "replace/SimpleLeetspeak.txt"
 
  
-{ iset_if_any( N/A = False, [] = False, 
+{ ilist_if_any( N/A = False, [] = False, 
     find_all "([A-Za-z0-9]+[.-_])*[A-Za-z0-9]+@[A-Za-z0-9-]+(\.[A-Z|a-z]{2,})+") }[]> NO_EMAIL \
                                             write "r_leak_analysis/emails.txt"
 
 # let's reduce an entry to its "core" by stripping non-letter characters
-use NO_EMAIL { iset_foreach( *strip_no_and_sc ) }> STRIPPED \
+use NO_EMAIL { ilist_foreach( *strip_no_and_sc ) }> STRIPPED \
                                             write "r_leak_analysis/stripped.txt"
 
 # let's filter entries which are certainly no "words", e.g. a12345b    
@@ -86,15 +86,15 @@ use NO_SINGLETON \
 # 1,2,3,4 is often used to abbreviate: one, to/two,three,for/four; e.g.,
 # 1love, get2gether, 3guys
 use NO_SINGLETON_NO_WALK \
-        {or(iset_if_all(deduplicate, do IS_WORD),
-            iset_if_all(detriplicate, do IS_WORD),
-            iset_if_all(split  " " , do IS_WORD),
-            iset_if_all(replace "replace/NumberToWS.txt" max numeric 0 split " ", min length 3 do IS_WORD),
-            iset_if_all(replace "replace/SpecialCharToSpace.txt" max numeric 0 split " ", 
+        {or(ilist_if_all(deduplicate, do IS_WORD),
+            ilist_if_all(detriplicate, do IS_WORD),
+            ilist_if_all(split  " " , do IS_WORD),
+            ilist_if_all(replace "replace/NumberToWS.txt" max numeric 0 split " ", min length 3 do IS_WORD),
+            ilist_if_all(replace "replace/SpecialCharToSpace.txt" max numeric 0 split " ", 
                     min length 3 do IS_WORD),
-            iset_if_all(remove_no , do IS_WORD),
-            iset_if_all(find_all "^([a-zA-Z]{3,})[0-9]{1,4}([a-zA-Z]{2,})$", do IS_WORD),
-            iset_if_all(max non_letter 0 find_all "[A-Z][a-z]+", do IS_WORD ))}[]> NO_SIMPLE_WORD_COMBINATION \
+            ilist_if_all(remove_no , do IS_WORD),
+            ilist_if_all(find_all "^([a-zA-Z]{3,})[0-9]{1,4}([a-zA-Z]{2,})$", do IS_WORD),
+            ilist_if_all(max non_letter 0 find_all "[A-Z][a-z]+", do IS_WORD ))}[]> NO_SIMPLE_WORD_COMBINATION \
                                            write "r_leak_analysis/simple_multiple_word_combinations.txt"
 
 
@@ -104,28 +104,28 @@ use NO_SINGLETON_NO_WALK \
 # the longest match(es) will be returned, but if and only if at most N characters
 # are not matched.
 use NO_SIMPLE_WORD_COMBINATION \
-        { iset_if_any( N/A = False, [] = False, 
+        { ilist_if_any( N/A = False, [] = False, 
                 max symbol 1 \
                 max numeric 1 \
                 break_up( do IS_WORD ) \
                 write "r_leak_analysis/extracted_base_words.txt" ) }[]> NO_WORD_COMBINATION \
                                             write "r_leak_analysis/complex_multiple_word_combinations.txt"
 # Consider adding the following check: 
-#               iset_if_all( N/A = False, [] = False, _ , min length 3) \
+#               ilist_if_all( N/A = False, [] = False, _ , min length 3) \
 
 
 use NO_WORD_COMBINATION \
-    {   iset_if_any( N/A = False, [] = False,
+    {   ilist_if_any( N/A = False, [] = False,
             do SIMPLE_DELEETIFICATION \
             max numeric 0 \
             or( do IS_WORD,
-                iset_if_any(N/A = False, [] = False, break_up(do IS_WORD))
+                ilist_if_any(N/A = False, [] = False, break_up(do IS_WORD))
             ) ) }[]> AFTER_BREAKUP \
                                             write "r_leak_analysis/leetspeak.txt"
 
 # let's look for addresses (e.g., Bergstrasse29a), brands (e.g., BMW320d), words with numbers and appended characters, etc.
 use AFTER_BREAKUP \
-    { iset_if_all(N/A=False, []=False, find_all "^([a-zA-Z]{3,})[^a-zA-Z]{2,}[a-zA-Z]{1,2}$", do IS_WORD) }[]> REST \
+    { ilist_if_all(N/A=False, []=False, find_all "^([a-zA-Z]{3,})[^a-zA-Z]{2,}[a-zA-Z]{1,2}$", do IS_WORD) }[]> REST \
                                             write "r_leak_analysis/words_with_complex_appendix.txt"
 
 

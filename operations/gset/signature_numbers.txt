@@ -20,6 +20,8 @@
 
 # Sieg Heil
 198
+# SS (19=S)
+1919
 
 # Deutschland den Deutschen
 444
