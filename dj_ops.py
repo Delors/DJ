@@ -171,6 +171,7 @@ class Report(Operation):
             only used if unique is enforced.
         """
 
+    @final
     def is_reporter(self) -> bool: return True
 
     def do_print(self, entry: str):
@@ -203,8 +204,6 @@ class Write(Report):
 
     def __str__(self):
         return f"{Write.op_name()} \"{escape(self.filename)}\""
-
-    def is_reporter(self) -> bool: return True
 
     def init(self, td_unit: TDUnit, parent: ASTNode):
         super().init(td_unit, parent)
