@@ -34,9 +34,9 @@ def transform_entries(td_unit: TDUnit, dictionary_filename: str, report_pace: bo
 
     if td_unit.print_global_sets:
         for (name, entries) in td_unit.global_entry_sets.items():
-            print(f"[info] global set {name}:")
+            print(f"[info] global set {name}:",file=stderr)
             for e in entries:
-                print(f"[info]\t{e}")
+                print(f"[info] {e}",file=stderr)
 
     # 2. run generators
     generators = td_unit.evaluate_generators()
@@ -58,8 +58,8 @@ def transform_entries(td_unit: TDUnit, dictionary_filename: str, report_pace: bo
             sentry = entry.rstrip("\r\n")
             td_unit.process(count, sentry)
             if report_pace and time()-start > 5:
-                print(
-                    f"[info] processed: {count}; speed: {(count-last_count)//(time()-start)} entries per second", file=stderr)
+                msg = f"[info] processed: {count}; speed: {(count-last_count)//(time()-start)} entries per second"
+                print(msg, file=stderr)
                 last_count = count
                 start = time()
         except StopIteration:
@@ -179,7 +179,7 @@ def main() -> int:
     try:
         td_unit.init(td_unit, None)
     except InitializationFailed as ex:
-        print(f"[error] {ex.args[0]}")
+        print(f"[error] {ex.args[0]}", file = stderr)
         return 1
 
     # 2. apply operations
