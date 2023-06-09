@@ -5,17 +5,33 @@
 123456789
 1234567890
 
-666     # Number of the beast
-18      # Adolf Hitler
-88      # Heil Hitler
+# Number of the beast
+666
+
+# Adolf Hitler
+18
+
+# Heil Hitler
+88
 1488
-192     # Adolf is back
-198     # Sieg Heil
-444     # Deutschland den Deutschen
-28      # Blood and Honour
-1681    # Bombenanschlag mit 168 Toten
+
+# Adolf is back
+192
+
+# Sieg Heil
+198
+
+# Deutschland den Deutschen
+444
+
+# Blood and Honour
+28
+
+# Bombenanschlag mit 168 Toten
+1681
 
 0815
 4711
 
-1312    # acab
+# acab
+1312
