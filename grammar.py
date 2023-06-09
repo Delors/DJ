@@ -97,8 +97,8 @@ DJ_GRAMMAR = Grammar(
     nl              = ~r"[\r\n]"m
     ws              = ~r"[ \t]"
     _meaningless    = ws* nl?
-    #continuation    = ( ~r"\s*\\\s*[\r\n]\s*"m ) / ws+ # In some cases it is possible to split a definition/sequence over multiple lines using "\" at the end.
-    continuation    =  ( ~r"\s*\\\s*[\r\n]\s*"m ) / ~r"\s*"s 
+    continuation    = ( ~r"\s*\\\s*[\r\n]\s*"m ) / ws+ # In some cases it is possible to split a definition/sequence over multiple lines using "\" at the end.
+    nl_continuation = ( ~r"\s*\\\s*[\r\n]\s*"m ) / ~r"\s*"s 
     comment         = ~r"#[^\r\n]*"    
     #quoted_string   = ~'"[^"]*"' # does not support escapes
     quoted_string   = ~r'"(?:(?:(?!(?<!\\)").)*)"' # supports nested escaped "
@@ -201,7 +201,7 @@ DJ_GRAMMAR = Grammar(
     nop             = "_"
     macro_call      = "do" ws+ identifier
     # Handling of (intermediate) sets
-    set_store       = "{" continuation? op_defs continuation? ( "}>" / "}[]>" / "}/>" / "}/[]>" ) ws* identifier
+    set_store       = "{" nl_continuation? op_defs nl_continuation? ( "}>" / "}[]>" / "}/>" / "}/[]>" ) ws* identifier
     set_use         = "use" (ws+ identifier)+ # a set use always has to be the first op in an op_defs
     # Meta operators that are set related
     iset_if_all     = ~r"iset_if_all\s*\(\s*" (~r"N/A\s*=\s*" boolean_value ~r"\s*,\s*\[\]\s*=\s*" boolean_value ~r"\s*,\s*")? op_defs ~r"\s*,\s*" op_defs ~r"\s*\)"s
