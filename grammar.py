@@ -114,7 +114,7 @@ DJ_GRAMMAR = Grammar(
 
     ignore          = "ignore" ws+ file_name
     set             = "set" ws+ identifier
-    global_set      = "global_set" ws+ identifier ws+ file_name( ~r"\(\s*" op_defs ~r"\s*\)"s )?
+    global_set      = "global_set" ws+ identifier ws+ file_name( ~r"\(\s*"s op_defs ~r"\s*\)"s )?
     config          = "config" ws+ python_identifier ws+ python_identifier ws+ python_value
     def             = "def" ws+ identifier continuation op_defs
     gen             = "gen" ws+ ("alt") ws+ python_value
