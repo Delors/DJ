@@ -233,6 +233,36 @@ class Write(Report):
             pass
 
 
+class Classify(Report):
+
+    reported_entries: dict[str, set[str]] = {}
+
+    def op_name() -> str: return "classify"
+
+    def __init__(self, classifier) -> None:
+        super().__init__()
+        self.classifier = classifier
+
+    def __str__(self):
+        return f"{Classify.op_name()} \"{escape(self.classifier)}\""
+    
+    def init(self, td_unit: TDUnit, parent: ASTNode):
+        super().init(td_unit, parent)
+        # We need one shared reported entries set per target to remove
+        # duplicates (per effective output target) if specified!
+        shared_reported_entries = Classify.reported_entries.get(self.classifier)
+        if shared_reported_entries is not None:
+            self.reported_entries = shared_reported_entries
+        else:
+            reported_entries = set()
+            Classify.reported_entries[self.classifier] = reported_entries
+            self.reported_entries = reported_entries
+        return self
+
+    def do_print(self, entry: str):
+        print(f"{self.classifier}{entry}")
+
+
 class UseSet(Operation):
     """
     Replaces the current dictionary entry with the entries from

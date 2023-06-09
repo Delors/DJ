@@ -17,7 +17,7 @@ from dj_ast import ComplexOperation
 from dj_ast import TDUnit, Body, Header, Comment
 from dj_ast import Generate, IgnoreEntries, SetDefinition, GlobalSetDefinition
 from dj_ast import MacroDefinition, ConfigureOperation, CreateFile
-from dj_ops import NOP, REPORT, Write, MacroCall, Or, BreakUp
+from dj_ops import NOP, REPORT, Write, Classify, MacroCall, Or, BreakUp
 from dj_ops import ISetIfAll, ISetForeach, ISetIfAny
 from dj_ops import UseSet, StoreInSet, StoreFilteredInSet, StoreNotApplicableInSet, StoreFilteredAndNotApplicableInSet
 from dj_ops import NegateFilterModifier, KeepAlwaysModifier, KeepOnlyIfNotApplicableModifier, KeepIfRejectedModifier
@@ -139,6 +139,7 @@ DJ_GRAMMAR = Grammar(
                       nop /
                       report /
                       write /
+                      classify /
                       min /
                       max /
                       iset_max /
@@ -438,6 +439,10 @@ class DJTreeVisitor (NodeVisitor):
     def visit_write(self, node, children):
         (_write, _ws, filename) = children
         return Write(filename)
+    
+    def visit_classify(self, node, children):
+        (_classify,_ws,classifier) = children
+        return Classify(classifier)
 
     # IN THE FOLLOWING:
     #       "n" stands for Node and
