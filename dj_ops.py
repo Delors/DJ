@@ -324,6 +324,9 @@ class AbstractStoreInSet(Operation):
     def init(self, td_unit: TDUnit, parent: ASTNode):
         super().init(td_unit, parent)
         self.cop.init(td_unit, parent)
+        if self.td_unit.entry_sets.get(self.setname) is None:
+            msg = f"{self}: no set {self.setname} definition found"
+            raise InitializationFailed(msg)
         return self
 
     def next_entry(self):
