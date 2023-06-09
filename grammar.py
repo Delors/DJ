@@ -562,8 +562,8 @@ class DJTreeVisitor (NodeVisitor):
     def visit_correct_spelling(self, _n, _c): return CorrectSpelling()
 
     def visit_gset_drop(_, node, children):
-        (_gset_drop, _ws, gs_name) = children
-        return GSetDrop(gs_name)
+        (_gset_drop, _ws, setname) = children
+        return GSetDrop(setname)
 
 
 DJ_EXAMPLE_FILE = """
