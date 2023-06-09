@@ -22,8 +22,9 @@ class IsPattern(PerEntryFilter):
 
         second_char = entry[1]
         if first_char == second_char or length == 2:
-            # well... given the previous test it is obviously not a pattern
-            # that is based on the repetition of two different characters
+            # well... given the previous test it is obviously not a 
+            # pattern that is based on the repetition of two different 
+            # characters
             return []
 
         if length % 2 == 0 and entry == entry[0:2]*(length//2):
