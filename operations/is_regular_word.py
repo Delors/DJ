@@ -52,7 +52,7 @@ class IsRegularWord(PerEntryFilter):
         #                 operation; the second is the operation
         #                 to regenerate the original string.
         r = self.do_process(entry)
-        print(r)
+        # TODODODODO print(r)
         if r is not None:
             (accepted_word,lang) = r
             generator_rule = ""

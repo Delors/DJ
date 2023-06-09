@@ -13,7 +13,7 @@ class GListIn(PerEntryFilter):
 
     def __init__(self, setname):
         self.setname = setname
-        self.entries_set = None
+        self.entries_list = None
 
     def __str__(self):
         return f'{GListIn.op_name()} {self.setname}'
@@ -23,13 +23,11 @@ class GListIn(PerEntryFilter):
         if self.setname not in td_unit.global_entry_sets:
             msg = f"{self}: global set does not exist"
             raise InitializationFailed(msg)
-        self.entries_set = self.td_unit.global_entry_sets[self.setname]        
+        self.entries_list = self.td_unit.global_entry_sets[self.setname]
         return self
 
-    def process(self, entry: str) -> list[str]: 
-        if entry in self.entries_set:
+    def process(self, entry: str) -> list[str]:
+        if entry in self.entries_list:
             return [entry]
         else:
             return []
-
-

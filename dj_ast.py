@@ -438,7 +438,8 @@ class ConfigureOperation(ASTNode):
             print(
                 f"[debug] updating: " +
                 f"{op_module.__name__}.{op_class.__name__}.{self.field_name} = " +
-                f"{self.field_value} (before: {old_value})", file=stderr)
+                f"{self.field_value} (before: {old_value})", 
+                file=stderr)
 
         if value_type == int:
             value = int(self.field_value)
@@ -509,7 +510,7 @@ class Header(ASTNode):
         its = []
         for o in self.setup_ops:
             try:
-                # "only generators support instantiate()"
+                # "only generators support evaluate_generator()"
                 g = o.evaluate_generator()
                 its.append(g)
             except:

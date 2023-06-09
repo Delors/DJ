@@ -420,8 +420,8 @@ class StoreNotApplicableInSet(AbstractStoreInSet):
             else:
                 new_entries.extend(r)
         if self.td_unit.trace_ops:
-            print(
-                f"[trace] storing not applicable in {self.setname}: {not_applicable}", file=stderr)
+            msg = f"[trace] storing not applicable in {self.setname}: {not_applicable}"
+            print(msg, file=stderr)
         self.td_unit.entry_sets[self.setname].extend(not_applicable)
         return new_entries
 
@@ -445,8 +445,8 @@ class StoreFilteredAndNotApplicableInSet(AbstractStoreInSet):
             else:
                 new_entries.extend(r)
         if self.td_unit.trace_ops:
-            print(
-                f"[trace] storing filtered or not applicable in {self.setname}: {rejected}", file=stderr)
+            msg = f"[trace] storing filtered or not applicable in {self.setname}: {rejected}"
+            print(msg, file=stderr)
         self.td_unit.entry_sets[self.setname].extend(rejected)
         return new_entries
 
