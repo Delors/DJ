@@ -210,6 +210,7 @@ DJ_GRAMMAR = Grammar(
     # Reporting operators   
     report          = "report"
     write           = "write" ws+ file_name
+    classify        = "classify" ws+ quoted_string
 
     # Modularized operators
     # ======================================
