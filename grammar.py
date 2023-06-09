@@ -76,6 +76,7 @@ from operations.find_all import FindAll
 from operations.omit import Omit
 from operations.multiply import Multiply
 from operations.gset_drop import GSetDrop
+from operations.gset_in import GSetIn
 from operations.iset_concat import ISetConcat
 
 
@@ -135,6 +136,9 @@ DJ_GRAMMAR = Grammar(
                       iset_if_any /
                       iset_select_longest /
                       iset_unique /
+                      iset_concat /
+                      gset_drop /
+                      gset_in /
                       break_up /
                       nop /
                       report /
@@ -190,9 +194,7 @@ DJ_GRAMMAR = Grammar(
                       mangle_dates /                      
                       deleetify /
                       related /
-                      correct_spelling /
-                      iset_concat /
-                      gset_drop
+                      correct_spelling 
 
     # Core operators                  
     # ======================================
@@ -272,6 +274,7 @@ DJ_GRAMMAR = Grammar(
     correct_spelling = "correct_spelling"
     iset_concat     = "iset_concat" (ws+ quoted_string)?
     gset_drop       = "gset_drop" ws+ identifier
+    gset_in         = "gset_in" ws+ identifier
     """
 )
 
@@ -565,6 +568,10 @@ class DJTreeVisitor (NodeVisitor):
     def visit_gset_drop(_, node, children):
         (_gset_drop, _ws, setname) = children
         return GSetDrop(setname)
+
+    def visit_gset_in(_, node, children):
+        (_gset_in, _ws, setname) = children
+        return GSetIn(setname)
 
 
 DJ_EXAMPLE_FILE = """
