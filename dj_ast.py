@@ -292,20 +292,20 @@ class GlobalSetDefinition(ASTNode):
     the global set.
     """
 
-    def __init__(self, name, filename, cop) -> None:
-        self.name = name
+    def __init__(self, setname, filename, cop) -> None:
+        self.setname = setname
         self.filename = filename
         self.cop = cop
 
     def __str__(self) -> str:
-        cmd = f'global_set {self.name} "{self.filename}"'
+        cmd = f'global_set {self.setname} "{self.filename}"'
         if self.cop is not None:
             cmd += "( "+str(self.cop)+" )"
         return cmd
 
     def init(self, td_unit: 'TDUnit', parent: 'ASTNode'):
         super().init(td_unit, parent)
-        self.td_unit.global_entry_sets[self.name] = []
+        self.td_unit.global_entry_sets[self.setname] = []
         if self.cop is not None:
             self.cop.init(td_unit, self)
         return self
@@ -318,9 +318,9 @@ class GlobalSetDefinition(ASTNode):
         entries = read_utf8file(self.filename)
         if self.cop:
             entries = self.cop.process_entries(entries)
-        self.td_unit.global_entry_sets[self.name].extend(entries)
+        self.td_unit.global_entry_sets[self.setname].extend(entries)
         if self.td_unit.verbose:
-            msg = f"[debug] global set {self.name}: {self.filename} (#{len(entries)})"
+            msg = f"[debug] global set {self.setname}: {self.filename} (#{len(entries)})"
             print(msg, file=stderr)
 
 
