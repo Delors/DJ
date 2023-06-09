@@ -425,7 +425,7 @@ class DJTreeVisitor (NodeVisitor):
             [(_,on_none,_,on_empty,_)] = on_none_and_on_empty
             return ISetIfAny(on_none, on_empty, cop)
         except Exception as e:
-            return ISetIfAny(on_none, on_empty, cop)
+            return ISetIfAny(False, False, cop)
 
     def visit_break_up(self, n, visited_children):
         (_, test, _) = visited_children
