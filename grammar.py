@@ -259,7 +259,7 @@ DJ_GRAMMAR = Grammar(
     replace         = "replace" ws+ file_name    
     multi_replace   = "multi_replace" ws+ file_name    
     omit            = "omit" ws+ int_value
-    map             = "map" ws+ quoted_string ws+ quoted_string
+    map             = "map" (ws+ "not")? ws+ quoted_string ws+ quoted_string
     pos_map         = "pos_map" ws+ quoted_string
     multiply        = "multiply" ws+ int_value
     append          = "append" (ws+ "each")? ws+ quoted_string
@@ -523,27 +523,23 @@ class DJTreeVisitor (NodeVisitor):
     def visit_reverse(self, _n, _c): return REVERSE
     def visit_replace(self, _n, c): (_, _, f) = c; return Replace(f)
     def visit_multi_replace(self, _n, c): (_, _, f) = c; return MultiReplace(f)
-    def visit_omit(self, _n, c): (_, _, v) = c; return Omit(v)
-    def visit_map(self, _n, c): (_, _, s, _, ts) = c; return Map(s, ts)
+    def visit_omit(self, _n, c): (_, _, v) = c; return Omit(v)    
     def visit_pos_map(self, _n, c): (_, _, pm) = c; return PosMap(pm)
+    def visit_map(self, _n, c): 
+        (_map_op, map_not, _, srcs, _, trgts) = c
+        return Map(isinstance(map_not,list), srcs, trgts)
 
     def visit_append(self, _n, c):
         (_, m, _, s) = c
         # The following test is really awkward, but I didn't find a
         # simpler solution to just test for the presence of this flag...
-        if isinstance(m, list):
-            return Append(True, s)
-        else:
-            return Append(False, s)
+        return Append(isinstance(m, list), s)
 
     def visit_prepend(self, _n, c):
         (_, m, _, s) = c
         # The following test is really awkward, but I didn't find a
         # simpler solution to just test for the presence of this flag...
-        if isinstance(m, list):
-            return Prepend(True, s)
-        else:
-            return Prepend(False, s)
+        return Prepend(isinstance(m, list), s)
 
     def visit_ilist_concat(self, _n, c):
         (_, s_opt) = c

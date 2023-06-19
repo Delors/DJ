@@ -5,41 +5,73 @@ from common import InitializationFailed, escape
 
 
 class Map(PerEntryTransformer):
-    """ Maps a given character to one to several alternatives.
+    """ Maps each given character to one to several alternatives.
+
+        Example
+            map "abc" "l"
+        Input
+            12abc&
+        Output
+            12lll&
+
+        Example
+            map "ab" "xy"
+        Input
+            12abc&
+        Output
+            12xx&
+            12yx&
+            12yy&
+            12xy&
+
     """
 
     def op_name() -> str: return "map"
 
-    def __init__(self, source_char: str, target_chars: str):
-        self.source_char = source_char
+    def __init__(self, map_not : bool, source_chars: str, target_chars: str):
+        self.map_not = map_not
+        self.raw_source_chars = source_chars
+        self.source_chars = set(source_chars)
         self.raw_target_chars = target_chars
         self.target_chars = set(target_chars)
 
     def __str__(self):
-        source_char = escape(self.source_char)
+        map_not = Map.op_name()
+        if self.map_not:
+            map_not += " not"
+        source_chars = escape(self.raw_source_chars)
         target_chars = escape(self.raw_target_chars)
-        return f'{Map.op_name()} "{source_char}" "{target_chars}"'
+        return f'{map_not} "{source_chars}" "{target_chars}"'
 
     def init(self, td_unit: TDUnit, parent: ASTNode):
         super().init(td_unit, parent)
-        if len(self.source_char) != 1:
+        if len(self.source_chars) == 0:
             raise InitializationFailed(
-                f"{self}: invalid length for source char")
+                f"{self}: invalid length for source chars")
         if len(self.target_chars) == 0:
             raise InitializationFailed(
                 f"{self}: invalid length for target chars")
-        if not set(self.source_char).isdisjoint(self.target_chars):
-            msg = f'{self}: useless identity mapping {self.source_char} => "{", ".join(self.target_chars)}"'
+        if not self.source_chars.isdisjoint(self.target_chars):
+            msg = f'{self}: useless identity mapping {self.source_chars.intersection(self.target_chars)}"'
             raise InitializationFailed(msg)
         return self
 
     def process(self, entry: str) -> list[str]:
-        if self.source_char in entry:
-            entries = []
-            for c in self.target_chars:
-                entries.append(entry.replace(self.source_char, c))
-            return entries
+        hit = False
+        new_entries = [""]
+        for e in entry:
+            in_source_chars = e in self.source_chars
+            if (in_source_chars and not self.map_not) or (not in_source_chars and self.map_not) :
+                hit = True
+                es = []
+                for t in self.raw_target_chars:
+                    for new_e in new_entries:
+                        es.append(new_e + t)
+                new_entries = es
+            else:
+                new_entries = list(map(lambda new_e: new_e+e, new_entries))
+
+        if hit:
+            return new_entries
         else:
             return None
-
-
