@@ -1,0 +1,8 @@
+# Maps each entry to "luds?" to make it possible to identify the structure!
+
+*map "abcdefghijkmnopqrstuvwxyz" "l" \ 
+*map "ABCDEFGHIJKLMNOPQRSTUVWXYZ" "u" \
+*map "0123456789" "d" \
+*map "^°!\"§$%&/()=?`{[]}\´+*~#'-_.:,;µ@€|<>" "s" \
+*map not "luds" "?" \
+report
