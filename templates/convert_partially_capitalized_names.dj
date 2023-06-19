@@ -1,0 +1,8 @@
+# Convert names where the surname is given in capital letters to the
+# standard format. E.g., Vladimir PAVEL => Vladimir Pavel.
+# However, we do not want to convert entries that are seemingly not names,
+# e.g., for an entry such as "HiHo ALLE", we do not want to change the 
+# capitalization of "HiHo". Therefore, `split " " *title ilist_concat report` 
+# wouldn't work.
+
+split " " ~ilist_foreach( max lower 0 min upper 1 capitalize ) ilist_concat " " report
