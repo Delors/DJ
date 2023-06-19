@@ -39,7 +39,7 @@ from operations.is_popular_word import IS_POPULAR_WORD
 from operations.is_regular_word import IsRegularWord
 from operations.is_sc import IsSC
 from operations.is_walk import IsWalk
-from operations.ilist_select_longest import ISET_SELECT_LONGEST
+from operations.ilist_select_longest import ILIST_SELECT_LONGEST
 from operations.ilist_unique import ISET_UNIQUE
 from operations.lower import Lower
 from operations.upper import Upper
@@ -463,7 +463,7 @@ class DJTreeVisitor (NodeVisitor):
     def visit_is_regular_word(self, _n, _c): return IsRegularWord()
     def visit_is_popular_word(self, _n, _c): return IS_POPULAR_WORD
     def visit_sieve(self, _n, c): (_, _, f) = c; return Sieve(f)
-    def visit_ilist_select_longest(self, _n, _c): return ISET_SELECT_LONGEST
+    def visit_ilist_select_longest(self, _n, _c): return ILIST_SELECT_LONGEST
     def visit_ilist_unique(self, _n, _c): return ISET_UNIQUE
 
     def visit_find_all(self, _n, c):
