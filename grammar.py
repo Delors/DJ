@@ -63,10 +63,11 @@ from operations.reverse import REVERSE
 from operations.segments import Segments
 from operations.sieve import Sieve
 from operations.strip_ws import STRIP_WS
+from operations.strip_no import STRIP_NO
+from operations.strip_sc import STRIP_SC
 from operations.strip import Strip
 from operations.split import Split
 from operations.strip_no_and_sc import StripNOAndSC
-from operations.strip_ws import STRIP_WS
 from operations.sub_split import SubSplit
 from operations.title import TITLE
 from operations.swapcase import SWAPCASE
@@ -178,6 +179,8 @@ DJ_GRAMMAR = Grammar(
                       remove /
                       strip /
                       strip_no_and_sc /
+                      strip_sc /
+                      strip_no /
                       reverse /
                       replace /
                       multi_replace /
@@ -255,6 +258,8 @@ DJ_GRAMMAR = Grammar(
     remove          = "remove" ws+ quoted_string
     strip           = "strip" ws+ quoted_string
     strip_no_and_sc = "strip_no_and_sc"    
+    strip_no        = "strip_no"    
+    strip_sc        = "strip_sc"    
     reverse         = "reverse"
     replace         = "replace" ws+ file_name    
     multi_replace   = "multi_replace" ws+ file_name    
@@ -491,6 +496,8 @@ class DJTreeVisitor (NodeVisitor):
         _, _, min, _, max) = c; return Segments(min, max)
 
     def visit_strip_ws(self, _n, _c): return STRIP_WS
+    def visit_strip_no(self, _n, _c): return STRIP_NO
+    def visit_strip_sc(self, _n, _c): return STRIP_SC    
     def visit_fold_ws(self, _n, _c): return FOLD_WS
     def visit_rotate(self, _n, c): (_, _, by) = c; return Rotate(by)
 
