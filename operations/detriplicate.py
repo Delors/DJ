@@ -13,12 +13,20 @@ class Detriplicate(PerEntryExtractor):
 
     def process(self, entry: str) -> list[str]:
         length = len(entry)
-        if length % 3 != 0:
-            return None
         frag_length = length//3
-        first_third = entry[0:frag_length]
-        second_third = entry[frag_length:2*frag_length]
-        third_third = entry[-frag_length:]
+        if length % 3 != 0:
+            # let's check for a pivot element
+            if length >= 8 and (length-2) % 3 == 0:
+                first_third = entry[0:frag_length]
+                second_third = entry[frag_length+1:2*frag_length+1]
+                third_third = entry[-frag_length:]
+            else:
+                return None
+        else:
+            first_third = entry[0:frag_length]
+            second_third = entry[frag_length:2*frag_length]
+            third_third = entry[-frag_length:]
+            
         if first_third == second_third and second_third == third_third:
             return [first_third]
         else:
