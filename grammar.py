@@ -3,6 +3,7 @@
 # Dr. Michael Eichberg (mail@michael-eichberg.de)
 # (c) 2022
 
+import re
 import argparse
 import sys
 from parsimonious.grammar import Grammar
@@ -18,8 +19,9 @@ from dj_ast import TDUnit, Body, Header, Comment
 from dj_ast import Generate, IgnoreEntries, SetDefinition, GlobalSetDefinition
 from dj_ast import MacroDefinition, ConfigureOperation, CreateFile
 from dj_ops import NOP, REPORT, Write, Classify, MacroCall, Or, BreakUp
-from dj_ops import IListIfAll, IListForeach, IListIfAny
-from dj_ops import UseSet, StoreInSet, StoreFilteredInSet, StoreNotApplicableInSet, StoreFilteredAndNotApplicableInSet
+from dj_ops import Restart, RESULT
+from dj_ops import IListIfAll, IListForeach, IListIfAny, IListRatio
+from dj_ops import UseSet, StoreInSet, StoreFilteredInSet, StoreNotApplicableInSet, StoreFilteredOrNotApplicableInSet
 from dj_ops import NegateFilterModifier, KeepAlwaysModifier, KeepOnlyIfNotApplicableModifier, KeepIfRejectedModifier
 from operations.capitalize import CAPITALIZE
 from operations.correct_spelling import CorrectSpelling
@@ -131,6 +133,8 @@ DJ_GRAMMAR = Grammar(
     op_def          = macro_call /
                       set_store /
                       set_use /
+                      restart /
+                      result /
                       or /
                       ilist_if_all /
                       ilist_foreach /
@@ -138,6 +142,7 @@ DJ_GRAMMAR = Grammar(
                       ilist_select_longest /
                       ilist_unique /
                       ilist_concat /
+                      ilist_ratio /
                       glist_drop /
                       glist_in /
                       break_up /
@@ -206,23 +211,27 @@ DJ_GRAMMAR = Grammar(
     # Handling of (intermediate) sets
     set_store       = "{" nl_continuation? op_defs nl_continuation? ( "}>" / "}[]>" / "}/>" / "}/[]>" ) ws* identifier
     set_use         = "use" (ws+ identifier)+ # a set use always has to be the first op in an op_defs
+    # Loop related operators
+    restart         = ~r"restart(\s+[0-9])?\s*\(\s*"s op_defs ~r"\s*,\s*"s op_defs ~r"\s*\)"s
+    result          = "result"
     # Meta operators that are set related
-    ilist_if_all     = ~r"ilist_if_all\s*\(\s*" (~r"N/A\s*=\s*" boolean_value ~r"\s*,\s*\[\]\s*=\s*" boolean_value ~r"\s*,\s*")? op_defs ~r"\s*,\s*" op_defs ~r"\s*\)"s
-    ilist_if_any     = ~r"ilist_if_any\s*\(\s*" (~r"N/A\s*=\s*"s boolean_value ~r"\s*,\s*\[\]\s*=\s*"s boolean_value ~r"\s*,\s*"s)? op_defs ~r"\s*\)"s
-    ilist_foreach    = ~r"ilist_foreach\s*\(\s*" op_defs ~r"\s*\)"s    
+    ilist_if_all    = ~r"ilist_if_all\s*\(\s*" (~r"N/A\s*=\s*" boolean_value ~r"\s*,\s*\[\]\s*=\s*" boolean_value ~r"\s*,\s*")? op_defs ~r"\s*,\s*" op_defs ~r"\s*\)"s
+    ilist_if_any    = ~r"ilist_if_any\s*\(\s*" (~r"N/A\s*=\s*"s boolean_value ~r"\s*,\s*\[\]\s*=\s*"s boolean_value ~r"\s*,\s*"s)? op_defs ~r"\s*\)"s
+    ilist_foreach   = ~r"ilist_foreach\s*\(\s*" op_defs ~r"\s*\)"s    
+    ilist_ratio     = ~r"ilist_ratio" (ws+ "joined")? ~r"\s+(<|>)\s*" float_value ~r"\s*\(\s*"s op_defs ~r"\s*,\s*"s op_defs ~r"\s*\)"s
     or              = ~r"or\s*\(\s*" op_defs ( ~r"\s*,\s*" op_defs )+ ~r"\s*\)"s
     break_up        = ~r"break_up\s*\(\s*" op_defs ~r"\s*\)"s
     # Reporting operators   
-    report          = "report"
-    write           = "write" ws+ file_name
-    classify        = "classify" ws+ quoted_string
+    report          = "report" 
+    write           = "write" ws+ file_name 
+    classify        = "classify" ws+ quoted_string 
 
     # Modularized operators
     # ======================================
     # 1. FILTERS    
     min             = "min" ws+ op_operator ws+ int_value
     max             = "max" ws+ op_operator ws+ int_value
-    ilist_max        = "ilist_max" ws+ op_operator ws+ int_value
+    ilist_max       = "ilist_max" ws+ op_operator ws+ int_value
     has             = "has" ws+ op_operator ws+ int_value
     is_sc           = "is_sc"    
     is_pattern      = "is_pattern"
@@ -400,8 +409,19 @@ class DJTreeVisitor (NodeVisitor):
             return StoreFilteredInSet(identifier, op_defs)
         elif op == "}/>":
             return StoreNotApplicableInSet(identifier, op_defs)
-        else: # op == "}/[]>"
-            return StoreFilteredAndNotApplicableInSet(identifier, op_defs)
+        else:  # op == "}/[]>"
+            return StoreFilteredOrNotApplicableInSet(identifier, op_defs)
+
+    def visit_result(self, _n,_c): return RESULT
+
+    def visit_restart(self, node, visited_children):
+        (restart_count, filter_cop, _, cop, _) = visited_children
+        count = re.findall("[0-9]", str(restart_count))
+        if count:
+            return Restart(int(count[0]), filter_cop, cop)
+        else:
+            # 256 should be sufficient for our cases...
+            return Restart(256, filter_cop, cop)
 
     def visit_set_use(self, node, visited_children):
         (_use, raw_identifiers) = visited_children
@@ -423,19 +443,29 @@ class DJTreeVisitor (NodeVisitor):
 
     def visit_ilist_if_all(self, n, visited_children):
         (_, on_none_and_on_empty, cop, _, test, _) = visited_children
-        try:            
-            [(_,on_none,_,on_empty,_)] = on_none_and_on_empty
-            return IListIfAll(on_none,on_empty,cop,test)
+        try:
+            [(_, on_none, _, on_empty, _)] = on_none_and_on_empty
+            return IListIfAll(on_none, on_empty, cop, test)
         except Exception as e:
             return IListIfAll(False, False, cop, test)
 
     def visit_ilist_if_any(self, node, visited_children):
         (_, on_none_and_on_empty, cop, _) = visited_children
-        try:            
-            [(_,on_none,_,on_empty,_)] = on_none_and_on_empty
+        try:
+            [(_, on_none, _, on_empty, _)] = on_none_and_on_empty
             return IListIfAny(on_none, on_empty, cop)
         except Exception as e:
             return IListIfAny(False, False, cop)
+        
+    #~r"ilist_ratio" (ws+ "joined")? ~r"\s+(<|>)\s*" float_value ~r"\s*\(\s*"s op_defs ~r"\s*,\s*"s op_def ~r"\s*\)"s        
+    def visit_ilist_ratio(self, node, visited_children):
+        (_,raw_joined,raw_op,value,_,before_cop,_,after_cop,_) = visited_children
+        joined =isinstance(raw_joined, list)
+        if "<" in raw_op.text:
+            op = "<"
+        else:
+            op = ">"
+        return IListRatio(joined,op,value,before_cop,after_cop)
 
     def visit_break_up(self, n, visited_children):
         (_, test, _) = visited_children
@@ -447,9 +477,9 @@ class DJTreeVisitor (NodeVisitor):
     def visit_write(self, node, children):
         (_write, _ws, filename) = children
         return Write(filename)
-    
+
     def visit_classify(self, node, children):
-        (_classify,_ws,classifier) = children
+        (_classify, _ws, classifier) = children
         return Classify(classifier)
 
     # IN THE FOLLOWING:
@@ -458,7 +488,11 @@ class DJTreeVisitor (NodeVisitor):
     #       "_" is used for things that are not relevant
     def visit_min(self, _n, c): (_, _, op, _, v) = c; return Min(op, v)
     def visit_max(self, _n, c): (_, _, op, _, v) = c; return Max(op, v)
-    def visit_ilist_max(self, _n, c): (_, _, op, _, v) = c; return IListMax(op, v)
+
+    def visit_ilist_max(self, _n, c):
+        (_, _, op, _, v) = c
+        return IListMax(op, v)
+
     def visit_has(self, _n, c): (_, _, op, _, v) = c; return Has(op, v)
     def visit_is_sc(self, _n, _c): return IsSC()
     def visit_is_part_of(self, _n, c): (_, _, seq) = c; return IsPartOf(seq)

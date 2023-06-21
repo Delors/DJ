@@ -217,9 +217,9 @@ class ComplexOperation(ASTNode):
         #        return False
         # return is_extractor
         return any(op.is_extractor() for op in self.ops)
-    
+
     def is_transformer_or_extractor(self) -> bool:
-        return self.is_transformer() or self.is_extractor()
+        return any(op.is_transformer_or_extractor() for op in self.ops)
 
     def is_reporter(self) -> bool:
         return all(op.is_reporter() for op in self.ops)
@@ -236,6 +236,7 @@ class ComplexOperation(ASTNode):
 
     def process_entries(self, entries):
         td_unit: TDUnit = self.td_unit
+        trace = td_unit.trace
         previous_entries = None
         current_entries = entries
         for op in self.ops:
@@ -247,13 +248,10 @@ class ComplexOperation(ASTNode):
                 if td_unit.trace_ops:
                     s_op = str(op)
                     if s_op.startswith("use"):
-                        print(
-                            f"[trace] {s_op} => {current_entries}",
-                            file=stderr)
+                        trace(f"{s_op} => {current_entries}")
                     else:
-                        print(
-                            f"[trace] {s_op} ( {previous_entries} ) => {current_entries}",
-                            file=stderr)
+                        trace(
+                            f"{s_op}( {previous_entries} ) => {current_entries}")
             except Exception as e:
                 print(traceback.format_exc(), file=stderr)
                 print(f"[error] {op}({entries}) failed: {str(e)}", file=stderr)
@@ -438,7 +436,7 @@ class ConfigureOperation(ASTNode):
             print(
                 f"[debug] updating: " +
                 f"{op_module.__name__}.{op_class.__name__}.{self.field_name} = " +
-                f"{self.field_value} (before: {old_value})", 
+                f"{self.field_value} (before: {old_value})",
                 file=stderr)
 
         if value_type == int:
@@ -541,14 +539,8 @@ class Body(ASTNode):
             cop.init(td_unit, self)
         return self
 
-    def process(self, entry: str):
-        # -1. The ignored check for the entry is done by TDUnit
-
-        # information all operations that a new entry will be processed
-        for cop in self.cops:
-            if not isinstance(cop, Comment):
-                cop.next_entry()
-
+    def apply_cops(self, entry: str):
+        trace = self.td_unit.trace
         # apply all operations in the specified order on the entry
         for cop in self.cops:
             if not isinstance(cop, Comment):
@@ -557,16 +549,20 @@ class Body(ASTNode):
                         "\\", "\\\\").replace("\"", "\\\"")
                     s_cop = str(cop)
                     if s_cop.startswith("use"):
-                        print(
-                            f'[trace] applying: {s_cop}',
-                            file=stderr
-                        )
+                        trace(f'applying: {s_cop}')
                     else:
-                        print(
-                            f'[trace] applying: {s_cop}( {escaped_entry} )',
-                            file=stderr
-                        )
+                        trace(f'applying: {s_cop}( {escaped_entry} )')
                 cop.process_entries([entry])
+
+    def process(self, entry: str):
+        # "-1." The ignored check for the entry is done by TDUnit
+
+        # information all operations that a new entry will be processed
+        for cop in self.cops:
+            if not isinstance(cop, Comment):
+                cop.next_entry()
+
+        self.apply_cops(entry)
 
     def close(self):
         for cop in self.cops:
@@ -587,6 +583,7 @@ class TDUnit(ASTNode):
 
         # A map from str (set name) to current entries.
         self.entry_sets: dict[str, list[str]] = {}
+        self.restart_context = []  # list of restart operations and strings
         self.global_entry_sets: dict[str, list[str]] = {}
         # A map from str to complex operation objects
         self.macros: dict[str, ComplexOperation] = {}
@@ -630,6 +627,21 @@ class TDUnit(ASTNode):
         else:
             if self.report_progress:
                 print(f"[progress] ignoring   #{no}: {entry}", file=stderr)
+
+    def trace(self, msg):
+        if self.restart_context:
+            def restart_context_to_str(ctx):
+                if isinstance(ctx,tuple):
+                    (fe,_re) = ctx
+                    #return f'"{escape(fe)}"~"{escape(re)}"'
+                    return f'"{escape(fe)}"'
+                else:
+                    return str(ctx.cop)
+            ctx = " - ".join(map(restart_context_to_str, self.restart_context))
+            full_msg = f"[trace: {ctx}] {msg}"
+        else:
+            full_msg = f"[trace] {msg}"
+        print(full_msg, file=stderr)
 
     def close(self):
         self.header.close()

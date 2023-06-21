@@ -9,6 +9,13 @@
 #   FrankfurtanderOder
 #   Frankfurt
 #   Oder
+#   frankfurtanderoder
+#   frankfurt
+#   Frankfurt Oder
+#   frankfurt oder
+#   FrankfurtOder
+#   frankfurtoder
+#   Frankfurtoder
 #   
 # Input: 
 #   Vladimir PAVEL
@@ -28,69 +35,94 @@
 # Input:
 #   Achkhoj-Martanovskij Rajon
 # Output:
+#   Achkhoj-MartanovskijRajon
 #   Achkhoj-Martanovskij
-#   AchkhojMartanovskij
-#   AchkhojRajon
+#   Rajon
+#   achkhoj-martanovskijrajon
+#   achkhoj-martanovskij
+#   rajon
+#   AchkhojMartanovskijRajon
 #   Achkhoj
 #   Martanovskij
-#   Rajon
-
+#   achkhojmartanovskijrajon
+#   achkhoj
+#   martanovskij
+#   AchkhojMartanovskij
+#   achkhojmartanovskij
+#   AchkhojMartanovskij Rajon
+#   achkhojmartanovskij rajon
+#   Achkhojmartanovskij Rajon
+#   Achkhojmartanovskijrajon
+#   Achkhoj Rajon
+#   achkhoj rajon
+#   AchkhojRajon
+#   achkhojrajon
+#   Achkhojrajon
 
 # GENERAL FILTER
 ignore "ignore/de.txt"
 ignore "ignore/en.txt"
 ignore "ignore/es.txt"
 ignore "ignore/fr.txt"
-ignore "ignore/al.txt"
+
+# Operations
+# An operation processes a given entry; in particular performs a filter, 
+# transform, or extract operation.
+# In general, entries which are unchanged by a transformer
+# are filtered.
+# - A "+" directly in front of the operation will ensure that the 
+#   original entry is passed on to the next step.
+# - A "*" directly in front of the transformer or extractor operation 
+#   will ensure that the current entry-set is passed on if and only 
+#   if it is not applicable.
+# - A "!" directly in front of a filter operation will pass on the original
+#   entry if it was filtered and vice versa.
+# - A "~" directly in front of a filter passes on the entry if and only if
+#   it was filtered or not applicable.
+
+set BASE
 
 # DEFINITIONS OF MACROS
 def UMLAUT_TO_ASCII replace "replace/UmlautToAscii.txt"
 def REWRITE_UMLAUT replace "replace/RewriteUmlaut.txt"
+def HANDLE_UMLAUT +do UMLAUT_TO_ASCII *do REWRITE_UMLAUT
 
 def SC_TO_SPACE replace "replace/SpecialCharToSpace.txt"
 
-# REMARKS
-# - "upper" only makes sense for "non-mobile phone" passwords
-# - "remove_no" potentially leads to many nonsense words.
-# - "deleetify" is a computationally intensive operation and the results
-#             of it may depend on the time when the deleetification
-#             is performed.
-# - "number" may lead to many new entries, use sparingly!
-def BASE_TRANSFORMATIONS \
-    +do SC_TO_SPACE \
-    +strip_ws \
-    +deleetify \
-    +capitalize \
+{ *do HANDLE_UMLAUT  }> BASE
+
+use BASE \
+    *strip_ws \    
     +remove_sc \
-    +get_no \
-    +get_sc \
-    +lower \
-    +do UMLAUT_TO_ASCII \
-    +do REWRITE_UMLAUT \
+    +remove_no \
+    +do SC_TO_SPACE \
+    +lower \        
+    +split " " \
+    *remove_ws \
+    report
+
+# Does two things:
+# 1) Converts names where the surname is given in capital letters to the
+#    standard format. E.g., Vladimir PAVEL => Vladimir Pavel;
+#    however, we do not want to convert entries that are seemingly not names,
+#    e.g., for an entry such as "HiHo ALLE", we do not want to change the 
+#    capitalization of "HiHo". Therefore, `split " " *title ilist_concat report` 
+#    wouldn't work.
+# 2) Splits up terms implicitly removes fill words and reconnects them.
+#    I.e., Frankfurt an der Oder => Frankfurt Oder
+use BASE \
+    *strip_ws *remove_no *remove_sc  split " " \
+    ~ilist_foreach( max lower 0 min upper 1 capitalize ) ilist_concat " " \
     +remove_ws \
-    +number "aeiou"
+    +title \
+    +lower \
+    report
 
-# Operations
-# An operation processes a given entry (in particular: filter, transform, extract parts)
-# In general, entries which are unchanged by a transformer
-# are filtered.
-# A "+" directly in front of the operation will ensure that the 
-#   original entry is passed on to the next step.
-# " A "*" directly in front of the operation will ensure that the current
-#   entry-set is passed on if and only if it is not applicable.
-
-do BASE_TRANSFORMATIONS report
-split "/" do BASE_TRANSFORMATIONS report
-# split "." do BASE_TRANSFORMATIONS report
-mangle_dates report
-split " " discard_endings "discard_endings/de.txt" do BASE_TRANSFORMATIONS report
-
-
-
-# Convert names where the surname is given in capital letters to the
-# standard format. E.g., Vladimir PAVEL => Vladimir Pavel;
-# however, we do not want to convert entries that are seemingly not names,
-# e.g., in an entry such as "HiHo ALLE", we do not want to change the 
-# capitalization of "HiHo". Therefore, `split " " *title ilist_concat report` 
-# wouldn't work.
-split " " ~ilist_foreach( max lower 0 min upper 1 capitalize ) ilist_concat " " report
+use BASE\
+    split " " \
+    *find_all "([A-Z][a-z]+)-" \
+    ilist_concat " "\
+    +remove_ws \
+    +title \
+    +lower \
+    report

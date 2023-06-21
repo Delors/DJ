@@ -111,7 +111,6 @@ def main() -> int:
         action="store_true"
     )
     parser.add_argument(
-        '-p',
         '--progress',
         help="prints detailed progress information",
         action="store_true"
@@ -125,6 +124,12 @@ def main() -> int:
         '-u',
         '--unique',
         help="an entry is reported only once to the first effective output target; this keeps all entries in memory; do not use on memory-constraint systems with huge dictionaries",
+        action="store_true"
+    )
+    parser.add_argument(
+        '-p',
+        '--print_original',
+        help="additionally prints the original entry in case of restarted operations",
         action="store_true"
     )
     parser.add_argument(
@@ -160,6 +165,7 @@ def main() -> int:
 
     td_unit: TDUnit = DJTreeVisitor().visit(dj_source_tree)
     td_unit.print_global_sets = args.print_global_sets
+    td_unit.print_original = args.print_original
     td_unit.report_progress = args.progress
     td_unit.verbose = verbose
     td_unit.trace_ops = trace_ops

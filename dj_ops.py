@@ -75,8 +75,8 @@ class ProcessEntriesHandler(ABC):
         #         return None
         #
         # return all_new_entries
-
-        ignored_entries = self.td_unit.ignored_entries
+        td_unit = self.td_unit
+        ignored_entries = td_unit.ignored_entries
         all_none = True
         all_new_entries = []
         for entry in entries:
@@ -87,8 +87,8 @@ class ProcessEntriesHandler(ABC):
                     if not new_e in ignored_entries:
                         if len(new_e) > 0:
                             all_new_entries.append(new_e)
-                    elif self.td_unit.trace_ops:
-                        print(f"[trace] ignored derived entry: {new_e}")
+                    elif td_unit.trace_ops:
+                        td_unit.trace(f"ignored derived entry: {new_e}")
         if all_none:
             return None
         else:
@@ -245,12 +245,13 @@ class Classify(Report):
 
     def __str__(self):
         return f"{Classify.op_name()} \"{escape(self.classifier)}\""
-    
+
     def init(self, td_unit: TDUnit, parent: ASTNode):
         super().init(td_unit, parent)
         # We need one shared reported entries set per target to remove
         # duplicates (per effective output target) if specified!
-        shared_reported_entries = Classify.reported_entries.get(self.classifier)
+        shared_reported_entries = Classify.reported_entries.get(
+            self.classifier)
         if shared_reported_entries is not None:
             self.reported_entries = shared_reported_entries
         else:
@@ -260,7 +261,11 @@ class Classify(Report):
         return self
 
     def do_print(self, entry: str):
-        print(f"{self.classifier}{entry}")
+        original_entry = ""
+        if self.td_unit.restart_context and self.td_unit.print_original:
+            original_entry = f'"{escape(self.td_unit.restart_context[0][0])}", '
+
+        print(f"{original_entry}{self.classifier}{entry}")
 
 
 class UseSet(Operation):
@@ -346,12 +351,12 @@ class StoreInSet(AbstractStoreInSet):
     def operator(self) -> str: return ">"
 
     def process_entries(self, entries: list[str]) -> list[str]:
+        td_unit = self.td_unit
         new_entries = self.cop.process_entries(entries)
-        if self.td_unit.trace_ops:
-            print(
-                f"[trace] storing in {self.setname}: {new_entries}", file=stderr)
+        if td_unit.trace_ops:
+            td_unit.trace(f"storing in {self.setname}: {new_entries}")
         if new_entries is not None:
-            self.td_unit.entry_sets[self.setname].extend(new_entries)
+            td_unit.entry_sets[self.setname].extend(new_entries)
         return new_entries
 
 
@@ -366,20 +371,7 @@ class StoreFilteredInSet(AbstractStoreInSet):
     def operator(self) -> str: return "[]>"
 
     def process_entries(self, entries: list[str]) -> list[str]:
-        # Old, non-order preserving implementation:
-        # new_entries = self.cop.process_entries(entries)
-        # filtered_entries = set(entries)
-        # if new_entries is not None:
-        #    filtered_entries.difference_update(new_entries)
-        #    self.td_unit.entry_sets[self.setname].extend(filtered_entries)
-        #    if self.td_unit.trace_ops:
-        #        msg = f"[trace] storing filtered in {self.setname}: {filtered_entries} => {self.td_unit.entry_sets[self.setname]}"
-        #        print(msg, file=stderr)
-        # elif self.td_unit.warn and not self.warning_shown:
-        #    self.warning_shown = True
-        #    msg = f"[warn] the result of {self.cop} returned an empty result because the operation was not applicable; did you wanted to use the '{{ <operation> }}/> <SET>' operation?"
-        #    print(msg, file=stderr)
-        # return new_entries
+        td_unit = self.td_unit
         filtered_entries = []
         all_new_entries = []
         for e in entries:
@@ -389,17 +381,17 @@ class StoreFilteredInSet(AbstractStoreInSet):
                     filtered_entries.append(e)
                 else:
                     all_new_entries.extend(new_entries)
-            elif self.td_unit.warn and not self.warning_shown:
+            elif td_unit.warn and not self.warning_shown:
                 self.warning_shown = True
                 msg = f"[warn] {self.cop}({e}) was not applicable; did you want to use: '{{ <operation> }}/> {self.setname}'?"
                 print(msg, file=stderr)
 
         if len(filtered_entries) > 0:
-            self.td_unit.entry_sets[self.setname].extend(filtered_entries)
+            td_unit.entry_sets[self.setname].extend(filtered_entries)
 
         if self.td_unit.trace_ops:
-            msg = f"[trace] storing filtered in {self.setname}: {filtered_entries} => {self.td_unit.entry_sets[self.setname]}"
-            print(msg, file=stderr)
+            td_unit.trace(
+                f"storing filtered in {self.setname}: {filtered_entries} => {td_unit.entry_sets[self.setname]}")
 
         return all_new_entries
 
@@ -423,15 +415,15 @@ class StoreNotApplicableInSet(AbstractStoreInSet):
             else:
                 new_entries.extend(r)
         if self.td_unit.trace_ops:
-            msg = f"[trace] storing not applicable in {self.setname}: {not_applicable}"
-            print(msg, file=stderr)
+            msg = f"storing not applicable in {self.setname}: {not_applicable}"
+            self.td_unit.trace(msg)
         self.td_unit.entry_sets[self.setname].extend(not_applicable)
         return new_entries
 
 
-class StoreFilteredAndNotApplicableInSet(AbstractStoreInSet):
+class StoreFilteredOrNotApplicableInSet(AbstractStoreInSet):
 
-    def op_name() -> str: return "store_filtered_and_not_applicable_in"
+    def op_name() -> str: return "store_filtered_or_not_applicable_in"
 
     def __init__(self, setname, cop: ComplexOperation) -> None:
         super().__init__(setname, cop)
@@ -448,8 +440,8 @@ class StoreFilteredAndNotApplicableInSet(AbstractStoreInSet):
             else:
                 new_entries.extend(r)
         if self.td_unit.trace_ops:
-            msg = f"[trace] storing filtered or not applicable in {self.setname}: {rejected}"
-            print(msg, file=stderr)
+            msg = f"storing filtered or not applicable in {self.setname}: {rejected}"
+            self.td_unit.trace(msg)
         self.td_unit.entry_sets[self.setname].extend(rejected)
         return new_entries
 
@@ -620,6 +612,11 @@ class KeepIfRejectedModifier(AbstractTransformerOrExtractorModifier):
     """ Modifies the behavior of the wrapped operation such that an
         input entry will be an output entry if the wrapped operation
         does not apply or returns the empty set.
+        Recall that (in particular) a meta operation often takes the 
+        shape of the wrapped complex operation and if that complex
+        operation consists of filters and transformers/extractors then
+        the entire complex operation is a transformer/extractor but
+        may still return the empty list or None.
     """
 
     def op_name() -> str: return "~"
@@ -730,6 +727,161 @@ class Or(Operation):
     def close(self):
         for cop in self.cops:
             cop.close()
+
+
+class Result(Operation):
+
+    def op_name() -> str: return "restart"
+
+    def process_entries(self, entries: list[str]) -> list[str]:
+        restart_context = self.td_unit.restart_context
+        if restart_context:
+            restart_op: Restart = restart_context[-1]
+            restart_op.results.extend(entries)
+            if self.td_unit.trace_ops:
+                self.td_unit.trace(f"results: {restart_op.results}")
+
+            Restart.all_results.update(entries)
+
+        return entries
+
+
+RESULT = Result()
+
+
+class Restart(Operation):
+    """ Takes the entries and repeats all operations for each entry.
+        - Keeps a list of all entries that were put in the restart list
+          to avoid analyzing it over and over again.
+        - Uses the list of results identified by the user using the 
+          result operation, to prevent the processing of terms that 
+          were already identified as a result and to return these
+          elements as the result's operation.         
+    """
+
+    # This set is collaboratively maintained by Restart and Result
+    # and contains all entries for which the operations will
+    # be restarted as well as all results (for which no restart)
+    # will be performed.
+    all_results = set()
+
+    def op_name() -> str: return "restart"
+
+    def __init__(self, count: int, filter_cop: ComplexOperation, cop: ComplexOperation) -> None:
+        self.count = count
+        self.filter_cop = filter_cop
+        self.cop = cop
+        # The set of entries for which we restarted the computation
+        # This set cannot be global, because differente path may
+        # lead to the same entry, but only some paths are preferable.
+        self.restarted_entries: set[str] = set()
+        # The set of results (entries passed to "result") of this
+        # restart operation
+        self.results: list[str] = []
+
+    def __str__(self):
+        count = ""
+        # The value "256" is a bit arbitrary, but we never expect any
+        # meaningful dj script to except a restart opertion more than
+        # 256 times....
+        if self.count < 256:
+            count = f" {self.count}"
+        return f"{Restart.op_name()}{count}({self.filter_cop}, {self.cop})"
+
+    def is_meta_op(self) -> bool:
+        return True
+    
+    def is_transformer_or_extractor(self) -> bool:
+        return True
+
+    def init(self, td_unit: TDUnit, parent: ASTNode):
+        super().init(td_unit, parent)
+        self.filter_cop.init(td_unit, self)
+        self.cop.init(td_unit, self)
+        if not self.filter_cop.is_filter():
+            msg = f"{self} the filter is not a filter operation"
+            raise InitializationFailed(msg)
+        return self
+
+    def next_entry(self):
+        self.filter_cop.next_entry()
+        self.cop.next_entry()
+        self.results.clear()
+        self.restarted_entries.clear()
+        Restart.all_results.clear()
+
+    def process_entries(self, entries: list[str]) -> list[str]:
+        # "ignored" entries are already filtered beforehand...
+
+        td_unit = self.td_unit
+        entry_sets = self.td_unit.entry_sets
+
+        # check if we want to do (yet another) restart
+        if td_unit.restart_context.count(self) >= self.count:
+            return None
+
+        filtered_entries = self.filter_cop.process_entries(entries)
+        if len(filtered_entries) == 0:
+            return []
+        for fe in filtered_entries:
+            if fe in Restart.all_results:
+                continue
+
+            restart_entries = self.cop.process_entries([fe])
+            if not restart_entries:
+                continue
+
+            for re in restart_entries:
+                if re in self.restarted_entries or re in Restart.all_results:
+                    if td_unit.trace_ops:
+                        td_unit.trace(
+                            f"rejected restart (already processed): {re}")
+                    continue
+                self.restarted_entries.add(fe)
+                self.restarted_entries.add(re)
+
+                # 1. let's safe the current evaluation context;
+                #    i.e., the values of the current sets and the
+                #    current restart context.
+                old_entry_sets = {}
+                for (k, v) in entry_sets.items():
+                    old_entry_sets[k] = v
+                    entry_sets[k] = []
+                td_unit.restart_context.append((fe, re))
+                td_unit.restart_context.append(self)
+
+                # 2. apply all operations to a fresh context
+                #    (however, we have not called next_entry
+                #    as this function is ONLY called for original
+                #    entries read from stdin, a file or explicitly
+                #    generated)
+                td_unit.body.apply_cops(re)
+
+                # 3. restore the evaluation context before we continue
+                td_unit.restart_context.pop()
+                td_unit.restart_context.pop()
+                for (k, v) in old_entry_sets.items():
+                    entry_sets[k] = v
+
+                if td_unit.trace_ops:
+                    td_unit.trace(
+                        f"{self}({fe})({re}): {self.results}) finished")
+
+        if len(self.results) == 0:
+            return None
+        else:
+            processed_results = set()
+            final_results = []
+            for r in self.results:
+                if r not in processed_results:
+                    processed_results.add(r)
+                    final_results.append(r)
+
+            return final_results
+
+    def close(self):
+        self.filter_cop.close()
+        self.cop.close()
 
 
 class IListIfAny(Operation):
@@ -895,6 +1047,82 @@ class IListForeach(Operation):
 
     def close(self):
         self.cop.close()
+
+
+class IListRatio(Operation):
+    """ Accepts (a set of) intermediate entries if - after applying all operations -
+        the resulting set of entries is not empty. I.e., the operation was
+        applicable to at least one entry. In this case "applicable" is
+        configurable.
+    """
+
+    def op_name() -> str: return "ilist_ratio"
+
+    def __init__(self, joined: bool, op: str, ratio: float, before_cop: ComplexOperation, after_cop: ComplexOperation) -> None:
+        self.joined = joined
+        self.op = op
+        self.ratio = ratio
+        self.before_cop = before_cop
+        self.after_cop = after_cop
+
+    def __str__(self):
+        params = ""
+        if self.joined:
+            params = "joined"
+        params += " "+self.op+" "+str(self.ratio)
+        return f"{IListRatio.op_name()} {params}({self.before_cop}, {self.after_cop})"
+
+    def is_extractor(self) -> bool:
+        return self.before_cop.is_extractor() or \
+            self.after_cop.is_extractor()
+
+    def is_transformer(self) -> bool:
+        return self.before_cop.is_transformer() or \
+            self.after_cop.is_transformer()
+    
+    def is_transformer_or_extractor(self) -> bool:
+        return self.before_cop.is_transformer_or_extractor() or \
+            self.after_cop.is_transformer_or_extractor()
+
+    def init(self, td_unit: TDUnit, parent: ASTNode):
+        super().init(td_unit, parent)
+        self.before_cop.init(td_unit, self)
+        self.after_cop.init(td_unit, self)
+        if not self.after_cop.is_transformer_or_extractor():
+            msg = f"{self}: the second operation is no transformer or extractor {self.after_cop} "
+            raise InitializationFailed(msg)
+        return self
+
+    def next_entry(self):
+        self.before_cop.next_entry()
+        self.after_cop.next_entry()
+
+    def process_entries(self, entries: list[str]) -> list[str]:
+        before_entries = self.before_cop.process_entries(entries)
+        if not before_entries:
+            return None
+        after_entries = self.after_cop.process_entries(before_entries)
+        if not after_entries:
+            return None
+        
+        if self.joined:
+            before_count = sum([len(e) for e in before_entries])
+            after_count = sum([len(e) for e in after_entries])
+        else:
+            before_count = len(before_entries)
+            after_count = len(after_entries)
+
+        current_ratio = before_count / after_count
+            
+        if (self.op == "<" and current_ratio >= self.ratio) or \
+            (self.op == ">" and current_ratio <= self.ratio):
+            return None
+        
+        return after_entries
+
+    def close(self):
+        self.before_cop.close()
+        self.after_cop.close()
 
 
 class BreakUp(PerEntryExtractor):

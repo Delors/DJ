@@ -1,0 +1,24 @@
+# This script shows how to perform basic comparison operations.
+
+# Here, the idea is to check that the extraction of subwords 
+# covers a sufficiently large part of the original entry, but
+# not the entire term (second `ilist_ratio < 1' test).
+# For example, given: "House123$$$", "House" and "123" will
+# be extracted which represents 8 out of 11 characters and
+# therefore the ratio will be 11/8 = 1,375. However, in case
+# of "H$123$aus" only "123" would be extracted and therefor the
+# ratio would be 9/3 = 3.0.
+
+# The ratio is calculated by counting the elements or the entries 
+# lengths after performing the first operation and after performing
+# the second operation. If the ratio is satisfied the second list 
+# of entries is returned; otherwise "None".
+
+ilist_ratio joined < 2.01 ( 
+    _ , 
+    ilist_ratio < 1 (
+        _,
+        find_all "([A-Z][a-z]{1,})|([0-9]+)"
+    ) 
+) \
+report

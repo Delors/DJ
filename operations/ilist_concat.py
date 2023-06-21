@@ -30,6 +30,6 @@ class IListConcat(Transformer):
         if not new_e in self.td_unit.ignored_entries:
             return [new_e]
         elif self.td_unit.trace_ops:
-            print(f"[trace] ignored derived entry: {new_e}")
+            self.td_unit.trace(f'ignored concatenated entry: "{new_e}"')
 
 
