@@ -73,14 +73,14 @@ ignore "ignore/fr.txt"
 # - A "+" directly in front of the operation will ensure that the 
 #   original entry is passed on to the next step.
 # - A "*" directly in front of the transformer or extractor operation 
-#   will ensure that the current entry-set is passed on if and only 
+#   will ensure that the current entry-list is passed on if and only 
 #   if it is not applicable.
 # - A "!" directly in front of a filter operation will pass on the original
 #   entry if it was filtered and vice versa.
 # - A "~" directly in front of a filter passes on the entry if and only if
 #   it was filtered or not applicable.
 
-set BASE
+list BASE
 
 # DEFINITIONS OF MACROS
 def UMLAUT_TO_ASCII replace "replace/UmlautToAscii.txt"

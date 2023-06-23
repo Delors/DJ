@@ -23,17 +23,17 @@ create "r_leak_analysis/rest.txt"
 config is_part_of       WRAP_AROUND     True
 config is_regular_word  DICTIONARIES    ["en","de","fr","es","nl","pt"]
 
-set STRIPPED
-set BASE
-set NO_PATTERN
-set NO_PATTERN_NO_SEQ
-set NO_SINGLETON
-set NO_SINGLETON_NO_WALK
-set REST
-set NO_SIMPLE_WORD_COMBINATION
-set NO_WORD_COMBINATION
-set NO_EMAIL
-set AFTER_BREAKUP
+list STRIPPED
+list BASE
+list NO_PATTERN
+list NO_PATTERN_NO_SEQ
+list NO_SINGLETON
+list NO_SINGLETON_NO_WALK
+list REST
+list NO_SIMPLE_WORD_COMBINATION
+list NO_WORD_COMBINATION
+list NO_EMAIL
+list AFTER_BREAKUP
 
 def IS_WORD or( is_popular_word, is_regular_word )
 

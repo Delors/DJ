@@ -29,12 +29,12 @@ def transform_entries(td_unit: TDUnit, dictionary_filename: str, report_pace: bo
         1) a generator
         2) a file or stdin
     """
-    # 1. transform global_sets (if any)
-    td_unit.instantiate_global_sets()
+    # 1. transform global_lists (if any)
+    td_unit.instantiate_global_lists()
 
-    if td_unit.print_global_sets:
-        for (name, entries) in td_unit.global_entry_sets.items():
-            print(f"[info] global set {name}:",file=stderr)
+    if td_unit.print_global_lists:
+        for (name, entries) in td_unit.global_entry_lists.items():
+            print(f"[info] global list {name}:",file=stderr)
             for e in entries:
                 print(f"[info] {e}",file=stderr)
 
@@ -99,9 +99,9 @@ def main() -> int:
         action="store_true"
     )
     parser.add_argument(
-        '-s',
-        '--print_global_sets',
-        help="prints the global sets after transformation",
+        '-l',
+        '--print_global_lists',
+        help="prints the global lists after transformation",
         action="store_true"
     )
     parser.add_argument(
@@ -164,7 +164,7 @@ def main() -> int:
         return -2
 
     td_unit: TDUnit = DJTreeVisitor().visit(dj_source_tree)
-    td_unit.print_global_sets = args.print_global_sets
+    td_unit.print_global_lists = args.print_global_lists
     td_unit.print_original = args.print_original
     td_unit.report_progress = args.progress
     td_unit.verbose = verbose

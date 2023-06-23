@@ -36,45 +36,6 @@ class ProcessEntriesHandler(ABC):
 
     @final
     def process_entries(self, entries: list[str]) -> list[str]:
-        # PRE ISET_FOREACH IMPLEMENTATION!!!
-        # td_unit = self.td_unit
-        # all_none = True
-        # all_new_entries_set = set()
-        # all_new_entries_count = 0
-        # all_new_entries = []
-        # for entry in entries:
-        #    new_entries = self.process(entry)
-        #    if new_entries is not None:
-        #        all_none = False
-        #        for new_entry in new_entries:
-        #            if not new_entry in td_unit.ignored_entries and len(new_entry) > 0:
-        #                all_new_entries_set.add(new_entry)
-        #                if len(all_new_entries_set) > all_new_entries_count:
-        #                    all_new_entries_count += 1
-        #                    all_new_entries.append(new_entry)
-        # if all_none:
-        #    return None
-        # else:
-        #    return all_new_entries
-        # ______________________________________________________________
-        # WITH DUPLICATE REMOVAL AND "FOR_ALL" SEMANTICS
-        # td_unit = self.td_unit
-        # all_new_entries_set = set()
-        # all_new_entries_count = 0
-        # all_new_entries = []
-        # for entry in entries:
-        #     new_entries = self.process(entry)
-        #     if new_entries is not None:
-        #         for new_entry in new_entries:
-        #             if not new_entry in td_unit.ignored_entries and len(new_entry) > 0:
-        #                 all_new_entries_set.add(new_entry)
-        #                 if len(all_new_entries_set) > all_new_entries_count:
-        #                     all_new_entries_count += 1
-        #                     all_new_entries.append(new_entry)
-        #     else:
-        #         return None
-        #
-        # return all_new_entries
         td_unit = self.td_unit
         ignored_entries = td_unit.ignored_entries
         all_none = True
@@ -140,7 +101,7 @@ class Report(Operation):
     report ___remove\_ws capitalize report___
 
     In the above case, we first print out the (original) entry. After
-    that white space is removed. This will also filter the set of 
+    that white space is removed. This will also filter the list of 
     entries down to those which had white space in the first place 
     and then those entries will be capitalized. For example,
     given the two entries:
@@ -166,8 +127,8 @@ class Report(Operation):
 
     def __init__(self) -> None:
         super().__init__()
-        self.reported_entries: set[str] = set()
-        """ The set of reported, i.e., printed, entries;
+        self.reported_entries: list[str] = list()
+        """ The list of reported, i.e., printed, entries;
             only used if unique is enforced.
         """
 
@@ -271,39 +232,39 @@ class Classify(Report):
 class UseSet(Operation):
     """
     Replaces the current dictionary entry with the entries from
-    the specified sets. The list passed on to the next operation
-    consists of the elements of the first set followed by the elements
-    of all subsequent sets. However, the list may contain duplicates
+    the specified lists. The list passed on to the next operation
+    consists of the elements of the first list followed by the elements
+    of all subsequent lists. However, the list may contain duplicates
     to enable, e.g., concat operations and statistics.
     """
 
     def op_name() -> str: return "use"
 
-    def __init__(self, set_names) -> None:
-        self.set_names = set_names
+    def __init__(self, list_names) -> None:
+        self.list_names = list_names
 
     def __str__(self):
-        return f'{UseSet.op_name()} {" ".join(self.set_names)}'
+        return f'{UseSet.op_name()} {" ".join(self.list_names)}'
 
     def init(self, td_unit: TDUnit, parent: ASTNode):
         super().init(td_unit, parent)
         if not isinstance(parent, ComplexOperation) or \
                 not parent.ops[0] is self:  # TODO check that the complex operation is not a wrapped operation
-            msg = f"{self}: a set use has to be a top level and the first operation."
+            msg = f"{self}: a list use has to be a top level and the first operation."
             raise InitializationFailed(msg)
-        for set_name in self.set_names:
-            if td_unit.entry_sets.get(set_name) is None:
-                msg = f"{self}: set name {set_name} is not defined"
+        for list_name in self.list_names:
+            if td_unit.entry_lists.get(list_name) is None:
+                msg = f"{self}: list name {list_name} is not defined"
                 raise InitializationFailed(msg)
         return self
 
     def process_entries(self, _entries: list[str]) -> list[str]:
-        if len(self.set_names) == 1:
-            entries = self.td_unit.entry_sets[self.set_names[0]]
+        if len(self.list_names) == 1:
+            entries = self.td_unit.entry_lists[self.list_names[0]]
         else:
             entries = None
-            for s in self.set_names:
-                next_entries = self.td_unit.entry_sets[s]
+            for s in self.list_names:
+                next_entries = self.td_unit.entry_lists[s]
                 if next_entries is not None:
                     if entries is None:
                         entries = list(next_entries)
@@ -315,8 +276,8 @@ class UseSet(Operation):
 
 class AbstractStoreInSet(Operation):
 
-    def __init__(self, setname, cop: ComplexOperation) -> None:
-        self.setname = setname
+    def __init__(self, listname, cop: ComplexOperation) -> None:
+        self.listname = listname
         self.cop = cop
 
     @property
@@ -324,13 +285,13 @@ class AbstractStoreInSet(Operation):
     def operator(self) -> str: raise NotImplementedError()
 
     def __str__(self):
-        return f"{{ {self.cop} }}{self.operator()} {self.setname}"
+        return f"{{ {self.cop} }}{self.operator()} {self.listname}"
 
     def init(self, td_unit: TDUnit, parent: ASTNode):
         super().init(td_unit, parent)
         self.cop.init(td_unit, parent)
-        if self.td_unit.entry_sets.get(self.setname) is None:
-            msg = f"{self}: no set {self.setname} definition found"
+        if self.td_unit.entry_lists.get(self.listname) is None:
+            msg = f"{self}: no list {self.listname} definition found"
             raise InitializationFailed(msg)
         return self
 
@@ -345,8 +306,8 @@ class StoreInSet(AbstractStoreInSet):
 
     def op_name() -> str: return "store_in"
 
-    def __init__(self, setname, cop: ComplexOperation) -> None:
-        super().__init__(setname, cop)
+    def __init__(self, listname, cop: ComplexOperation) -> None:
+        super().__init__(listname, cop)
 
     def operator(self) -> str: return ">"
 
@@ -354,9 +315,9 @@ class StoreInSet(AbstractStoreInSet):
         td_unit = self.td_unit
         new_entries = self.cop.process_entries(entries)
         if td_unit.trace_ops:
-            td_unit.trace(f"storing in {self.setname}: {new_entries}")
+            td_unit.trace(f"storing in {self.listname}: {new_entries}")
         if new_entries is not None:
-            td_unit.entry_sets[self.setname].extend(new_entries)
+            td_unit.entry_lists[self.listname].extend(new_entries)
         return new_entries
 
 
@@ -364,8 +325,8 @@ class StoreFilteredInSet(AbstractStoreInSet):
 
     def op_name() -> str: return "store_filtered_in"
 
-    def __init__(self, setname, cop: ComplexOperation) -> None:
-        super().__init__(setname, cop)
+    def __init__(self, listname, cop: ComplexOperation) -> None:
+        super().__init__(listname, cop)
         self.warning_shown = False
 
     def operator(self) -> str: return "[]>"
@@ -383,15 +344,15 @@ class StoreFilteredInSet(AbstractStoreInSet):
                     all_new_entries.extend(new_entries)
             elif td_unit.warn and not self.warning_shown:
                 self.warning_shown = True
-                msg = f"[warn] {self.cop}({e}) was not applicable; did you want to use: '{{ <operation> }}/> {self.setname}'?"
+                msg = f"[warn] {self.cop}({e}) was not applicable; did you want to use: '{{ <operation> }}/> {self.listname}'?"
                 print(msg, file=stderr)
 
         if len(filtered_entries) > 0:
-            td_unit.entry_sets[self.setname].extend(filtered_entries)
+            td_unit.entry_lists[self.listname].extend(filtered_entries)
 
         if self.td_unit.trace_ops:
             td_unit.trace(
-                f"storing filtered in {self.setname}: {filtered_entries} => {td_unit.entry_sets[self.setname]}")
+                f"storing filtered in {self.listname}: {filtered_entries} => {td_unit.entry_lists[self.listname]}")
 
         return all_new_entries
 
@@ -400,8 +361,8 @@ class StoreNotApplicableInSet(AbstractStoreInSet):
 
     def op_name() -> str: return "store_not_applicable_in"
 
-    def __init__(self, setname, cop: ComplexOperation) -> None:
-        super().__init__(setname, cop)
+    def __init__(self, listname, cop: ComplexOperation) -> None:
+        super().__init__(listname, cop)
 
     def operator(self) -> str: return "/>"
 
@@ -415,9 +376,9 @@ class StoreNotApplicableInSet(AbstractStoreInSet):
             else:
                 new_entries.extend(r)
         if self.td_unit.trace_ops:
-            msg = f"storing not applicable in {self.setname}: {not_applicable}"
+            msg = f"storing not applicable in {self.listname}: {not_applicable}"
             self.td_unit.trace(msg)
-        self.td_unit.entry_sets[self.setname].extend(not_applicable)
+        self.td_unit.entry_lists[self.listname].extend(not_applicable)
         return new_entries
 
 
@@ -425,8 +386,8 @@ class StoreFilteredOrNotApplicableInSet(AbstractStoreInSet):
 
     def op_name() -> str: return "store_filtered_or_not_applicable_in"
 
-    def __init__(self, setname, cop: ComplexOperation) -> None:
-        super().__init__(setname, cop)
+    def __init__(self, listname, cop: ComplexOperation) -> None:
+        super().__init__(listname, cop)
 
     def operator(self) -> str: return "/[]>"
 
@@ -440,9 +401,9 @@ class StoreFilteredOrNotApplicableInSet(AbstractStoreInSet):
             else:
                 new_entries.extend(r)
         if self.td_unit.trace_ops:
-            msg = f"storing filtered or not applicable in {self.setname}: {rejected}"
+            msg = f"storing filtered or not applicable in {self.listname}: {rejected}"
             self.td_unit.trace(msg)
-        self.td_unit.entry_sets[self.setname].extend(rejected)
+        self.td_unit.entry_lists[self.listname].extend(rejected)
         return new_entries
 
 
@@ -545,7 +506,7 @@ class KeepAlwaysModifier(AbstractTransformerOrExtractorModifier):
     def process_entries(self, entries: list[str]) -> list[str]:
         # The following variant passes on all elements in one
         # block. Hence, if a single entry is not applicable
-        # the entire set is considered as being not applicable.
+        # the entire list is considered as being not applicable.
         # This semantics has proven to be unexpected and therefore
         # the behavior of this modifier is to process each
         # entry after another!
@@ -592,7 +553,7 @@ class KeepOnlyIfNotApplicableModifier(AbstractTransformerOrExtractorModifier):
         the effect of the operation. 
 
         The alternative semantics where we always reason about
-        the set as a whole has proven to be unexpected in practice!
+        the list as a whole has proven to be unexpected in practice!
         """
         op = self.op
         all_new_entries = []
@@ -611,7 +572,7 @@ class KeepOnlyIfNotApplicableModifier(AbstractTransformerOrExtractorModifier):
 class KeepIfRejectedModifier(AbstractTransformerOrExtractorModifier):
     """ Modifies the behavior of the wrapped operation such that an
         input entry will be an output entry if the wrapped operation
-        does not apply or returns the empty set.
+        does not apply or returns the empty list.
         Recall that (in particular) a meta operation often takes the 
         shape of the wrapped complex operation and if that complex
         operation consists of filters and transformers/extractors then
@@ -772,7 +733,7 @@ class Restart(Operation):
         self.filter_cop = filter_cop
         self.cop = cop
         # The set of entries for which we restarted the computation
-        # This set cannot be global, because differente path may
+        # This set cannot be global, because different paths may
         # lead to the same entry, but only some paths are preferable.
         self.restarted_entries: set[str] = set()
         # The set of results (entries passed to "result") of this
@@ -814,7 +775,7 @@ class Restart(Operation):
         # "ignored" entries are already filtered beforehand...
 
         td_unit = self.td_unit
-        entry_sets = self.td_unit.entry_sets
+        entry_lists = self.td_unit.entry_lists
 
         # check if we want to do (yet another) restart
         if td_unit.restart_context.count(self) >= self.count:
@@ -841,12 +802,12 @@ class Restart(Operation):
                 self.restarted_entries.add(re)
 
                 # 1. let's safe the current evaluation context;
-                #    i.e., the values of the current sets and the
+                #    i.e., the values of the current lists and the
                 #    current restart context.
-                old_entry_sets = {}
-                for (k, v) in entry_sets.items():
-                    old_entry_sets[k] = v
-                    entry_sets[k] = []
+                old_entry_lists = {}
+                for (k, v) in entry_lists.items():
+                    old_entry_lists[k] = v
+                    entry_lists[k] = []
                 td_unit.restart_context.append((fe, re))
                 td_unit.restart_context.append(self)
 
@@ -860,8 +821,8 @@ class Restart(Operation):
                 # 3. restore the evaluation context before we continue
                 td_unit.restart_context.pop()
                 td_unit.restart_context.pop()
-                for (k, v) in old_entry_sets.items():
-                    entry_sets[k] = v
+                for (k, v) in old_entry_lists.items():
+                    entry_lists[k] = v
 
                 if td_unit.trace_ops:
                     td_unit.trace(
@@ -885,8 +846,8 @@ class Restart(Operation):
 
 
 class IListIfAny(Operation):
-    """ Accepts (a set of) intermediate entries if - after applying all operations -
-        the resulting set of entries is not empty. I.e., the operation was
+    """ Accepts (a list of) intermediate entries if - after applying all operations -
+        the resulting list of entries is not empty. I.e., the operation was
         applicable to at least one entry. In this case "applicable" is
         configurable.
     """
@@ -940,7 +901,7 @@ class IListIfAny(Operation):
 
 
 class IListIfAll(Operation):
-    """ Accepts a set of entries if all entries generated by the given 
+    """ Accepts a list of entries if all entries generated by the given 
         operation satisfy the filter. I.e., the original entries are 
         accepted - not those which are the result of the generator 
         operation.
@@ -993,8 +954,9 @@ class IListIfAll(Operation):
             else:
                 return []
 
-        tested_entries = set(self.test.process_entries(generated_entries))
-        if all(map(lambda e: True if e in tested_entries else False, generated_entries)):
+        tested_entries = list(self.test.process_entries(generated_entries))
+        if all([True for g in generated_entries if g in tested_entries]):
+        #if all(map(lambda e: True if e in tested_entries else False, generated_entries)):
             return entries
         else:
             return []
@@ -1003,9 +965,70 @@ class IListIfAll(Operation):
         self.cop.close()
         self.test.close()
 
+class IListIfElse(Operation):
+    """ Performs a test and depending on the result either the
+        "if" or the "else" operation is performed.
+    """
+
+    def op_name() -> str: return "ilist_if_else"
+
+    def __init__(self, test: ComplexOperation, if_cop: ComplexOperation, else_cop: ComplexOperation) -> None:
+        self.if_cop = if_cop
+        self.else_cop = else_cop        
+        self.test = test  # ONLY FILTERS ARE ALLOWED HERE (VALIDATED IN init)
+
+    def __str__(self):
+        return f"{IListIfElse.op_name()}({self.test}, {self.if_cop}, {self.else_cop})"
+
+    def is_meta_op(self) -> bool:
+        return True
+
+    def is_filter(self) -> bool:
+        return self.if_cop.is_filter() and self.else_cop.is_filter()
+    
+    def is_extractor(self) -> bool:
+        return self.if_cop.is_extractor() and self.else_cop.is_extractor()
+
+    def is_transformer(self) -> bool:
+        return self.if_cop.is_transformer() and self.else_cop.is_transformer()
+
+    def is_transformer_or_extractor(self) -> bool:
+        return self.if_cop.is_transformer_or_extractor() or \
+            self.else_cop.is_transformer_or_extractor()
+
+
+    def init(self, td_unit: TDUnit, parent: ASTNode):
+        super().init(td_unit, parent)
+        self.if_cop.init(td_unit, self)
+        self.else_cop.init(td_unit, self)
+        self.test.init(td_unit, self)
+
+        if not self.test.is_filter():
+            msg = f"{self} {self.test} is not a filter"
+            raise InitializationFailed(msg)
+
+        return self
+
+    def next_entry(self):
+        self.if_cop.next_entry()
+        self.else_cop.next_entry()
+        self.test.next_entry()
+
+    def process_entries(self, entries: list[str]) -> list[str]:
+        # "ignored" entries are already filtered beforehand...
+        if entries == self.test.process_entries(entries):
+            return self.if_cop.process_entries(entries)
+        else:
+            return self.else_cop.process_entries(entries)
+
+    def close(self):
+        self.if_cop.close()
+        self.else_cop.close()
+        self.test.close()
+
 
 class IListForeach(Operation):
-    """ Continues processing each entry of an intermediate set on its own.
+    """ Continues processing each entry of an intermediate list on its own.
     """
 
     def op_name() -> str: return "ilist_foreach"
@@ -1050,10 +1073,8 @@ class IListForeach(Operation):
 
 
 class IListRatio(Operation):
-    """ Accepts (a set of) intermediate entries if - after applying all operations -
-        the resulting set of entries is not empty. I.e., the operation was
-        applicable to at least one entry. In this case "applicable" is
-        configurable.
+    """ Computes the ratio between the lists of elements or the sums
+        of the lengths of the entries of both list.
     """
 
     def op_name() -> str: return "ilist_ratio"

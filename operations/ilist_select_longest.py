@@ -4,7 +4,7 @@ from dj_ast import Filter
 
 
 class IListSelectLongest(Filter):
-    """ Among the set of entries that were derived from a single dictionary
+    """ Among the list of entries that were derived from a single dictionary
         entry (e.g., due to splitting up the entries, finding related words, 
         etc.), those entries are selected where each entry is not part
         of another entry; the order is maintained!

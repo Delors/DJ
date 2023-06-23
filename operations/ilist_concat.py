@@ -4,7 +4,7 @@ from common import escape
 
 class IListConcat(Transformer):
     """ Concats all current intermediate results. 
-        None is returned if the current set only consists of one 
+        None is returned if the current list only consists of one 
         intermediate result.
     """
 

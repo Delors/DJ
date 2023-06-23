@@ -14,10 +14,8 @@
 # the second operation. If the ratio is satisfied the second list 
 # of entries is returned; otherwise "None".
 
-ilist_ratio joined < 2.01 ( 
-    _ , 
-    ilist_ratio < 1 (
-        _,
+ilist_ratio joined < 2.01 ( _ , 
+    ilist_ratio < 1 ( _,
         find_all "([A-Z][a-z]{1,})|([0-9]+)"
     ) 
 ) \

@@ -1,5 +1,5 @@
 # Overview
-The files in this folder contain those character sets used on specific devices for, e.g., setting passwords. For example, iOS uses UTF-8 for passwords, but only a limited selection of characters is actually useable. 
+The files in this folder contain those character lists used on specific devices for, e.g., setting passwords. For example, iOS uses UTF-8 for passwords, but only a limited selection of characters is actually useable. 
 
 # IMPORTANT
 _All files use UTF-8 encoding._ 

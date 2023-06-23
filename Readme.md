@@ -1,15 +1,15 @@
 # Dictionary Transformation and Generation for Password Recovery aka `Dictionary Juggling` (DJ)
 
 Processes the entries of a _base_ dictionary by applying one to multiple user-definable transformations, extractions,  filtering or generating operations. 
-Basically, DJ enables the trivial definition of user-definable analysis and transformation pipelines to generate dictionaries useable for password recovery.
+Basically, DJ enables the  definition of user-definable analysis and transformation pipelines to generate dictionaries useable for password recovery.
 
 ## Installation
 
-To execute most basic operations (e.g. `strip`, `remove`, `fold`, etc.) no special installation steps/downloads are necessary. However, to use the advanced dictionary and/or NLP-based features, several dictionaries and pre-trained NLP models are required. Some will be downloaded automatically and some need to be pre-installed. I.e., on first usage of the respective features DJ needs an Internet connection. Alternatively, the respective packages can be downloaded externally and then be installed for complete offline usage.
+To execute most basic operations (e.g. `strip`, `remove`, `fold`, etc.) no special installation steps/downloads are necessary. However, to use the advanced dictionary and/or NLP-based features, several dictionaries and pre-trained NLP models are required. Some will be downloaded automatically and some need to be pre-installed. I.e., on first usage of the respective features DJ needs an Internet connection. Alternatively, the respective packages can be downloaded externally and then be installed locally for complete offline usage.
 
 ### 1. Download dictionaries
 Some of the available operations need well defined dictionaries as a foundation. 
-These dictionaries need to be `hunspell` dictionaries. DJ relies on those used by [libreoffice](https://github.com/LibreOffice/dictionaries) and the dictionaries need to be placed in the folder `dicts`.
+These dictionaries need to be `hunspell` dictionaries. DJ is tested with those used by [libreoffice](https://github.com/LibreOffice/dictionaries). The dictionaries need to be placed in the folder `dicts`.
 
 ```sh
 mkdir dicts
@@ -26,14 +26,14 @@ Second, install the python libraries.
 pip3 install -r requirements.txt
 ```
 
-#### Potential Installation Issues
+### Potential Installation Issues (Ubuntu/Debian)
 
 __Gensim and Numpy__  
 If you install Gensim using pip and Numpy was already installed using "apt" (i.e., using the system's package manager), errors may appear when you want to use respective operations (e.g., `related` or `is_popular_word`). In this case, _first_ remove the global Numpy installation (e.g., `sudo apt remove python3-numpy`) 
 
-__Pynuspell and Python >3.10__
+__Pynuspell and Python >= 3.10__
 
-The `pynuspell` module is not (as of Oct. 2022) available for Python 3.10 and above in the PIP repository. In this case, it must be installed from source if operations (e.g., `correct_spelling` or `is_regular_word`) that use dictionaries are going to be used. 
+The `pynuspell` module is not (as of Oct. 2022) available for Python 3.10 and above in the PIP repository. In this case, it must be installed from source if operations that use dictionaries (e.g., `correct_spelling` or `is_regular_word`) are going to be used. 
 
 To install pynuspell from source, you first have to install `nuspell` _and_ also the development package `libnuspell-dev`. After that, head over to [https://pypi.org/project/pynuspell/](https://pypi.org/project/pynuspell/)
 and follow the installation instructions; however, be aware that the instructions are not correct for Linux. For Linux (Debian/Ubuntu) you need to do the following:
@@ -57,10 +57,10 @@ To force DJ to download the necessary data just start DJ with the `related` oper
 
 ```bash
 $ ./dj.py -v 'is_popular_word related 0.5 report'
-Wiesbaden
+Halle
 ``` 
 
-This will force the on-demand download of the respective NLP models. Therefore, the first usage may take quite some time as several GB need to be downloaded from the web, loaded 
+This will force the on-demand download of the respective NLP models. Therefore, the first usage may take quite some time as several GB need to be downloaded from the web.  
 
 ## Usage
 
@@ -78,10 +78,10 @@ For example, in case of `python3 DJ.py lower report` every entry of the given di
 
 _Do not forget to specify `report` or `write "<FILE>"`  at the end; otherwise you'll have no output!_
 
-More complex operations specifications are also possible on the command line using appropriate escaping/parameter expansion. The next example shows how to specify some configuration operations:
+More complex operation specifications are also possible on the command line using appropriate escaping/parameter expansion. The next example shows how to specify some configuration operations:
 
 ```sh
-python3 dj.py "config related K 100"$'\n'"related 0.5 related 0.6 related 0.7 report"
+python3 dj.py "config related K 100"$'\n'"related 0.5 report"
 ```
 
 ### Standard Usage
@@ -164,7 +164,7 @@ I.e., in this example the second `+split " "` operation is effectively useless b
 
 ### Formatting long operation definitions
 
-To foster readability of long chains of operation definitions it is possible to split up a chain of operation definitions over multiple lines by ending a line using "\" (please note, that the "\" has to be the very last character!). This will then be treated as a continuation of the previous line.  Hence, the above rule (Example 2) can also be written as:
+To foster readability of long chains of operation definitions it is possible to split up a chain of operation definitions over multiple lines by ending a line using "\\" (please note, that the "\\" has to be the very last character!). This will then be treated as a continuation of the previous line.  Hence, the above rule (Example 2) can also be written as:
 
 ```sh 
 +split " " \
@@ -188,12 +188,12 @@ Controlling the output:
  - `report` to write the result of an operation (sequence) to stdout. 
  - `write "<file>"` to write out the results of a transformation to a specific file instead of `stdout`. Multiple `write` operations can be used and write to the same file.
 
-Using intermediate *sets*:  
-It is also possible to capture the (intermediate) result of an operation for later usage. For example, in some cases an intermediate result should be processed in multiple specific manners that are not compatible with each other and the previous operations were computationally expensive (e.g., when using some of the semantics features) or the result should just be given some name. In this case, the result can be stored in an intermediate set and used later on. To use a set, it first needs to be declared using `set <SET_NAME>`. Afterwards, the results of some operations are stored in the set using the set syntax `{ <operation(s)> }> <SET_NAME>`. Alternatively, to store filtered entries `{ <operation(s)> }[]> <SET_NAME>` can be used. The set is used later on by starting an operations chain using `use <SET_NAME>`.
+Using intermediate *lists*:  
+It is also possible to capture the (intermediate) result of an operation for later usage. For example, in some cases an intermediate result should be processed in multiple specific manners that are not compatible with each other and the previous operations were computationally expensive (e.g., when using some of the semantics features) or the result should just be given some name. In this case, the result can be stored in an intermediate list and used later on. To use a list, it first needs to be declared using `list <LIST_NAME>`. Afterwards, the results of some operations are stored in the list using the list syntax `{ <operation(s)> }> <LIST_NAME>`. Alternatively, to store filtered entries `{ <operation(s)> }[]> <LIST_NAME>` can be used. The list is used later on by starting an operations chain using `use <LIST_NAME>`.
 
 ```sh
-set STEP_ONE
-set STEP_TWO
+list STEP_ONE
+list STEP_TWO
 
 { related 0.5 }> STEP_ONE               write "most_related.txt"
 use STEP_ONE related 0.6                write "related.txt"

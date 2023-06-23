@@ -15,7 +15,7 @@ create "structure/lds.txt"
 create "structure/uds.txt"
 create "structure/luds.txt"
 
-set REST
+list REST
 
 { or(
     min lower 1 max upper 0 max numeric 0 max symbol 0 write "structure/l.txt",

@@ -14,16 +14,16 @@ ignore "ignore/en.txt"
 ignore "ignore/fr.txt"
 
 
-set STRIPPED_MINIMIZED
-set NO_SEQUENCE
-set NO_PATTERN
-set NO_SEQ_NO_PATTERN_NO_WALK
-set NO_WORD
-set NO_WORD_SEQ
-set UNKNOWN_1
-set UNKNOWN_2
-set CROPPED
-set GARBAGE
+list STRIPPED_MINIMIZED
+list NO_SEQUENCE
+list NO_PATTERN
+list NO_SEQ_NO_PATTERN_NO_WALK
+list NO_WORD
+list NO_WORD_SEQ
+list UNKNOWN_1
+list UNKNOWN_2
+list CROPPED
+list GARBAGE
 
 def IS_WORD \
  or( is_regular_word, is_popular_word )

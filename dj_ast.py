@@ -41,7 +41,7 @@ class Comment(ASTNode):
 class Operation(ASTNode):
     """ Representation of an operation. An operation processes one to many 
         entries and produces zero (`[]`) to many entries. An operation which 
-        does not apply to an entry/a set of entries returns `None`. 
+        does not apply to an entry/a list of entries returns `None`. 
         For a precise definition of "does not apply" see the documentation 
         of the respective operations.
 
@@ -76,7 +76,7 @@ class Operation(ASTNode):
             nop.
         - a macro which combines one to many operations and which basically
             provides a convenience method to facilitate the definition of
-            a set of operations which should be carried out in a specific order
+            a list of operations which should be carried out in a specific order
             and which may be used multiple times.
 
         Lifecycle:
@@ -264,9 +264,9 @@ class ComplexOperation(ASTNode):
             op.close()
 
 
-class SetDefinition(ASTNode):
+class ListDefinition(ASTNode):
     """
-    Represents a named set. A named set is initialized/reset before an
+    Represents a named list. A named list is initialized/reset before an
     entry of the dictionary is processed and holds (intermediate) 
     results created while processing the entry.
     """
@@ -275,40 +275,40 @@ class SetDefinition(ASTNode):
         self.name = name
 
     def __str__(self) -> str:
-        return "set "+self.name
+        return "list "+self.name
 
     def init(self, td_unit: 'TDUnit', parent: ASTNode):
         super().init(td_unit, parent)
-        td_unit.entry_sets[self.name] = []
+        td_unit.entry_lists[self.name] = []
         return self
 
 
-class GlobalSetDefinition(ASTNode):
+class GlobalListDefinition(ASTNode):
     """
-    Represents a named set that will be initialized from the given file.
+    Represents a named list that will be initialized from the given file.
     Used by special operations that transform entries based on 
-    the global set.
+    the global list.
     """
 
-    def __init__(self, setname, filename, cop) -> None:
-        self.setname = setname
+    def __init__(self, listname, filename, cop) -> None:
+        self.listname = listname
         self.filename = filename
         self.cop = cop
 
     def __str__(self) -> str:
-        cmd = f'global_set {self.setname} "{self.filename}"'
+        cmd = f'global_list {self.listname} "{self.filename}"'
         if self.cop is not None:
             cmd += "( "+str(self.cop)+" )"
         return cmd
 
     def init(self, td_unit: 'TDUnit', parent: 'ASTNode'):
         super().init(td_unit, parent)
-        self.td_unit.global_entry_sets[self.setname] = []
+        self.td_unit.global_entry_lists[self.listname] = []
         if self.cop is not None:
             self.cop.init(td_unit, self)
         return self
 
-    def instantiate_global_set(self):
+    def instantiate_global_list(self):
         # we have to read the entries now, because we want to apply
         # the specific rules only to the entries of this file (even
         # if we later join the transformed elements with some other
@@ -316,9 +316,9 @@ class GlobalSetDefinition(ASTNode):
         entries = read_utf8file(self.filename)
         if self.cop:
             entries = self.cop.process_entries(entries)
-        self.td_unit.global_entry_sets[self.setname].extend(entries)
+        self.td_unit.global_entry_lists[self.listname].extend(entries)
         if self.td_unit.verbose:
-            msg = f"[debug] global set {self.setname}: {self.filename} (#{len(entries)})"
+            msg = f"[debug] global list {self.listname}: {self.filename} (#{len(entries)})"
             print(msg, file=stderr)
 
 
@@ -334,7 +334,7 @@ class IgnoreEntries(ASTNode):
         super().init(td_unit, parent)
         # 1. reads in the file and stores the entries to
         #    be ignored in the TDUnit object.
-        to_be_ignored = set(read_utf8file(self.filename))
+        to_be_ignored = list(read_utf8file(self.filename))
         td_unit.ignored_entries = td_unit.ignored_entries.union(to_be_ignored)
         if td_unit.verbose:
             msg = f"[debug] ignoring: {self.filename} (#{len(to_be_ignored)})"
@@ -497,10 +497,10 @@ class Header(ASTNode):
             o.init(td_unit, self)
         return self
 
-    def instantiate_global_sets(self):
+    def instantiate_global_lists(self):
         for gs in self.setup_ops:
             try:
-                gs.instantiate_global_set()
+                gs.instantiate_global_list()
             except:
                 pass
 
@@ -579,16 +579,16 @@ class TDUnit(ASTNode):
         # The following fields will be fully initialized during
         # the explicit initialization step ("init").
 
-        self.ignored_entries: set[str] = set()
+        self.ignored_entries: list[str] = []
 
-        # A map from str (set name) to current entries.
-        self.entry_sets: dict[str, list[str]] = {}
+        # A map from str (list name) to current entries.
+        self.entry_lists: dict[str, list[str]] = {}
         self.restart_context = []  # list of restart operations and strings
-        self.global_entry_sets: dict[str, list[str]] = {}
+        self.global_entry_lists: dict[str, list[str]] = {}
         # A map from str to complex operation objects
         self.macros: dict[str, ComplexOperation] = {}
 
-        self.print_global_sets = False  # detailed information about global sets is printed
+        self.print_global_lists = False  # detailed information about global lists is printed
         self.report_progress = False  # report progress w.r.t. the processed entries
         self.trace_ops = False  # provide detailed information about an operation's effect
         self.verbose = False  # provide configuration and initialization related information
@@ -604,8 +604,8 @@ class TDUnit(ASTNode):
         self.body.init(td_unit, self)
         return self
 
-    def instantiate_global_sets(self):
-        self.header.instantiate_global_sets()
+    def instantiate_global_lists(self):
+        self.header.instantiate_global_lists()
 
     def evaluate_generators(self) -> Iterable[str]:
         return self.header.evaluate_generators()
@@ -618,9 +618,9 @@ class TDUnit(ASTNode):
             if self.report_progress:
                 print(f"[progress] processing #{no}: {entry}", file=stderr)
 
-            # clear all (intermediate) sets
-            for k in self.entry_sets.keys():
-                self.entry_sets[k].clear()
+            # clear all (intermediate) lists
+            for k in self.entry_lists.keys():
+                self.entry_lists[k].clear()
             # delegate to the body for the application of the rules
             self.body.process(entry)
 

@@ -6,25 +6,25 @@ from common import InitializationFailed
 class GListDrop(PerEntryTransformer):
     """
     Discards the ending of an entry if it matches any of the strings
-    found in the specified global set.
+    found in the specified global list.
     """
 
     def op_name() -> str: return "glist_drop"
 
     MIN_LENGTH = 4 # of characters of the remaining entry
 
-    def __init__(self, setname):
-        self.setname = setname
+    def __init__(self, listname):
+        self.listname = listname
         self.entries_set = None
 
     def __str__(self):
-        return f'{GListDrop.op_name()} {self.setname}'
+        return f'{GListDrop.op_name()} {self.listname}'
 
     def init(self, td_unit: TDUnit, parent: ASTNode):
         super().init(td_unit, parent)
-        if self.setname not in td_unit.global_entry_sets:
-            raise InitializationFailed(f"{self}: set does not exist")
-        self.entries_set = self.td_unit.global_entry_sets[self.setname]        
+        if self.listname not in td_unit.global_entry_lists:
+            raise InitializationFailed(f"{self}: list does not exist")
+        self.entries_set = set(self.td_unit.global_entry_lists[self.listname])
         return self
 
     def process(self, entry: str) -> list[str]:        

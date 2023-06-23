@@ -16,11 +16,11 @@ from common import unescape
 
 from dj_ast import ComplexOperation
 from dj_ast import TDUnit, Body, Header, Comment
-from dj_ast import Generate, IgnoreEntries, SetDefinition, GlobalSetDefinition
+from dj_ast import Generate, IgnoreEntries, ListDefinition, GlobalListDefinition
 from dj_ast import MacroDefinition, ConfigureOperation, CreateFile
 from dj_ops import NOP, REPORT, Write, Classify, MacroCall, Or, BreakUp
 from dj_ops import Restart, RESULT
-from dj_ops import IListIfAll, IListForeach, IListIfAny, IListRatio
+from dj_ops import IListIfElse, IListIfAll, IListForeach, IListIfAny, IListRatio
 from dj_ops import UseSet, StoreInSet, StoreFilteredInSet, StoreNotApplicableInSet, StoreFilteredOrNotApplicableInSet
 from dj_ops import NegateFilterModifier, KeepAlwaysModifier, KeepOnlyIfNotApplicableModifier, KeepIfRejectedModifier
 from operations.capitalize import CAPITALIZE
@@ -94,7 +94,7 @@ and "_reversed" would then remain unmatched.
 DJ_GRAMMAR = Grammar(
     r"""    
     file            = header body 
-    header          = ( ignore / set / global_set / config / def / gen / comment / create / _meaningless ) *
+    header          = ( ignore / list / global_list / config / def / gen / comment / create / _meaningless ) *
     body            = ( op_defs / comment / _meaningless ) +
     
     nl              = ~r"[\r\n]"m
@@ -106,7 +106,7 @@ DJ_GRAMMAR = Grammar(
     #quoted_string   = ~'"[^"]*"' # does not support escapes
     quoted_string   = ~r'"(?:(?:(?!(?<!\\)").)*)"' # supports nested escaped "
     file_name       = quoted_string
-    identifier      = ~r"[A-Z_][A-Z0-9_]*" # we require identifiers of sets and macros to use capital letters to make them easily distinguishable
+    identifier      = ~r"[A-Z_][A-Z0-9_]*" # we require identifiers of lists and macros to use capital letters to make them easily distinguishable
     op_operator     = ~r"[a-z_]+"
     float_value     = ~r"[0-9]+(\.[0-9]+)?"
     int_value       = ~r"[0-9][0-9]*"
@@ -116,8 +116,8 @@ DJ_GRAMMAR = Grammar(
     python_value    = ~r"[^\n\r]+" # we also support simple lists of strings
 
     ignore          = "ignore" ws+ file_name
-    set             = "set" ws+ identifier
-    global_set      = "global_set" ws+ identifier ws+ file_name( ~r"\(\s*"s op_defs ~r"\s*\)"s )?
+    list            = "list" ws+ identifier
+    global_list     = "global_list" ws+ identifier ws+ file_name( ~r"\(\s*"s op_defs ~r"\s*\)"s )?
     config          = "config" ws+ python_identifier ws+ python_identifier ws+ python_value
     def             = "def" ws+ identifier continuation op_defs
     gen             = "gen" ws+ ("alt") ws+ python_value
@@ -131,12 +131,13 @@ DJ_GRAMMAR = Grammar(
     
     # IN THE FOLLOWING THE ORDER OF OP DEFINITION MAY MATTER!
     op_def          = macro_call /
-                      set_store /
-                      set_use /
+                      list_store /
+                      list_use /
                       restart /
                       result /
                       or /
                       ilist_if_all /
+                      ilist_if_else /
                       ilist_foreach /
                       ilist_if_any /
                       ilist_select_longest /
@@ -208,15 +209,16 @@ DJ_GRAMMAR = Grammar(
     # ======================================
     nop             = "_"
     macro_call      = "do" ws+ identifier
-    # Handling of (intermediate) sets
-    set_store       = "{" nl_continuation? op_defs nl_continuation? ( "}>" / "}[]>" / "}/>" / "}/[]>" ) ws* identifier
-    set_use         = "use" (ws+ identifier)+ # a set use always has to be the first op in an op_defs
+    # Handling of (intermediate) lists
+    list_store      = "{" nl_continuation? op_defs nl_continuation? ( "}>" / "}[]>" / "}/>" / "}/[]>" ) ws* identifier
+    list_use        = "use" (ws+ identifier)+ # a list use always has to be the first op in an op_defs
     # Loop related operators
     restart         = ~r"restart(\s+[0-9])?\s*\(\s*"s op_defs ~r"\s*,\s*"s op_defs ~r"\s*\)"s
     result          = "result"
-    # Meta operators that are set related
+    # Meta operators that are list related
     ilist_if_all    = ~r"ilist_if_all\s*\(\s*" (~r"N/A\s*=\s*" boolean_value ~r"\s*,\s*\[\]\s*=\s*" boolean_value ~r"\s*,\s*")? op_defs ~r"\s*,\s*" op_defs ~r"\s*\)"s
     ilist_if_any    = ~r"ilist_if_any\s*\(\s*" (~r"N/A\s*=\s*"s boolean_value ~r"\s*,\s*\[\]\s*=\s*"s boolean_value ~r"\s*,\s*"s)? op_defs ~r"\s*\)"s
+    ilist_if_else   = ~r"ilist_if_else\s*\(\s*"s op_defs ~r"\s*,\s*"s op_defs ~r"\s*,\s*"s op_defs ~r"\s*\)"s
     ilist_foreach   = ~r"ilist_foreach\s*\(\s*" op_defs ~r"\s*\)"s    
     ilist_ratio     = ~r"ilist_ratio" (ws+ "joined")? ~r"\s+(<|>)\s*" float_value ~r"\s*\(\s*"s op_defs ~r"\s*,\s*"s op_defs ~r"\s*\)"s
     or              = ~r"or\s*\(\s*" op_defs ( ~r"\s*,\s*" op_defs )+ ~r"\s*\)"s
@@ -338,16 +340,16 @@ class DJTreeVisitor (NodeVisitor):
         (_ignore, _ws, filename) = children
         return IgnoreEntries(filename)
 
-    def visit_global_set(self, node, children):
-        (_global_set, _ws, name, _ws, filename, op_defs_opt) = children
+    def visit_global_list(self, node, children):
+        (_global_list, _ws, name, _ws, filename, op_defs_opt) = children
         op_defs = None
         if isinstance(op_defs_opt, list):
             (_ws, op_defs, _ws) = op_defs_opt[0]
-        return GlobalSetDefinition(name, filename, op_defs)
+        return GlobalListDefinition(name, filename, op_defs)
 
-    def visit_set(self, node, children):
-        (_set, _ws, name) = children
-        return SetDefinition(name)
+    def visit_list(self, node, children):
+        (_list, _ws, name) = children
+        return ListDefinition(name)
 
     def visit_create(self, node, children):
         (_create, _ws, filename, initial_value) = children
@@ -399,7 +401,7 @@ class DJTreeVisitor (NodeVisitor):
         (_do, _ws, identifier) = visited_children
         return MacroCall(identifier)
 
-    def visit_set_store(self, node, visited_children):
+    def visit_list_store(self, node, visited_children):
         (_para, _ws, op_defs, _ws, [store_op],
          _ws, identifier) = visited_children
         op = store_op.text
@@ -423,7 +425,7 @@ class DJTreeVisitor (NodeVisitor):
             # 256 should be sufficient for our cases...
             return Restart(256, filter_cop, cop)
 
-    def visit_set_use(self, node, visited_children):
+    def visit_list_use(self, node, visited_children):
         (_use, raw_identifiers) = visited_children
         identifiers = list(map(lambda x: x[1], raw_identifiers))
         return UseSet(identifiers)
@@ -440,6 +442,10 @@ class DJTreeVisitor (NodeVisitor):
     def visit_ilist_foreach(self, n, visited_children):
         (_, cop, _) = visited_children
         return IListForeach(cop)
+
+    def visit_ilist_if_else(self, n, visited_children):
+        (_, test,_,if_cop,_,else_cop, _) = visited_children
+        return IListIfElse(test,if_cop,else_cop)
 
     def visit_ilist_if_all(self, n, visited_children):
         (_, on_none_and_on_empty, cop, _, test, _) = visited_children
@@ -602,12 +608,12 @@ class DJTreeVisitor (NodeVisitor):
     def visit_correct_spelling(self, _n, _c): return CorrectSpelling()
 
     def visit_glist_drop(_, node, children):
-        (_glist_drop, _ws, setname) = children
-        return GListDrop(setname)
+        (_glist_drop, _ws, listname) = children
+        return GListDrop(listname)
 
     def visit_glist_in(_, node, children):
-        (_glist_in, _ws, setname) = children
-        return GListIn(setname)
+        (_glist_in, _ws, listname) = children
+        return GListIn(listname)
 
 
 DJ_EXAMPLE_FILE = """
@@ -619,10 +625,10 @@ ignore "ignore/de.txt"
 config related K 15
 config related KEEP_ALL_RELATEDNESS 0.777
 
-set NO_PATTERN
-set WALK
-set RELATED
-set NO_WORD
+list NO_PATTERN
+list WALK
+list RELATED
+list NO_WORD
 
 def BASE_TRANSFORMATIONS \
  *strip_no_and_sc \

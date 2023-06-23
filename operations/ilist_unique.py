@@ -4,7 +4,7 @@ from dj_ast import Filter
 
 
 class IListUnique(Filter):
-    """ Reduces the list of intermedidate entries to a set; i.e.,
+    """ Reduces the list of intermediate entries to a list; i.e.,
         duplicates are removed. The order is maintained - except of
         the removal of duplicates.
 
