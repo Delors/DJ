@@ -106,7 +106,7 @@ use BASE \
 #    standard format. E.g., Vladimir PAVEL => Vladimir Pavel;
 #    however, we do not want to convert entries that are seemingly not names,
 #    e.g., for an entry such as "HiHo ALLE", we do not want to change the 
-#    capitalization of "HiHo". Therefore, `split " " *title ilist_concat report` 
+#    capitalization of "HiHo". Therefore, a simpler `split " " *title ilist_concat report` 
 #    wouldn't work.
 # 2) Splits up terms implicitly removes fill words and reconnects them.
 #    I.e., Frankfurt an der Oder => Frankfurt Oder

@@ -127,8 +127,8 @@ class Report(Operation):
 
     def __init__(self) -> None:
         super().__init__()
-        self.reported_entries: list[str] = list()
-        """ The list of reported, i.e., printed, entries;
+        self.reported_entries: set[str] = set()
+        """ The set of reported, i.e., printed, entries;
             only used if unique is enforced.
         """
 
@@ -330,6 +330,9 @@ class StoreFilteredInSet(AbstractStoreInSet):
         self.warning_shown = False
 
     def operator(self) -> str: return "[]>"
+
+    def is_filter(self) -> bool:
+        return self.cop.is_filter()
 
     def process_entries(self, entries: list[str]) -> list[str]:
         td_unit = self.td_unit
@@ -626,9 +629,9 @@ class NegateFilterModifier(Operation):
     def init(self, td_unit: TDUnit, parent: ASTNode):
         super().init(td_unit, parent)
         op = self.op
-        if not (op.is_filter()):
-            raise InitializationFailed(f"{self}: {op} is no filter")
         op.init(td_unit, parent)
+        if not (op.is_filter()):
+            raise InitializationFailed(f"{self}: {op} is no filter")        
         return self
 
     def next_entry(self):
@@ -954,9 +957,8 @@ class IListIfAll(Operation):
             else:
                 return []
 
-        tested_entries = list(self.test.process_entries(generated_entries))
-        if all([True for g in generated_entries if g in tested_entries]):
-        #if all(map(lambda e: True if e in tested_entries else False, generated_entries)):
+        tested_entries = self.test.process_entries(generated_entries)        
+        if all(map(lambda e: True if e in tested_entries else False, generated_entries)):
             return entries
         else:
             return []

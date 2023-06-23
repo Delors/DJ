@@ -83,7 +83,7 @@ A (poor man's ?) rule extractor:
  - Password2023! => `$2$0$2$3$!`  
       DJ: `find_all "[^a-zA-Z]+$" prepend each "$" report`
  - 1Password => `^1`
-      DJ: `find_all "^[^a-zA-Z]+" reverse prepend each "^" report`
+      DJ: `find_all "^[^a-zA-Z]+" *reverse prepend each "^" report`
 
 ---
 
@@ -119,6 +119,31 @@ is_regular_word report
 ```
 
 <!-- _footer: This covers only the most basic scenarios, but it gives a first impression.  -->
+
+
+--- 
+
+# Example - Semantic Expansion
+
+Given a term such as "Bugatti", we want to get related terms (easily):
+```
+gti
+volvo
+coupe
+gucci
+buggati
+bentley
+lamborghini
+...
+```
+
+DJ
+```sh
+config related K 100
+config related KEEP_ALL_RELATEDNESS 0.75
+
+related 0.4 report
+```
 
 ---
 
@@ -351,7 +376,7 @@ Example to create rules that prepend and append at the same time (e.g., which cr
 ```shell
 list LEFT
 list RIGHT
-{ find_all "^[^a-zA-Z]+" reverse prepend each "^" }> LEFT
+{ find_all "^[^a-zA-Z]+" *reverse prepend each "^" }> LEFT
 { find_all "[^a-zA-Z]+$" prepend each "$" }> RIGHT
 use LEFT RIGHT ilist_max length 1 report
 use LEFT RIGHT ilist_concat " " report

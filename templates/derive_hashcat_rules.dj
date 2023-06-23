@@ -10,7 +10,7 @@ list BASE
 # In both cases, we will have at most one match!
 # Hence, for each original entry the lists LEFT and 
 # RIGHT will contain at most one value!
-use BASE { find_all "^[^a-zA-Z]+" reverse prepend each "^" }> LEFT
+use BASE { find_all "^[^a-zA-Z]+" *reverse prepend each "^" }> LEFT
 use BASE { find_all "[^a-zA-Z]+$" prepend each "$" }> RIGHT
 
 # In case we only have a prependix or an appendix, we 

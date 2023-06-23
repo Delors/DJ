@@ -334,7 +334,7 @@ class IgnoreEntries(ASTNode):
         super().init(td_unit, parent)
         # 1. reads in the file and stores the entries to
         #    be ignored in the TDUnit object.
-        to_be_ignored = list(read_utf8file(self.filename))
+        to_be_ignored = set(read_utf8file(self.filename))
         td_unit.ignored_entries = td_unit.ignored_entries.union(to_be_ignored)
         if td_unit.verbose:
             msg = f"[debug] ignoring: {self.filename} (#{len(to_be_ignored)})"
@@ -579,7 +579,7 @@ class TDUnit(ASTNode):
         # The following fields will be fully initialized during
         # the explicit initialization step ("init").
 
-        self.ignored_entries: list[str] = []
+        self.ignored_entries: set[str] = set()
 
         # A map from str (list name) to current entries.
         self.entry_lists: dict[str, list[str]] = {}

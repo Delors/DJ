@@ -23,7 +23,9 @@ list NO_WORD_SEQ
 list UNKNOWN_1
 list UNKNOWN_2
 list CROPPED
+list CROPPED_BUT_STILL_NO_WORD
 list GARBAGE
+list EXTENDED_WORD
 
 def IS_WORD \
  or( is_regular_word, is_popular_word )
@@ -83,6 +85,16 @@ use UNKNOWN_1 { cut r 1 2 }> CROPPED
 use UNKNOWN_1 { cut l 1 1 cut r 1 1 }> CROPPED                 
 
 use CROPPED \
+    {
+        ilist_if_all(
+            _,
+            { !do IS_WORD }[]> EXTENDED_WORD
+        )
+    }> CROPPED_BUT_STILL_NO_WORD 
+
+use EXTENDED_WORD report                                               
+
+use CROPPED_BUT_STILL_NO_WORD \
     { break_up(max numeric 0 is_regular_word) ilist_max length 4 }/> NO_WORD_SEQ \         
                                                             write "find_words/sub_words.txt"
 

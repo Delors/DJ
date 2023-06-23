@@ -1,6 +1,8 @@
 # Converts entries which contain non-7bit ascii characters
 # to the most likely candidates using just 7bit ascii.
 
+create "temp/non-7bit-ASCII.txt"
+
 list NON_7BIT_ASCII
 
 # GENERAL FILTER
@@ -10,18 +12,19 @@ ignore "ignore/es.txt"
 ignore "ignore/fr.txt"
 ignore "ignore/al.txt"
 
-# DEFINITIONS OF MACROS
+# DEFINITION OF MACRO 
+# Please note that we may have multiple transliterations!
 def LETTERS_TO_ASCII \
-    *replace "replace/AsortedLettersToAscii.txt" \
-    *replace "replace/CroatianLettersToAscii.txt" \
-    *replace "replace/DanishLettersToAscii.txt" \
-    *replace "replace/FrenchLettersToAscii.txt" \
-    *replace "replace/LithuanianLettersToAscii.txt" \
-    *replace "replace/PolishLettersToAscii.txt" \
-    *replace "replace/SpanishLettersToAscii.txt" \
-    *replace "replace/TurkishLettersToAscii.txt" \
+    +replace "replace/AsortedLettersToAscii.txt" \
+    +replace "replace/CroatianLettersToAscii.txt" \
+    +replace "replace/DanishLettersToAscii.txt" \
+    +replace "replace/FrenchLettersToAscii.txt" \
+    +replace "replace/LithuanianLettersToAscii.txt" \
+    +replace "replace/PolishLettersToAscii.txt" \
+    +replace "replace/SpanishLettersToAscii.txt" \
+    +replace "replace/TurkishLettersToAscii.txt" \
     +replace "replace/RewriteUmlaut.txt" \
-    *replace "replace/UmlautToAscii.txt" 
+    +replace "replace/UmlautToAscii.txt" 
 
 *strip "`'’\"" \
     do LETTERS_TO_ASCII \
@@ -29,7 +32,7 @@ def LETTERS_TO_ASCII \
     min length 3 \
     report
 
-# Let's write out all entries which "still" contain non-7Bit ASCII
+# Let's write out the entries which contained non-7Bit ASCII
 # characters!
 use NON_7BIT_ASCII write "temp/non-7bit-ASCII.txt"
 
